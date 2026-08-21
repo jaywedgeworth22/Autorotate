@@ -183,6 +183,18 @@ public actor RotationEngine {
             // 2. ROTATE — produce the new value in memory.
             // ------------------------------------------------------------
             let rotateStart = Date()
+            // Programmatic rotate mints (and often deactivates) the provider
+            // credential before PUSH.  With nowhere to land the new value the
+            // plaintext exists only in this stack frame — then it is discarded
+            // while the old provider credential may already be dead.
+            guard record.targets.contains(where: { $0.enabled }) else {
+                run.steps.append(RotationStepResult(
+                    step: .rotate, status: .failed,
+                    detail: "No enabled target to receive the new value; refusing to rotate.",
+                    startedAt: rotateStart))
+                return await finish(run: &run, record: record, status: .failed,
+                                    actor: actor, fingerprint: nil)
+            }
             var newValue: String
             do {
                 newValue = try await Self.withRetries(record.policy.maxRetries) {
@@ -294,9 +306,16 @@ public actor RotationEngine {
             let requiredTargets = pushOutcomes.filter { $0.target.required }
             let requiredOK = requiredTargets.filter { $0.ok && !verifyFailures.contains($0.target.id) }
             let anyRequiredFailed = requiredTargets.contains { !$0.ok || verifyFailures.contains($0.target.id) }
+            // Vacuous "all required targets OK" is not a commit: a secret whose
+            // only enabled targets are optional must still land the value on at
+            // least one of them.  Otherwise ROTATE already mutated the provider
+            // and COMMIT would fingerprint a value that lives nowhere.
+            let anyDelivered = pushOutcomes.contains {
+                $0.ok && !verifyFailures.contains($0.target.id)
+            }
 
             let terminalStatus: RotationRunStatus
-            if requiredTargets.isEmpty || !anyRequiredFailed {
+            if !anyRequiredFailed && (!requiredTargets.isEmpty || anyDelivered) {
                 var updated = record
                 updated.lastRotatedAt = Date()
                 updated.version = newVersion
