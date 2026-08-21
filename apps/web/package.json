@@ -90,7 +90,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.185.4",
     "@vitejs/plugin-react": "^5.1.1",
-    "autoprefixer": "^10.4.23",
+    "autoprefixer": "^10.5.4",
     "drizzle-kit": "^0.31.8",
     "esbuild": "^0.27.2",
     "eslint": "^9.39.1",
