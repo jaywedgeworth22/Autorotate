@@ -26,7 +26,8 @@ write-block hook, fleet stanza in `AGENTS.md`.
 | CI | `web` (ubuntu, Node 22 + npm 11) + `apple` (macos-26) + gitleaks secret scan |
 | Branch protection | **Not yet configured** — owner dashboard item |
 
-First Xcode 26 scheme builds are done (local + CI). Remaining onboard closeout:
-merge PR #16 when web is green, `workflow_dispatch` Effort Issues Sync, Slack
-+ Apple Notes closeout. Architecture and invariants: `docs/architecture.md`.
-Fleet protocol: `AGENTS.md` § Inter-agent coordination.
+PR #16 merged to `main` (`c1f12a5`). Effort Issues Sync run 32458648310
+succeeded. Remaining: Dependabot #1–15 rebase/merge; owner dashboard
+(branch protection, Infisical, ASC, SENTRY_FLEET_DSN). Architecture and
+invariants: `docs/architecture.md`. Fleet protocol: `AGENTS.md` §
+Inter-agent coordination.
