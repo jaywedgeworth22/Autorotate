@@ -34,6 +34,7 @@ struct ContentView: View {
                 }
         }
         .topSpinScreenBackground()
+        .appUpdatePrompt()
     }
 }
 
