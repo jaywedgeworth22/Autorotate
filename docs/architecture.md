@@ -44,15 +44,32 @@ rotate(secretId):
 | OpenAI | ✅ | Admin API: create/delete project service-account keys |
 | Anthropic | ⚠️ | Admin API key management (workspace-scoped) |
 | Cloudflare | ✅ | API token roll (`PUT .../tokens/:id/value`) |
-| Vercel | ⚠️ updateOnly | Tokens created in UI; TopSpin stores/propagates |
+| Vercel | ✅ | Create user token via REST (`POST /v3/user/tokens`); dashboard-only tokens remain update-only fallback |
 | Twilio | ✅ | API key create/delete |
 | SendGrid | ✅ | API key create/delete (scoped) |
-| Slack | ⚠️ updateOnly | App-level tokens rotate in UI |
+| Slack | ⚠️ partial | `auth.rotate` when the token supports refresh-token rotation; otherwise updateOnly |
+| Resend | ✅ | Create sending API key (`POST /api-keys`) |
+| Hugging Face | ✅ | Create fine-grained token |
+| Neon | ✅ | Create org API key |
 | npm | ✅ (granular) / ⚠️ | Granular access tokens via API where enabled |
 | Docker Hub | ✅ | Personal access tokens create/delete |
 | Doppler / generic REST | ✅ | Generic connector: configurable request template |
 | Kubernetes secrets | ✅ | kubectl/REST apply as target |
 | `.env` / JSON / YAML / TOML / INI files | ✅ | File target engine |
+| `global-api-keys` | ✅ | Env-style parser (trailing Mac agent token, `export`, comments) |
+| Mac agent (`mac.jays.services`) | ✅ | Writes `~/.secrets`, Drive copy, and Apple Keychain history |
+
+The Grok App Builder PWA snapshot (`backups/grok-web-2026-08-21/`) also catalogs 40+ platforms (xAI, Groq, Anthropic, Coolify, FMP, App Store Connect, …) with live / generate / console rotation kinds. Native iOS and macOS apps keep the TopSpinCore engine.
+
+## 3.1 Merge rule (2026-08-21)
+
+Two complete TopSpin implementations existed: the GitHub monorepo (zero-plaintext MySQL control center + native Apple apps) and the Grok App Builder PWA (encrypted IndexedDB vault, live vendor rotators, Mac agent). This repo keeps **both**:
+
+- **GitHub original** — tagged `backup/pre-grok-merge-2026-08-21` and copied under `backups/github-web-pre-merge-2026-08-21/`.
+- **Grok PWA** — copied under `backups/grok-web-2026-08-21/` (vault, rotators, parser, agent, UI).
+- **Live web engine** — LOCK → AUDIT + hash-chained audit from GitHub, plus Grok live rotators, `global-api-keys` parser, and the Mac agent.
+
+See [MERGE.md](../MERGE.md).
 
 ## 4. Infisical integration
 

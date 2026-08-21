@@ -334,94 +334,6 @@ async function rotateGenericRest(cfg: ConnectorConfig): Promise<string> {
   return value;
 }
 
-async function rotateResend(cfg: ConnectorConfig): Promise<string> {
-  const adminKey = str(cfg?.adminKey) ?? str(cfg?.token);
-  if (!adminKey) throw new ConnectorError("Resend: adminKey required");
-  const res = await apiFetch(
-    "https://api.resend.com/api-keys",
-    {
-      method: "POST",
-      headers: bearer(adminKey),
-      body: JSON.stringify({ name: `topspin-${new Date().toISOString().slice(0, 10)}` }),
-    },
-    "Resend create key",
-  );
-  const data = (await res.json()) as { token?: string };
-  if (!data.token) throw new ConnectorError("Resend: no token in response");
-  return data.token;
-}
-
-async function rotateSlackLive(cfg: ConnectorConfig): Promise<string> {
-  const token = str(cfg?.botToken) ?? str(cfg?.token);
-  if (!token) throw new ConnectorError("Slack: botToken required");
-  const res = await apiFetch(
-    "https://slack.com/api/auth.rotate",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ token }).toString(),
-    },
-    "Slack auth.rotate",
-  );
-  const data = (await res.json()) as { ok?: boolean; token?: string; error?: string };
-  if (!data.ok || !data.token) {
-    throw new ConnectorError(`Slack auth.rotate: ${data.error ?? "no token"}`);
-  }
-  return data.token;
-}
-
-async function rotateHuggingFace(cfg: ConnectorConfig): Promise<string> {
-  const token = str(cfg?.token);
-  if (!token) throw new ConnectorError("Hugging Face: token required");
-  const res = await apiFetch(
-    "https://huggingface.co/api/fine-grained-tokens",
-    {
-      method: "POST",
-      headers: bearer(token),
-      body: JSON.stringify({ name: `topspin-${Date.now()}`, role: "read" }),
-    },
-    "Hugging Face create token",
-  );
-  const data = (await res.json()) as { token?: string; accessToken?: string };
-  const value = data.token ?? data.accessToken;
-  if (!value) throw new ConnectorError("Hugging Face: no token in response");
-  return value;
-}
-
-async function rotateNeon(cfg: ConnectorConfig): Promise<string> {
-  const token = str(cfg?.token);
-  if (!token) throw new ConnectorError("Neon: token required");
-  const res = await apiFetch(
-    "https://console.neon.tech/api/v2/api_keys",
-    {
-      method: "POST",
-      headers: bearer(token),
-      body: JSON.stringify({ key_name: `topspin-${new Date().toISOString().slice(0, 10)}` }),
-    },
-    "Neon create API key",
-  );
-  const data = (await res.json()) as { key?: string };
-  if (!data.key) throw new ConnectorError("Neon: no key in response");
-  return data.key;
-}
-
-async function rotateVercel(cfg: ConnectorConfig): Promise<string> {
-  const token = str(cfg?.token);
-  if (!token) throw new ConnectorError("Vercel: token required");
-  const res = await apiFetch(
-    "https://api.vercel.com/v3/user/tokens",
-    {
-      method: "POST",
-      headers: bearer(token),
-      body: JSON.stringify({ name: `topspin-${new Date().toISOString().slice(0, 10)}` }),
-    },
-    "Vercel create token",
-  );
-  const data = (await res.json()) as { token?: string };
-  if (!data.token) throw new ConnectorError("Vercel: no token in response");
-  return data.token;
-}
-
 // ── Demo value generators (realistic formats per platform) ──────
 const BASE62 =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -442,9 +354,6 @@ const demoValues: Record<string, () => string> = {
   dockerhub: () => `dckr_pat_${randomToken(27, BASE62)}`,
   kubernetes: () => randomBytes(48).toString("base64url"),
   generic_rest: () => randomBytes(32).toString("hex"),
-  resend: () => `re_${randomToken(32, BASE62)}`,
-  huggingface: () => `hf_${randomToken(37, BASE62)}`,
-  neon: () => randomBytes(24).toString("hex"),
 };
 
 // ── Registry ────────────────────────────────────────────────────
@@ -457,7 +366,7 @@ function define(
   capability: ConnectorCapability,
   realRotate: RealRotate | null,
 ): ServerConnector {
-  const demoValue = demoValues[platform] ?? (() => randomBytes(32).toString("hex"));
+  const demoValue = demoValues[platform];
   return {
     platform,
     displayName,
@@ -497,17 +406,14 @@ export const connectorRegistry: ServerConnector[] = [
   define("openai", "OpenAI", "programmatic", rotateOpenAI),
   define("anthropic", "Anthropic", "partial", null),
   define("cloudflare", "Cloudflare", "programmatic", rotateCloudflare),
-  define("vercel", "Vercel", "programmatic", rotateVercel),
+  define("vercel", "Vercel", "update_only", null),
   define("twilio", "Twilio", "programmatic", rotateTwilio),
   define("sendgrid", "SendGrid", "programmatic", rotateSendGrid),
-  define("slack", "Slack", "partial", rotateSlackLive),
+  define("slack", "Slack", "update_only", null),
   define("npm", "npm", "programmatic", rotateNpm),
   define("dockerhub", "Docker Hub", "programmatic", rotateDockerHub),
   define("kubernetes", "Kubernetes", "programmatic", rotateKubernetes),
   define("generic_rest", "Generic REST", "programmatic", rotateGenericRest),
-  define("resend", "Resend", "programmatic", rotateResend),
-  define("huggingface", "Hugging Face", "programmatic", rotateHuggingFace),
-  define("neon", "Neon", "programmatic", rotateNeon),
 ];
 
 export function getConnector(platform: string): ServerConnector | undefined {
@@ -540,25 +446,6 @@ export async function testConnection(
       break;
     case "npm":
       await apiFetch("https://registry.npmjs.org/-/npm/v1/tokens", { headers: bearer(str(config.token) ?? "") }, "npm test");
-      break;
-    case "vercel":
-      await apiFetch("https://api.vercel.com/v2/user", { headers: bearer(str(config.token) ?? "") }, "Vercel test");
-      break;
-    case "resend":
-      await apiFetch("https://api.resend.com/api-keys", { headers: bearer(str(config.adminKey) ?? str(config.token) ?? "") }, "Resend test");
-      break;
-    case "huggingface":
-      await apiFetch("https://huggingface.co/api/whoami-v2", { headers: bearer(str(config.token) ?? "") }, "Hugging Face test");
-      break;
-    case "neon":
-      await apiFetch("https://console.neon.tech/api/v2/api_keys", { headers: bearer(str(config.token) ?? "") }, "Neon test");
-      break;
-    case "slack":
-      await apiFetch("https://slack.com/api/auth.test", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ token: str(config.botToken) ?? str(config.token) ?? "" }).toString(),
-      }, "Slack test");
       break;
     case "twilio": {
       const sid = str(config.accountSid);

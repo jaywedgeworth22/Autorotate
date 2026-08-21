@@ -21,23 +21,33 @@ plaintext secrets.
   [docs/architecture.md](docs/architecture.md).
 - **Audit chain** — every run appends a hash-chained audit record, so the
   history is tamper-evident.
+- **Mac agent** — optional Python agent writes `~/.secrets/global-api-keys`,
+  Drive, and Keychain history on `mac.jays.services`.
+
+The 2026-08-21 merge with the Grok App Builder PWA is documented in
+[MERGE.md](MERGE.md). Native iOS/macOS apps were not rewritten.
 
 ## Monorepo layout
 
 ```
 TopSpin/
 ├── apps/
-│   └── web/                # Web control center (React + Vite frontend,
-│                           #   Hono + tRPC + Drizzle backend, MySQL)
+│   ├── web/                # Web control center (React + Vite frontend,
+│   │                       #   Hono + tRPC + Drizzle backend, MySQL)
+│   └── agent/              # Mac Python agent (global-api-keys + Keychain)
 ├── apple/                  # Apple-platform workspace (XcodeGen)
 │   ├── TopSpinCore/        #   Shared SwiftPM package: rotation engine,
 │   │                       #   connectors, crypto, Keychain, stores
 │   ├── TopSpin-iOS/        #   iOS app (SwiftUI, iOS 17+)
 │   ├── TopSpin-macOS/      #   macOS app (SwiftUI, macOS 14+)
 │   └── project.yml         #   XcodeGen spec → TopSpin.xcodeproj
+├── backups/                # Frozen copies of both pre-merge implementations
+│   ├── github-web-pre-merge-2026-08-21/
+│   └── grok-web-2026-08-21/
 ├── docs/
 │   ├── architecture.md     # System architecture + connector capability matrix
 │   └── build-plan.md       # Original build plan
+├── MERGE.md                # How the GitHub and Grok trees were combined
 ├── .github/                # CI, release, CodeQL, Dependabot, templates
 ├── scripts/                # Repo automation (e.g. push-to-github.sh)
 └── AGENTS.md               # Coordination manifest for AI agent fleets
@@ -75,6 +85,7 @@ swift build && swift test
 ## Documentation
 
 - [Architecture & connector capability matrix](docs/architecture.md)
+- [How the Grok and GitHub trees were merged](MERGE.md)
 - [Build plan](docs/build-plan.md)
 - [Apple workspace notes](apple/README.md) · [macOS notes](apple/README-macOS.md)
 - [Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md) ·
