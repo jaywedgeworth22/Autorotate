@@ -66,7 +66,7 @@ struct AddTargetView: View {
 
                 switch kind {
                 case .infisical: infisicalSection
-                case .file:      fileSection
+                case .file:      fileTargetSection
                 case .webhook:   webhookSection
                 case .keychain:  keychainSection
                 }
@@ -116,7 +116,7 @@ struct AddTargetView: View {
         }
     }
 
-    private var fileSection: some View {
+    private var fileTargetSection: some View {
         Section {
             TextField("Absolute path (app container)", text: $filePath)
                 .textInputAutocapitalization(.never)
