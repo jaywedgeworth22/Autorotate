@@ -2,6 +2,14 @@
 
 ## Current Handoff
 
+### 2026-08-21 GROK — merge Grok App Builder PWA with this monorepo
+
+Merged the App Builder TopSpin (encrypted vault, 40+ platforms, live rotators,
+Mac agent) with this repo. Backups of both trees: `backups/`. Live web engine
+gained Resend / Slack / Hugging Face / Neon / Vercel rotators, `global-api-keys`
+parser, and `apps/agent`. Native Apple apps untouched. Tag
+`backup/pre-grok-merge-2026-08-21`. See `MERGE.md`.
+
 ### 2026-08-20 KIMI — fleet onboarding + GitHub push
 
 Repo is **public**: https://github.com/jaywedgeworth22/TopSpin (pushed from

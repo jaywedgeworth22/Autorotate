@@ -2,6 +2,11 @@
 
 **Date:** 2026-08-21 · **From:** Kimi orchestration swarm · **To:** a local agent (or human) running on the Mac
 
+> **2026-08-21 GROK update:** the Grok App Builder PWA was merged into this
+> monorepo (`MERGE.md`). Backups of both trees are under `backups/`. Native
+> Apple apps were not rewritten. The six-step pipeline and zero-plaintext
+> rule still apply.
+
 This document is a complete, self-contained briefing. You do not need any prior
 context. Follow the tasks in order.
 

@@ -182,6 +182,24 @@ export const PLATFORM_META: Record<string, PlatformMeta> = {
     ],
     hints: { verify: 'service-token login' },
   },
+  resend: {
+    tile: 're',
+    tagline: 'Transactional email API keys',
+    fields: [{ key: 'adminKey', label: 'Admin API key', placeholder: 're_…', secret: true }],
+    hints: { create: 'POST /api-keys', verify: 'GET /api-keys' },
+  },
+  huggingface: {
+    tile: 'hf',
+    tagline: 'Fine-grained access tokens',
+    fields: [{ key: 'token', label: 'Access token', placeholder: 'hf_…', secret: true }],
+    hints: { create: 'POST /api/fine-grained-tokens', verify: 'GET /api/whoami-v2' },
+  },
+  neon: {
+    tile: 'ne',
+    tagline: 'Org API keys',
+    fields: [{ key: 'token', label: 'API key', secret: true }],
+    hints: { create: 'POST /api/v2/api_keys', verify: 'GET /api/v2/api_keys' },
+  },
 }
 
 export function platformMeta(platform: string): PlatformMeta {

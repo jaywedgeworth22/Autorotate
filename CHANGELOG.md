@@ -6,6 +6,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html):
 breaking changes bump MAJOR, backwards-compatible features bump MINOR, and
 backwards-compatible fixes bump PATCH.
 
+## [1.1.0] - 2026-08-21
+
+### Added
+
+- Merged the Grok App Builder TopSpin PWA with this monorepo. Backups of both
+  trees live under `backups/` (see `MERGE.md`).
+- Live rotators for Resend, Slack (`auth.rotate`), Hugging Face, Neon, and
+  Vercel token create (web engine).
+- `global-api-keys` parser (`apps/web/api/topspin/env-parse.ts`) with trailing
+  Mac agent token support.
+- Mac Python agent (`apps/agent/topspin-agent.py`) for `mac.jays.services`.
+- Git tag `backup/pre-grok-merge-2026-08-21` freezes the pre-merge web engine.
+
+### Changed
+
+- Vercel connector is now programmatic (was update-only). Slack is partial.
+- Architecture matrix updated for the merged capability set.
+
 ## [1.0.0] - 2026-08-21
 
 Initial release of TopSpin — multi-platform secret rotation.
