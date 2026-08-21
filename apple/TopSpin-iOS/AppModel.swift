@@ -64,17 +64,18 @@ final class AppModel {
 
     // MARK: Init
 
-    /// Nonisolated so the SwiftUI `App.init` (which must run before launch
-    /// completes for BGTaskScheduler registration) can build the model
-    /// synchronously. Everything touched here is actor- or value-based.
-    nonisolated init(container: ModelContainer, settings: SettingsStorage = SettingsStorage()) {
+    /// @MainActor (inherited from the class). SwiftUI `App.init` may be
+    /// main-actor-isolated, so the model can be built synchronously before
+    /// launch completes for BGTaskScheduler registration.
+    init(container: ModelContainer, settings: SettingsStorage = SettingsStorage()) {
         self.container = container
         self.settings = settings
         self.secretStore = SwiftDataSecretStore(container: container)
         self.runStore = SwiftDataRotationRunStore(container: container)
         self.auditStore = SwiftDataAuditStore(container: container)
         self.configStore = SwiftDataConnectorConfigStore(container: container)
-        self.keychain = Self.makeKeychain(settings: settings)
+        let keychain = Self.makeKeychain(settings: settings)
+        self.keychain = keychain
         self.lastBackgroundRefreshAt = settings.lastBackgroundRefreshAt
         self.engine = Self.makeEngine(secretStore: secretStore,
                                       auditStore: auditStore,

@@ -20,6 +20,7 @@ struct TopSpinApp: App {
     private let container: ModelContainer
     @State private var containerError: String?
 
+    @MainActor
     init() {
         let builtContainer: ModelContainer
         do {
