@@ -25,3 +25,6 @@ topspin-files/
 
 # OS noise
 .DS_Store
+
+# XcodeGen output — regenerate with `xcodegen generate`
+apple/TopSpin.xcodeproj/
