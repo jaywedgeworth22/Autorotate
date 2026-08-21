@@ -15,7 +15,7 @@ jobs:
     name: Web (apps/web)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node 22
         uses: actions/setup-node@v7
@@ -38,7 +38,7 @@ jobs:
     name: Apple (TopSpinCore + iOS + macOS)
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Select Xcode 26
         run: |
