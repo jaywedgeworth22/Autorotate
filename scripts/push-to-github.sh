@@ -13,8 +13,8 @@
 set -euo pipefail
 
 GITHUB_TOKEN="${1:-${GITHUB_TOKEN:-}}"
-GITHUB_USER="${2:-${GITHUB_USER:-}}"
-REPO_NAME="TopSpin"
+GITHUB_USER="${2:-${GITHUB_USER:-jaywedgeworth22}}"   # default owner: jaywedgeworth22
+REPO_NAME="TopSpin"   # public repo
 
 if [ -z "$GITHUB_TOKEN" ] || [ -z "$GITHUB_USER" ]; then
   echo "error: provide GITHUB_TOKEN and GITHUB_USER (env vars or args)." >&2
