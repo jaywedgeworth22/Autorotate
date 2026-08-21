@@ -19,13 +19,14 @@ write-block hook, fleet stanza in `AGENTS.md`.
 
 | Component | State |
 |---|---|
-| Web control center (`apps/web/`) | Built; `npm run check` + `npm run build` green at build time; demo mode default |
-| TopSpinCore (`apple/TopSpinCore/`) | `swift build` + `swift test` — 22/22 passing (Swift 5.9.2) |
-| iOS app (`apple/TopSpin-iOS/`) | Audited, **never compiled** — first Xcode 26 build pending |
-| macOS app (`apple/TopSpin-macOS/`) | Audited, **never compiled** — first Xcode 26 build pending |
-| CI | `web` (ubuntu) + `apple` (macos-26) + gitleaks secret scan |
+| Web control center (`apps/web/`) | Local `npm ci` + `check` + `build` + 9/9 tests green (2026-08-21 CURSOR). CI web job was failing on `npm ci` Exit-handler crash because the lockfile mixed `npmmirror.com` / `npm.mirrors.msh.team`; lockfile + `.npmrc` now pin `registry.npmjs.org`, CI pins npm 11. |
+| TopSpinCore (`apple/TopSpinCore/`) | `swift test` — 22/22 passing locally and on CI |
+| iOS app (`apple/TopSpin-iOS/`) | Local `xcodebuild` **BUILD SUCCEEDED** (generic iOS Simulator, unsigned) + CI apple job green |
+| macOS app (`apple/TopSpin-macOS/`) | Local `xcodebuild` **BUILD SUCCEEDED** (platform=macOS, unsigned) + CI apple job green |
+| CI | `web` (ubuntu, Node 22 + npm 11) + `apple` (macos-26) + gitleaks secret scan |
 | Branch protection | **Not yet configured** — owner dashboard item |
 
-Build order and first-build fixups: `HANDOFF.md`.  Architecture and
-invariants: `docs/architecture.md`.  Fleet protocol: `AGENTS.md` §
-Inter-agent coordination.
+First Xcode 26 scheme builds are done (local + CI). Remaining onboard closeout:
+merge PR #16 when web is green, `workflow_dispatch` Effort Issues Sync, Slack
++ Apple Notes closeout. Architecture and invariants: `docs/architecture.md`.
+Fleet protocol: `AGENTS.md` § Inter-agent coordination.
