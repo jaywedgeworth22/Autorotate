@@ -126,10 +126,12 @@ final class ModelTests: XCTestCase {
     }
 
     func testConnectorRegistryCoversMatrix() {
-        XCTAssertEqual(ConnectorRegistry.all.count, 15)
+        XCTAssertEqual(ConnectorRegistry.shipped.count, 15)
+        XCTAssertGreaterThanOrEqual(ConnectorRegistry.all.count, 40)
         XCTAssertEqual(ConnectorRegistry.capability(of: "vercel"), .updateOnly)
         XCTAssertEqual(ConnectorRegistry.capability(of: "github"), .partial)
         XCTAssertEqual(ConnectorRegistry.capability(of: "aws.iam"), .programmatic)
+        XCTAssertEqual(ConnectorRegistry.capability(of: "coolify"), .updateOnly)
     }
 }
 
@@ -343,5 +345,38 @@ final class RotationEngineTests: XCTestCase {
         let stored = try await secrets.secret(id: record.id)!
         XCTAssertEqual(stored.version, 0)
         XCTAssertNotEqual(stored.status, .active)
+    }
+}
+
+final class CatalogConnectorTests: XCTestCase {
+    func testRegistryIdsAreUniqueAndIncludeGrokCatalog() {
+        let ids = ConnectorRegistry.all.map(\.id)
+        XCTAssertEqual(ids.count, Set(ids).count)
+        XCTAssertNotNil(ConnectorRegistry.descriptor(for: "coolify"))
+        XCTAssertNotNil(ConnectorRegistry.descriptor(for: "xai"))
+        XCTAssertEqual(ConnectorRegistry.capability(of: "jwt"), .programmatic)
+        XCTAssertEqual(ConnectorRegistry.capability(of: "coolify"), .updateOnly)
+        XCTAssertNil(ConnectorRegistry.makeCatalogConnector(id: "github"))
+        XCTAssertNotNil(ConnectorRegistry.makeCatalogConnector(id: "coolify"))
+    }
+
+    func testCatalogGenerateMintsLocalValue() async throws {
+        let jwt = ConnectorRegistry.makeCatalogConnector(id: "jwt")!
+        let a = try await jwt.rotate(adminCredential: "")
+        let b = try await jwt.rotate(adminCredential: "")
+        XCTAssertEqual(a.count, 64)
+        XCTAssertNotEqual(a, b)
+    }
+
+    func testCatalogUpdateOnlyRequiresImport() async {
+        let coolify = ConnectorRegistry.makeCatalogConnector(id: "coolify")!
+        do {
+            _ = try await coolify.rotate(adminCredential: "token")
+            XCTFail("update-only catalog should not mint via rotate()")
+        } catch ConnectorError.manualRotationRequired(let id) {
+            XCTAssertEqual(id, "coolify")
+        } catch {
+            XCTFail("unexpected error \(error)")
+        }
     }
 }

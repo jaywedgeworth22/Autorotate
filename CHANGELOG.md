@@ -6,6 +6,43 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html):
 breaking changes bump MAJOR, backwards-compatible features bump MINOR, and
 backwards-compatible fixes bump PATCH.
 
+## [1.2.0] - 2026-08-21
+
+### Added
+
+- Complete backup of the Kimi Agent dump (`Kimi_Agent_TopSpin Secret Rotator`)
+  under `backups/kimi-agent-topspin/` with ORIGIN hashes.  The dump had no
+  `.git`; this repository's history from `fc50b10` is that product.
+- Backup of dump `app/` under `backups/secret-rotator/` (same product family;
+  there is no standalone Secret Rotator repo).
+- Grok's extra platform catalog in the live web registry and TopSpinCore
+  (Coolify, xAI, Groq, Vault, JWT/HMAC generators, and related update-only
+  targets).  Dedicated live rotators (Resend, Hugging Face, Neon, Vercel,
+  Slack) were already merged in 1.1.0.
+
+### Changed
+
+- Relicensed the project from MIT to Apache License 2.0.  Copyright is Jay
+  (the earlier "TopSpin Systems" MIT notice was a placeholder, not a company).
+  See `LICENSE` and `NOTICE`.  Historical commits remain MIT as published.
+
+
+### Added
+
+- Merged the Grok App Builder TopSpin PWA with this monorepo. Backups of both
+  trees live under `backups/` (see `MERGE.md`).
+- Live rotators for Resend, Slack (`auth.rotate`), Hugging Face, Neon, and
+  Vercel token create (web engine).
+- `global-api-keys` parser (`apps/web/api/topspin/env-parse.ts`) with trailing
+  Mac agent token support.
+- Mac Python agent (`apps/agent/topspin-agent.py`) for `mac.jays.services`.
+- Git tag `backup/pre-grok-merge-2026-08-21` freezes the pre-merge web engine.
+
+### Changed
+
+- Vercel connector is now programmatic (was update-only). Slack is partial.
+- Architecture matrix updated for the merged capability set.
+
 ## [1.0.0] - 2026-08-21
 
 Initial release of TopSpin — multi-platform secret rotation.

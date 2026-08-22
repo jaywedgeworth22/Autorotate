@@ -136,6 +136,9 @@ enum ConnectorFactory {
                 method: value(ConnectorSettingsKey.method, default: "POST"),
                 responseValueJSONPath: value(ConnectorSettingsKey.responseValueJSONPath))
         default:
+            if let catalog = ConnectorRegistry.makeCatalogConnector(id: record.connectorId) {
+                return catalog
+            }
             throw ConnectorError.misconfigured(
                 "Unknown connector id '\(record.connectorId)'. Registered ids are listed in ConnectorRegistry.all.")
         }
@@ -198,6 +201,9 @@ enum ConnectorFieldCatalog {
                     f(ConnectorSettingsKey.method, "HTTP method", "POST"),
                     f(ConnectorSettingsKey.responseValueJSONPath, "Response value JSON path (optional)")]
         default:
+            if ConnectorRegistry.makeCatalogConnector(id: connectorId) != nil {
+                return [f("token", "API token", "paste credential")]
+            }
             // Vercel, Slack, Docker Hub need no connector settings.
             return []
         }

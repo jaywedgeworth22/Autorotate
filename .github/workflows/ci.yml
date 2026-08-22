@@ -15,19 +15,22 @@ jobs:
     name: Web (apps/web)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - name: Setup Node 20
-        uses: actions/setup-node@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
+
+      - name: Pin npm 11 (npm 10 exit-handler crash on this lockfile)
+        run: npm install -g npm@11.6.2
 
       - name: Install, typecheck, build
         working-directory: apps/web
         run: |
-          npm ci
+          npm ci --no-audit --no-fund
           npm run check
           npm run build
 
@@ -35,7 +38,7 @@ jobs:
     name: Apple (TopSpinCore + iOS + macOS)
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Select Xcode 26
         run: |

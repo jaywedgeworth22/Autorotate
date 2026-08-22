@@ -334,6 +334,94 @@ async function rotateGenericRest(cfg: ConnectorConfig): Promise<string> {
   return value;
 }
 
+async function rotateResend(cfg: ConnectorConfig): Promise<string> {
+  const adminKey = str(cfg?.adminKey) ?? str(cfg?.token);
+  if (!adminKey) throw new ConnectorError("Resend: adminKey required");
+  const res = await apiFetch(
+    "https://api.resend.com/api-keys",
+    {
+      method: "POST",
+      headers: bearer(adminKey),
+      body: JSON.stringify({ name: `topspin-${new Date().toISOString().slice(0, 10)}` }),
+    },
+    "Resend create key",
+  );
+  const data = (await res.json()) as { token?: string };
+  if (!data.token) throw new ConnectorError("Resend: no token in response");
+  return data.token;
+}
+
+async function rotateSlackLive(cfg: ConnectorConfig): Promise<string> {
+  const token = str(cfg?.botToken) ?? str(cfg?.token);
+  if (!token) throw new ConnectorError("Slack: botToken required");
+  const res = await apiFetch(
+    "https://slack.com/api/auth.rotate",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ token }).toString(),
+    },
+    "Slack auth.rotate",
+  );
+  const data = (await res.json()) as { ok?: boolean; token?: string; error?: string };
+  if (!data.ok || !data.token) {
+    throw new ConnectorError(`Slack auth.rotate: ${data.error ?? "no token"}`);
+  }
+  return data.token;
+}
+
+async function rotateHuggingFace(cfg: ConnectorConfig): Promise<string> {
+  const token = str(cfg?.token);
+  if (!token) throw new ConnectorError("Hugging Face: token required");
+  const res = await apiFetch(
+    "https://huggingface.co/api/fine-grained-tokens",
+    {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ name: `topspin-${Date.now()}`, role: "read" }),
+    },
+    "Hugging Face create token",
+  );
+  const data = (await res.json()) as { token?: string; accessToken?: string };
+  const value = data.token ?? data.accessToken;
+  if (!value) throw new ConnectorError("Hugging Face: no token in response");
+  return value;
+}
+
+async function rotateNeon(cfg: ConnectorConfig): Promise<string> {
+  const token = str(cfg?.token);
+  if (!token) throw new ConnectorError("Neon: token required");
+  const res = await apiFetch(
+    "https://console.neon.tech/api/v2/api_keys",
+    {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ key_name: `topspin-${new Date().toISOString().slice(0, 10)}` }),
+    },
+    "Neon create API key",
+  );
+  const data = (await res.json()) as { key?: string };
+  if (!data.key) throw new ConnectorError("Neon: no key in response");
+  return data.key;
+}
+
+async function rotateVercel(cfg: ConnectorConfig): Promise<string> {
+  const token = str(cfg?.token);
+  if (!token) throw new ConnectorError("Vercel: token required");
+  const res = await apiFetch(
+    "https://api.vercel.com/v3/user/tokens",
+    {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ name: `topspin-${new Date().toISOString().slice(0, 10)}` }),
+    },
+    "Vercel create token",
+  );
+  const data = (await res.json()) as { token?: string };
+  if (!data.token) throw new ConnectorError("Vercel: no token in response");
+  return data.token;
+}
+
 // ── Demo value generators (realistic formats per platform) ──────
 const BASE62 =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -354,11 +442,49 @@ const demoValues: Record<string, () => string> = {
   dockerhub: () => `dckr_pat_${randomToken(27, BASE62)}`,
   kubernetes: () => randomBytes(48).toString("base64url"),
   generic_rest: () => randomBytes(32).toString("hex"),
+  resend: () => `re_${randomToken(32, BASE62)}`,
+  huggingface: () => `hf_${randomToken(37, BASE62)}`,
+  neon: () => randomBytes(24).toString("hex"),
+  vault: () => `hvs.${randomToken(24, BASE62)}`,
+  doppler: () => `dp.st.${randomToken(32, BASE62)}`,
+  onepassword: () => `ops_${randomToken(32, BASE62)}`,
+  xai: () => `xai-${randomToken(48, BASE62)}`,
+  groq: () => `gsk_${randomToken(48, BASE62)}`,
+  google_ai: () => `AIza${randomToken(35, BASE62)}`,
+  gitlab: () => `glpat-${randomToken(20, BASE62)}`,
+  bitbucket: () => randomToken(32, BASE62),
+  gcp: () => randomBytes(32).toString("hex"),
+  azure: () => randomToken(40, BASE62),
+  netlify: () => randomToken(40, BASE62),
+  railway: () => randomToken(32, BASE62),
+  render: () => `rnd_${randomToken(32, BASE62)}`,
+  fly: () => `FlyV1 ${randomToken(40, BASE62)}`,
+  digitalocean: () => `dop_v1_${randomToken(40, BASE62)}`,
+  coolify: () => randomBytes(32).toString("hex"),
+  heroku: () => randomBytes(20).toString("hex"),
+  discord: () => `${randomToken(24, BASE62)}.${randomToken(6, BASE62)}.${randomToken(27, BASE62)}`,
+  mailgun: () => `key-${randomBytes(16).toString("hex")}`,
+  postmark: () => randomBytes(20).toString("hex"),
+  supabase: () => `sbp_${randomToken(40, BASE62)}`,
+  planetscale: () => `pscale_tkn_${randomToken(32, BASE62)}`,
+  mongodb: () => randomToken(32, BASE62),
+  fmp: () => randomToken(32, BASE62),
+  ssh: () => `ssh-ed25519 ${randomBytes(32).toString("base64")} topspin-demo`,
+  database: () => randomToken(32, BASE62),
+  webhook_hmac: () => `whsec_${randomBytes(24).toString("base64url")}`,
+  jwt: () => randomBytes(32).toString("hex"),
+  apple_asc: () => randomBytes(16).toString("hex"),
+  linear: () => `lin_api_${randomToken(40, BASE62)}`,
+  notion: () => `ntn_${randomToken(40, BASE62)}`,
+  generic_secret: () => randomBytes(32).toString("hex"),
 };
 
 // ── Registry ────────────────────────────────────────────────────
 
 type RealRotate = (cfg: ConnectorConfig) => Promise<string>;
+
+/** Local CSPRNG mint — used for jwt / database / webhook HMAC / generic secret. */
+const rotateGenerated: RealRotate = async () => randomBytes(32).toString("hex");
 
 function define(
   platform: string,
@@ -366,7 +492,7 @@ function define(
   capability: ConnectorCapability,
   realRotate: RealRotate | null,
 ): ServerConnector {
-  const demoValue = demoValues[platform];
+  const demoValue = demoValues[platform] ?? (() => randomBytes(32).toString("hex"));
   return {
     platform,
     displayName,
@@ -406,14 +532,50 @@ export const connectorRegistry: ServerConnector[] = [
   define("openai", "OpenAI", "programmatic", rotateOpenAI),
   define("anthropic", "Anthropic", "partial", null),
   define("cloudflare", "Cloudflare", "programmatic", rotateCloudflare),
-  define("vercel", "Vercel", "update_only", null),
+  define("vercel", "Vercel", "programmatic", rotateVercel),
   define("twilio", "Twilio", "programmatic", rotateTwilio),
   define("sendgrid", "SendGrid", "programmatic", rotateSendGrid),
-  define("slack", "Slack", "update_only", null),
+  define("slack", "Slack", "partial", rotateSlackLive),
   define("npm", "npm", "programmatic", rotateNpm),
   define("dockerhub", "Docker Hub", "programmatic", rotateDockerHub),
   define("kubernetes", "Kubernetes", "programmatic", rotateKubernetes),
   define("generic_rest", "Generic REST", "programmatic", rotateGenericRest),
+  define("resend", "Resend", "programmatic", rotateResend),
+  define("huggingface", "Hugging Face", "programmatic", rotateHuggingFace),
+  define("neon", "Neon", "programmatic", rotateNeon),
+  // Grok catalog — update-only unless a local generator applies.
+  define("vault", "HashiCorp Vault", "update_only", null),
+  define("doppler", "Doppler", "update_only", null),
+  define("onepassword", "1Password Connect", "update_only", null),
+  define("xai", "xAI", "update_only", null),
+  define("groq", "Groq", "update_only", null),
+  define("google_ai", "Google AI / Gemini", "update_only", null),
+  define("gitlab", "GitLab", "update_only", null),
+  define("bitbucket", "Bitbucket", "update_only", null),
+  define("gcp", "Google Cloud", "update_only", null),
+  define("azure", "Azure", "update_only", null),
+  define("netlify", "Netlify", "update_only", null),
+  define("railway", "Railway", "update_only", null),
+  define("render", "Render API token", "update_only", null),
+  define("fly", "Fly.io", "update_only", null),
+  define("digitalocean", "DigitalOcean", "update_only", null),
+  define("coolify", "Coolify", "update_only", null),
+  define("heroku", "Heroku", "update_only", null),
+  define("discord", "Discord", "update_only", null),
+  define("mailgun", "Mailgun", "update_only", null),
+  define("postmark", "Postmark", "update_only", null),
+  define("supabase", "Supabase", "update_only", null),
+  define("planetscale", "PlanetScale", "update_only", null),
+  define("mongodb", "MongoDB Atlas", "update_only", null),
+  define("fmp", "Financial Modeling Prep", "update_only", null),
+  define("ssh", "SSH keys", "update_only", null),
+  define("database", "Database password", "programmatic", rotateGenerated),
+  define("webhook_hmac", "Webhook / HMAC", "programmatic", rotateGenerated),
+  define("jwt", "JWT signing key", "programmatic", rotateGenerated),
+  define("apple_asc", "App Store Connect", "update_only", null),
+  define("linear", "Linear", "update_only", null),
+  define("notion", "Notion", "update_only", null),
+  define("generic_secret", "Generic secret", "programmatic", rotateGenerated),
 ];
 
 export function getConnector(platform: string): ServerConnector | undefined {
@@ -447,6 +609,25 @@ export async function testConnection(
     case "npm":
       await apiFetch("https://registry.npmjs.org/-/npm/v1/tokens", { headers: bearer(str(config.token) ?? "") }, "npm test");
       break;
+    case "vercel":
+      await apiFetch("https://api.vercel.com/v2/user", { headers: bearer(str(config.token) ?? "") }, "Vercel test");
+      break;
+    case "resend":
+      await apiFetch("https://api.resend.com/api-keys", { headers: bearer(str(config.adminKey) ?? str(config.token) ?? "") }, "Resend test");
+      break;
+    case "huggingface":
+      await apiFetch("https://huggingface.co/api/whoami-v2", { headers: bearer(str(config.token) ?? "") }, "Hugging Face test");
+      break;
+    case "neon":
+      await apiFetch("https://console.neon.tech/api/v2/api_keys", { headers: bearer(str(config.token) ?? "") }, "Neon test");
+      break;
+    case "slack":
+      await apiFetch("https://slack.com/api/auth.test", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ token: str(config.botToken) ?? str(config.token) ?? "" }).toString(),
+      }, "Slack test");
+      break;
     case "twilio": {
       const sid = str(config.accountSid);
       if (!sid) throw new ConnectorError("Twilio: accountSid required");
@@ -467,6 +648,11 @@ export async function testConnection(
       });
       break;
     }
+    case "jwt":
+    case "database":
+    case "webhook_hmac":
+    case "generic_secret":
+      return `local generator for ${name} is ready`;
     default:
       return `no lightweight test available for ${name} — credential saved`;
   }

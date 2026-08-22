@@ -35,8 +35,8 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
     links: [
       { label: 'Privacy', href: '/#privacy' },
       { label: 'Terms', href: '/#terms' },
-      { label: 'DPA', href: '/#dpa' },
-      { label: 'SOC 2', href: '/#soc2' },
+      { label: 'License', href: 'https://github.com/jaywedgeworth22/TopSpin/blob/main/LICENSE' },
+      { label: 'Security', href: '/#security' },
     ],
   },
 ]
@@ -86,13 +86,13 @@ export default function Footer() {
 
         <div className="mt-14 flex flex-col items-start justify-between gap-6 border-t border-line-subtle pt-8 md:flex-row md:items-center">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-mono-s text-ink-muted">© 2025 TopSpin Systems</span>
+            <span className="text-mono-s text-ink-muted">© 2026 Jay · Apache-2.0</span>
             <Chip>SOC 2 Type II</Chip>
             <Chip>Zero plaintext storage</Chip>
           </div>
           <div className="flex items-center gap-4">
             <a
-              href="https://github.com"
+              href="https://github.com/jaywedgeworth22/TopSpin"
               aria-label="GitHub"
               className="text-ink-muted transition-colors hover:text-ink-primary"
             >

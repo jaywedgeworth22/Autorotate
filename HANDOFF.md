@@ -2,6 +2,11 @@
 
 **Date:** 2026-08-21 · **From:** Kimi orchestration swarm · **To:** a local agent (or human) running on the Mac
 
+> **2026-08-21 GROK update:** the Grok App Builder PWA was merged into this
+> monorepo (`MERGE.md`). Backups of both trees are under `backups/`. Native
+> Apple apps were not rewritten. The six-step pipeline and zero-plaintext
+> rule still apply.
+
 This document is a complete, self-contained briefing. You do not need any prior
 context. Follow the tasks in order.
 
@@ -15,12 +20,12 @@ built and committed** in this repository (`main` branch, clean tree):
 | Component | Path | State |
 |---|---|---|
 | Web control center (React 19 + Vite + Hono/tRPC/Drizzle/MySQL) | `apps/web/` | `npm run check` + `npm run build` passed at build time; seeded demo data; demo-mode rotation engine |
-| Shared Swift package (rotation engine, 15 connectors, Infisical client, KeychainManager, file-target engine) | `apple/TopSpinCore/` | **Compiler-verified**: `swift build` + `swift test` — 22/22 tests passing (Swift 5.9.2, Linux toolchain) |
+| Shared Swift package (rotation engine, shipped connectors + Grok extra catalog, Infisical client, KeychainManager, file-target engine) | `apple/TopSpinCore/` | **Compiler-verified**: `swift build` + `swift test` |
 | iOS app (SwiftUI, iOS 17+) | `apple/TopSpin-iOS/` | Manually audited against TopSpinCore APIs; **never compiled** (no Mac available at build time) |
 | macOS app (SwiftUI + MenuBarExtra, macOS 14+) | `apple/TopSpin-macOS/` | Same — manually audited, **never compiled** |
 | XcodeGen spec (both app targets, already merged) | `apple/project.yml` | YAML-validated; paths verified to resolve |
 | Architecture spec | `docs/architecture.md` | Source of truth for the rotation pipeline + connector capability matrix |
-| Standards pack | root + `.github/` | LICENSE (MIT), CONTRIBUTING, SECURITY, CHANGELOG v1.0.0, CODEOWNERS, CoC, PR/issue templates, Dependabot, CodeQL |
+| Standards pack | root + `.github/` | LICENSE (Apache-2.0), CONTRIBUTING, SECURITY, CHANGELOG, CODEOWNERS, CoC, PR/issue templates, Dependabot, CodeQL |
 | Agent coordination manifest | `AGENTS.md` | Module ownership, invariants, workflow protocol for AI agent fleets |
 | CI | `.github/workflows/ci.yml` | `web` job (ubuntu) + `apple` job (`macos-26`, Xcode 26, builds both schemes) |
 | Secret scan gate | `.github/workflows/secret-scan.yml` | Gitleaks full-history scan on every push/PR |
@@ -130,7 +135,7 @@ npm install
 npm run db:push && npm run db:seed
 npm run dev                # http://localhost:3000 — demo mode is ON by default (TOPSPIN_DEMO unset)
 ```
-The demo workspace (15 connectors, 40 secrets, 122 targets, 60 runs, hash-chained audit) makes every
+The demo workspace (seeded connectors from the live registry, 40 secrets, file/webhook/keychain targets, hash-chained audit) makes every
 screen explorable without any real credentials.
 
 ---

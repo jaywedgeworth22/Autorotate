@@ -141,6 +141,14 @@ enum ConnectorFactory {
                           placeholder: "40", isOptional: true)
             ]
         default:
+            if ConnectorRegistry.makeCatalogConnector(id: connectorId) != nil {
+                return [
+                    FieldSpec(key: "token", label: "API token",
+                              placeholder: "paste credential",
+                              isOptional: true,
+                              help: "Update-only catalog platforms: rotate in the vendor console, then import. Generate-local platforms ignore this field.")
+                ]
+            }
             return []
         }
     }
@@ -290,6 +298,9 @@ enum ConnectorFactory {
                 generatedValueLength: optionalInt("generatedValueLength") ?? 40)
 
         default:
+            if let catalog = ConnectorRegistry.makeCatalogConnector(id: connectorId) {
+                return catalog
+            }
             throw FactoryError.unknownConnector(connectorId)
         }
     }

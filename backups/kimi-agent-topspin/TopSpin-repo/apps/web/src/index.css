@@ -1,0 +1,159 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* shadcn tokens mapped to the TopSpin dark palette (design.md §2) */
+    --background: 222 32% 4%;        /* #07090D abyss */
+    --foreground: 220 27% 93%;       /* #E8ECF4 ink-primary */
+    --card: 223 29% 7%;              /* #0C0F16 panel */
+    --card-foreground: 220 27% 93%;
+    --popover: 224 29% 9%;           /* #11151F raised */
+    --popover-foreground: 220 27% 93%;
+    --primary: 161 79% 54%;          /* #2EE6A8 spin */
+    --primary-foreground: 170 60% 6%;
+    --secondary: 224 29% 9%;
+    --secondary-foreground: 220 27% 93%;
+    --muted: 224 29% 9%;
+    --muted-foreground: 218 15% 48%; /* #9AA5B8 ink-secondary */
+    --accent: 224 29% 9%;
+    --accent-foreground: 220 27% 93%;
+    --destructive: 352 88% 62%;      /* #F4586B danger */
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 28% 15%;           /* #1B2130 line-subtle */
+    --input: 220 28% 15%;
+    --ring: 161 79% 54%;
+    --radius: 0.625rem;
+    --sidebar-background: 223 29% 7%;
+    --sidebar-foreground: 218 15% 48%;
+    --sidebar-primary: 161 79% 54%;
+    --sidebar-primary-foreground: 170 60% 6%;
+    --sidebar-accent: 224 29% 9%;
+    --sidebar-accent-foreground: 220 27% 93%;
+    --sidebar-border: 220 28% 15%;
+    --sidebar-ring: 161 79% 54%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-abyss text-ink-primary font-sans antialiased;
+    font-size: 15px;
+    line-height: 24px;
+  }
+  /* Numeric rule: tabular metrics */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  ::selection {
+    background: rgba(46, 230, 168, 0.25);
+    color: #e8ecf4;
+  }
+}
+
+@layer components {
+  /* Panel top-light gradient (design.md §2) */
+  .panel-light {
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 40%);
+  }
+  /* Hero radial spin glow */
+  .hero-radial {
+    background-image: radial-gradient(1200px 600px at 70% -10%, rgba(46, 230, 168, 0.1), transparent 60%);
+  }
+  /* Brand dial conic gradient */
+  .dial-conic {
+    background-image: conic-gradient(from 0deg, #2ee6a8, #5ea8ff 45%, #9b8cff 70%, transparent 75%);
+  }
+  /* 4% turbulence noise overlay */
+  .noise-overlay {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  }
+  /* The Spin — brand loader ring */
+  .spin-loader {
+    border-radius: 9999px;
+    background: conic-gradient(from 0deg, #2ee6a8, #5ea8ff 45%, #9b8cff 70%, transparent 75%);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2.5px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2.5px));
+    animation: dial-spin 1.2s linear infinite;
+  }
+  /* Label text style (design.md §3) */
+  .text-label {
+    @apply font-sans text-[11px] leading-4 font-semibold uppercase;
+    letter-spacing: 0.08em;
+  }
+  .text-mono-s {
+    @apply font-mono text-[11px] leading-4;
+    letter-spacing: 0.02em;
+  }
+}
+
+@keyframes scroll-cue {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(36px);
+    opacity: 0;
+  }
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes check-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes glow-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes cursor-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-dial-spin,
+  .animate-tick-pulse {
+    animation: none;
+  }
+}

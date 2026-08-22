@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { encryptJson, decryptJson, fingerprint } from "./crypto";
-import { computeEntryHash, canonicalEntry } from "./engine";
+import { computeEntryHash, canonicalEntry, infisicalSecretName } from "./engine";
 import { renderUpdated } from "./files";
+import { parseGlobalApiKeys, serializeGlobalApiKeys } from "./env-parse";
+import { getConnector } from "./connectors";
 
 describe("crypto", () => {
   it("encryptJson/decryptJson round-trips", () => {
@@ -36,6 +38,33 @@ describe("audit hash chain", () => {
     expect(computeEntryHash("0000000000000000", entry)).toBe(h1);
     expect(computeEntryHash("1111111111111111", entry)).not.toBe(h1);
     expect(canonicalEntry(entry)).toBe(canonicalEntry({ ...entry }));
+  });
+});
+
+describe("infisicalSecretName", () => {
+  it("uses the secret record name when wizard secretName is empty", () => {
+    expect(infisicalSecretName({}, "CLOUDFLARE_API_TOKEN")).toBe(
+      "CLOUDFLARE_API_TOKEN",
+    );
+    expect(infisicalSecretName({ secretName: "" }, "CLOUDFLARE_API_TOKEN")).toBe(
+      "CLOUDFLARE_API_TOKEN",
+    );
+    expect(
+      infisicalSecretName({ secretName: "   " }, "CLOUDFLARE_API_TOKEN"),
+    ).toBe("CLOUDFLARE_API_TOKEN");
+  });
+
+  it("does not fall back to a value fingerprint", () => {
+    const fp = fingerprint("rotated-value");
+    expect(infisicalSecretName({ secretName: "" }, "CLOUDFLARE_API_TOKEN")).not.toBe(
+      fp,
+    );
+  });
+
+  it("keeps an explicit Infisical secret name", () => {
+    expect(
+      infisicalSecretName({ secretName: "prod/cf-token" }, "CLOUDFLARE_API_TOKEN"),
+    ).toBe("prod/cf-token");
   });
 });
 
@@ -88,5 +117,54 @@ describe("file target renderers", () => {
     );
     expect(out).toContain("[default]\naws_access_key_id = A");
     expect(out).toContain("[prod]\naws_access_key_id = C");
+  });
+});
+
+describe("global-api-keys parser (Grok merge)", () => {
+  it("parses KEY=value, comments, and a trailing agent token", () => {
+    const parsed = parseGlobalApiKeys(
+      [
+        "# TopSpin managed",
+        "# username: mac-collab",
+        "OPENAI_API_KEY=sk-test-1",
+        'GITHUB_TOKEN="ghp_abc 123"',
+        "TOPSPIN_AGENT_TOKEN=agent-secret-token",
+        "bare-trailing-token-value",
+      ].join("\n"),
+    );
+    expect(parsed.keys.map((k) => k.key)).toEqual(["OPENAI_API_KEY", "GITHUB_TOKEN"]);
+    expect(parsed.keys[1].value).toBe("ghp_abc 123");
+    expect(parsed.agentToken).toBe("bare-trailing-token-value");
+    expect(parsed.macUsername).toBe("mac-collab");
+  });
+
+  it("round-trips keys without embedding the agent token as a secret", () => {
+    const text = serializeGlobalApiKeys(
+      [{ key: "XAI_API_KEY", value: "xai-demo" }],
+      "agent-token",
+    );
+    const parsed = parseGlobalApiKeys(text);
+    expect(parsed.keys).toEqual([{ key: "XAI_API_KEY", value: "xai-demo" }]);
+    expect(parsed.agentToken).toBe("agent-token");
+    expect(text).not.toMatch(/sk-live|BEGIN .* PRIVATE/);
+  });
+});
+
+describe("merged live connectors", () => {
+  it("registers Resend, Hugging Face, Neon, and live Vercel/Slack", () => {
+    expect(getConnector("resend")?.capability).toBe("programmatic");
+    expect(getConnector("huggingface")?.capability).toBe("programmatic");
+    expect(getConnector("neon")?.capability).toBe("programmatic");
+    expect(getConnector("vercel")?.capability).toBe("programmatic");
+    expect(getConnector("slack")?.capability).toBe("partial");
+  });
+
+  it("registers the Grok/Kimi extra catalog", () => {
+    expect(getConnector("coolify")?.capability).toBe("update_only");
+    expect(getConnector("xai")?.capability).toBe("update_only");
+    expect(getConnector("vault")?.capability).toBe("update_only");
+    expect(getConnector("jwt")?.capability).toBe("programmatic");
+    expect(getConnector("database")?.capability).toBe("programmatic");
+    expect(getConnector("generic_secret")?.capability).toBe("programmatic");
   });
 });

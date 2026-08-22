@@ -53,6 +53,22 @@ const DEFAULT_FIELDS: CredentialField[] = [
   { key: 'token', label: 'API token', placeholder: 'paste credential', secret: true },
 ]
 
+function tokenMeta(tile: string, tagline: string, placeholder?: string): PlatformMeta {
+  return {
+    tile,
+    tagline,
+    fields: [
+      {
+        key: 'token',
+        label: 'API token',
+        placeholder,
+        secret: true,
+      },
+    ],
+    hints: { verify: 'vendor console / token probe' },
+  }
+}
+
 export const PLATFORM_META: Record<string, PlatformMeta> = {
   aws_iam: {
     tile: 'aw',
@@ -182,6 +198,56 @@ export const PLATFORM_META: Record<string, PlatformMeta> = {
     ],
     hints: { verify: 'service-token login' },
   },
+  resend: {
+    tile: 're',
+    tagline: 'Transactional email API keys',
+    fields: [{ key: 'adminKey', label: 'Admin API key', placeholder: 're_…', secret: true }],
+    hints: { create: 'POST /api-keys', verify: 'GET /api-keys' },
+  },
+  huggingface: {
+    tile: 'hf',
+    tagline: 'Fine-grained access tokens',
+    fields: [{ key: 'token', label: 'Access token', placeholder: 'hf_…', secret: true }],
+    hints: { create: 'POST /api/fine-grained-tokens', verify: 'GET /api/whoami-v2' },
+  },
+  neon: {
+    tile: 'ne',
+    tagline: 'Org API keys',
+    fields: [{ key: 'token', label: 'API key', secret: true }],
+    hints: { create: 'POST /api/v2/api_keys', verify: 'GET /api/v2/api_keys' },
+  },
+  vault: tokenMeta('hv', 'Vault tokens', 'hvs.…'),
+  doppler: tokenMeta('dp', 'Doppler service tokens', 'dp.st.…'),
+  onepassword: tokenMeta('1p', '1Password Connect tokens', 'ops_…'),
+  xai: tokenMeta('xai', 'xAI API keys', 'xai-…'),
+  groq: tokenMeta('gq', 'Groq API keys', 'gsk_…'),
+  google_ai: tokenMeta('gm', 'Gemini / Google AI keys', 'AIza…'),
+  gitlab: tokenMeta('gl', 'GitLab personal access tokens', 'glpat-…'),
+  bitbucket: tokenMeta('bb', 'Bitbucket app passwords'),
+  gcp: tokenMeta('gc', 'Google Cloud service-account keys'),
+  azure: tokenMeta('az', 'Azure AD client secrets'),
+  netlify: tokenMeta('nt', 'Netlify personal access tokens'),
+  railway: tokenMeta('rw', 'Railway account tokens'),
+  render: tokenMeta('rd', 'Render API tokens (credential target, not hosting)'),
+  fly: tokenMeta('fy', 'Fly.io API tokens'),
+  digitalocean: tokenMeta('do', 'DigitalOcean personal access tokens'),
+  coolify: tokenMeta('cy', 'Coolify API tokens'),
+  heroku: tokenMeta('hk', 'Heroku API keys'),
+  discord: tokenMeta('dc', 'Discord bot tokens'),
+  mailgun: tokenMeta('mg', 'Mailgun API keys', 'key-…'),
+  postmark: tokenMeta('pm', 'Postmark server tokens'),
+  supabase: tokenMeta('sb', 'Supabase service-role keys', 'sbp_…'),
+  planetscale: tokenMeta('ps', 'PlanetScale service tokens', 'pscale_tkn_…'),
+  mongodb: tokenMeta('md', 'MongoDB Atlas API keys'),
+  fmp: tokenMeta('fm', 'Financial Modeling Prep API keys'),
+  ssh: tokenMeta('sh', 'SSH key material (import after generating)'),
+  database: tokenMeta('db', 'Generated database passwords'),
+  webhook_hmac: tokenMeta('wh', 'Webhook / HMAC signing secrets', 'whsec_…'),
+  jwt: tokenMeta('jw', 'JWT / session signing secrets'),
+  apple_asc: tokenMeta('as', 'App Store Connect API keys'),
+  linear: tokenMeta('ln', 'Linear personal API keys', 'lin_api_…'),
+  notion: tokenMeta('no', 'Notion integration tokens', 'ntn_…'),
+  generic_secret: tokenMeta('gs', 'High-entropy generic secrets'),
 }
 
 export function platformMeta(platform: string): PlatformMeta {

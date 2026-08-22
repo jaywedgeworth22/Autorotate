@@ -1,0 +1,130 @@
+# =============================================================================
+# TopSpin — XcodeGen project spec (native/project.yml)
+#
+# Generates TopSpin.xcodeproj containing the Apple-platform app targets, all
+# linking the local SwiftPM package TopSpinCore (no third-party deps).
+#
+#   brew install xcodegen
+#   cd native && xcodegen generate
+#   open TopSpin.xcodeproj
+#
+# Capabilities to enable in Xcode after generating (Signing & Capabilities):
+#   - Keychain Sharing: $(AppIdentifierPrefix)com.topspin.shared
+#     (already declared in TopSpin-iOS/TopSpin.entitlements)
+#   - Background Modes: "Background fetch" (matches Info.plist)
+#   - Push Notifications: NOT needed (notifications are local-only)
+#
+# Both app targets (iOS + macOS) are defined below; the former
+# project-macos-snippet.yml has been merged in.
+# =============================================================================
+
+name: TopSpin
+options:
+  bundleIdPrefix: com.topspin
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+packages:
+  TopSpinCore:
+    path: TopSpinCore
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"            # Swift 5.9 toolchain language mode
+    SWIFT_STRICT_CONCURRENCY: complete
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+
+  # ── iOS app ────────────────────────────────────────────────────────────────
+  TopSpin-iOS:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: TopSpin-iOS
+        # The entitlements file is referenced via CODE_SIGN_ENTITLEMENTS and
+        # Info.plist via INFOPLIST_FILE — never bundle them as resources.
+        excludes:
+          - "TopSpin.entitlements"
+          - "Info.plist"
+    dependencies:
+      - package: TopSpinCore
+        product: TopSpinCore
+      # BackgroundTasks / UserNotifications / Security are system frameworks
+      # and autolink on import — no explicit link entries needed.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.topspin.ios
+        CODE_SIGN_ENTITLEMENTS: TopSpin-iOS/TopSpin.entitlements
+        INFOPLIST_FILE: TopSpin-iOS/Info.plist
+        # Xcode merges the checked-in Info.plist (BGTaskSchedulerPermittedIdentifiers,
+        # UIBackgroundModes) with these INFOPLIST_KEY_* values at build time.
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: TopSpin
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ENABLE_PREVIEWS: YES
+        ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
+        # Development conveniences — replace with your team for device runs.
+        CODE_SIGN_STYLE: Automatic
+
+  # ── macOS app ──────────────────────────────────────────────────────────────
+  TopSpin-macOS:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: TopSpin-macOS
+        # Referenced via CODE_SIGN_ENTITLEMENTS — never bundle as a resource.
+        excludes:
+          - "TopSpinMac.entitlements"
+    dependencies:
+      - package: TopSpinCore
+        product: TopSpinCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.topspin.macos
+        PRODUCT_NAME: TopSpin
+        CODE_SIGN_ENTITLEMENTS: TopSpin-macOS/TopSpinMac.entitlements
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_HARDENED_RUNTIME: YES
+        # Info.plist is generated — no checked-in plist needed.
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: TopSpin
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
+        ENABLE_PREVIEWS: YES
+
+schemes:
+  TopSpin-macOS:
+    build:
+      targets:
+        TopSpin-macOS: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+  TopSpin-iOS:
+    build:
+      targets:
+        TopSpin-iOS: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

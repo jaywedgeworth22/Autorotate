@@ -13,7 +13,7 @@ jobs:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Extract release notes for this tag from CHANGELOG.md
         id: notes
@@ -36,7 +36,7 @@ jobs:
             -x '*/.build/*' '*/DerivedData/*' '*.xcworkspace/*' '*/xcuserdata/*'
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           body_path: release_notes.md
           files: topspin-apple-sources.zip
