@@ -445,11 +445,46 @@ const demoValues: Record<string, () => string> = {
   resend: () => `re_${randomToken(32, BASE62)}`,
   huggingface: () => `hf_${randomToken(37, BASE62)}`,
   neon: () => randomBytes(24).toString("hex"),
+  vault: () => `hvs.${randomToken(24, BASE62)}`,
+  doppler: () => `dp.st.${randomToken(32, BASE62)}`,
+  onepassword: () => `ops_${randomToken(32, BASE62)}`,
+  xai: () => `xai-${randomToken(48, BASE62)}`,
+  groq: () => `gsk_${randomToken(48, BASE62)}`,
+  google_ai: () => `AIza${randomToken(35, BASE62)}`,
+  gitlab: () => `glpat-${randomToken(20, BASE62)}`,
+  bitbucket: () => randomToken(32, BASE62),
+  gcp: () => randomBytes(32).toString("hex"),
+  azure: () => randomToken(40, BASE62),
+  netlify: () => randomToken(40, BASE62),
+  railway: () => randomToken(32, BASE62),
+  render: () => `rnd_${randomToken(32, BASE62)}`,
+  fly: () => `FlyV1 ${randomToken(40, BASE62)}`,
+  digitalocean: () => `dop_v1_${randomToken(40, BASE62)}`,
+  coolify: () => randomBytes(32).toString("hex"),
+  heroku: () => randomBytes(20).toString("hex"),
+  discord: () => `${randomToken(24, BASE62)}.${randomToken(6, BASE62)}.${randomToken(27, BASE62)}`,
+  mailgun: () => `key-${randomBytes(16).toString("hex")}`,
+  postmark: () => randomBytes(20).toString("hex"),
+  supabase: () => `sbp_${randomToken(40, BASE62)}`,
+  planetscale: () => `pscale_tkn_${randomToken(32, BASE62)}`,
+  mongodb: () => randomToken(32, BASE62),
+  fmp: () => randomToken(32, BASE62),
+  ssh: () => `ssh-ed25519 ${randomBytes(32).toString("base64")} topspin-demo`,
+  database: () => randomToken(32, BASE62),
+  webhook_hmac: () => `whsec_${randomBytes(24).toString("base64url")}`,
+  jwt: () => randomBytes(32).toString("hex"),
+  apple_asc: () => randomBytes(16).toString("hex"),
+  linear: () => `lin_api_${randomToken(40, BASE62)}`,
+  notion: () => `ntn_${randomToken(40, BASE62)}`,
+  generic_secret: () => randomBytes(32).toString("hex"),
 };
 
 // ── Registry ────────────────────────────────────────────────────
 
 type RealRotate = (cfg: ConnectorConfig) => Promise<string>;
+
+/** Local CSPRNG mint — used for jwt / database / webhook HMAC / generic secret. */
+const rotateGenerated: RealRotate = async () => randomBytes(32).toString("hex");
 
 function define(
   platform: string,
@@ -508,6 +543,39 @@ export const connectorRegistry: ServerConnector[] = [
   define("resend", "Resend", "programmatic", rotateResend),
   define("huggingface", "Hugging Face", "programmatic", rotateHuggingFace),
   define("neon", "Neon", "programmatic", rotateNeon),
+  // Grok catalog — update-only unless a local generator applies.
+  define("vault", "HashiCorp Vault", "update_only", null),
+  define("doppler", "Doppler", "update_only", null),
+  define("onepassword", "1Password Connect", "update_only", null),
+  define("xai", "xAI", "update_only", null),
+  define("groq", "Groq", "update_only", null),
+  define("google_ai", "Google AI / Gemini", "update_only", null),
+  define("gitlab", "GitLab", "update_only", null),
+  define("bitbucket", "Bitbucket", "update_only", null),
+  define("gcp", "Google Cloud", "update_only", null),
+  define("azure", "Azure", "update_only", null),
+  define("netlify", "Netlify", "update_only", null),
+  define("railway", "Railway", "update_only", null),
+  define("render", "Render API token", "update_only", null),
+  define("fly", "Fly.io", "update_only", null),
+  define("digitalocean", "DigitalOcean", "update_only", null),
+  define("coolify", "Coolify", "update_only", null),
+  define("heroku", "Heroku", "update_only", null),
+  define("discord", "Discord", "update_only", null),
+  define("mailgun", "Mailgun", "update_only", null),
+  define("postmark", "Postmark", "update_only", null),
+  define("supabase", "Supabase", "update_only", null),
+  define("planetscale", "PlanetScale", "update_only", null),
+  define("mongodb", "MongoDB Atlas", "update_only", null),
+  define("fmp", "Financial Modeling Prep", "update_only", null),
+  define("ssh", "SSH keys", "update_only", null),
+  define("database", "Database password", "programmatic", rotateGenerated),
+  define("webhook_hmac", "Webhook / HMAC", "programmatic", rotateGenerated),
+  define("jwt", "JWT signing key", "programmatic", rotateGenerated),
+  define("apple_asc", "App Store Connect", "update_only", null),
+  define("linear", "Linear", "update_only", null),
+  define("notion", "Notion", "update_only", null),
+  define("generic_secret", "Generic secret", "programmatic", rotateGenerated),
 ];
 
 export function getConnector(platform: string): ServerConnector | undefined {
@@ -580,6 +648,11 @@ export async function testConnection(
       });
       break;
     }
+    case "jwt":
+    case "database":
+    case "webhook_hmac":
+    case "generic_secret":
+      return `local generator for ${name} is ready`;
     default:
       return `no lightweight test available for ${name} — credential saved`;
   }

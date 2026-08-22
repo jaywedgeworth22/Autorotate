@@ -1,0 +1,65 @@
+name: Bug Report
+description: Report a defect in TopSpin (web, iOS, macOS, or TopSpinCore)
+title: "[Bug]: "
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. **Never paste real secrets, tokens, or
+        connection strings into this form** — redact before submitting.
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Affected module
+      options:
+        - Web control center (apps/web)
+        - iOS app (apple/TopSpin-iOS)
+        - macOS app (apple/TopSpin-macOS)
+        - TopSpinCore (apple/TopSpinCore)
+        - Repo tooling / CI
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Version/commit, OS, browser or Xcode version, Node version.
+      placeholder: |
+        TopSpin v1.0.0, macOS 15, Xcode 26, Node 20 ...
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste sanitized log output (no secrets!). Redact anything sensitive.
+      render: shell
+
+  - type: checkboxes
+    id: security-check
+    attributes:
+      label: Security check
+      options:
+        - label: This report contains no plaintext secrets, tokens, or credentials
+          required: true

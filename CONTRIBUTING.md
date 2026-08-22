@@ -45,6 +45,8 @@ Before opening (or merging) a PR, confirm:
 
 ## Code review expectations
 
+- Contributions are licensed under Apache License 2.0 (see [LICENSE](LICENSE)
+  and [NOTICE](NOTICE)).
 - Every PR requires at least one maintainer review (enforced via
   [CODEOWNERS](.github/CODEOWNERS)).
 - Reviewers check the security invariants above **before** style or

@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract release notes for this tag from CHANGELOG.md
+        id: notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { found=1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > release_notes.md
+          if [ ! -s release_notes.md ]; then
+            echo "No CHANGELOG section found for v$VERSION" > release_notes.md
+          fi
+          echo "--- release notes ---"
+          cat release_notes.md
+
+      - name: Zip apple/ sources
+        run: |
+          zip -r topspin-apple-sources.zip apple \
+            -x '*/.build/*' '*/DerivedData/*' '*.xcworkspace/*' '*/xcuserdata/*'
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.md
+          files: topspin-apple-sources.zip
+          generate_release_notes: false

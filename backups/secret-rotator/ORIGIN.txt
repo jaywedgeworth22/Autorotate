@@ -1,0 +1,27 @@
+Secret Rotator — origin record
+==============================
+
+Copied into the surviving TopSpin repo on Fri, Aug 21, 2026.
+
+Finding: there is no standalone GitHub repository, `~/apps` project, or
+`/Users/jay/Code/Secret Rotator` tree.  Search of GitHub user
+jaywedgeworth22 returned only `TopSpin`.  The name appears as the dump
+folder `/Users/jay/Code/Kimi_Agent_TopSpin Secret Rotator`.
+
+`app/` inside that dump is the TopSpin web control center (HTML title:
+"TopSpin — Rotate everything. Store nothing.").  It is the same product
+family as TopSpin, not a separate app, so it is backed up here and also
+as `backups/kimi-agent-topspin/app/`.
+
+Source path:
+  /Users/jay/Code/Kimi_Agent_TopSpin Secret Rotator/app
+
+Git remote: none (dump had no .git).  Live equivalent:
+  https://github.com/jaywedgeworth22/TopSpin.git  →  apps/web
+
+Tree sha256 of this copy (before ORIGIN/README):
+  290bfaf6f62617e833e0bef4b8b91d211e9fa9a413a72c805b633dd13d72a959
+  file count: 161
+
+No live credentials were copied.  `.env.example` is placeholders only.
+`.env` files were excluded from the copy.

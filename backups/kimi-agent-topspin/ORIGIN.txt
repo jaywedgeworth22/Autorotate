@@ -1,0 +1,32 @@
+Kimi Agent TopSpin dump — origin record
+=======================================
+
+Copied into the surviving TopSpin repo on Fri, Aug 21, 2026.
+
+Source path (Mac):
+  /Users/jay/Code/Kimi_Agent_TopSpin Secret Rotator
+
+There is no separate directory named /Users/jay/Code/Kimi_Agent_TopSpin.
+Kimi's deliverable is this one dump folder.  It contains TopSpin (plan +
+native), TopSpin-native (duplicate native tree), TopSpin-repo (packaged
+monorepo that became jaywedgeworth22/TopSpin), original zip artifacts,
+and app/ (the web control center; see backups/secret-rotator/).
+
+Git remote in the dump: none.  None of the dump trees contained a .git
+directory.  Git history for this product lives in the surviving repo:
+
+  remote:  https://github.com/jaywedgeworth22/TopSpin.git
+  first commit (packaged Kimi TopSpin-repo): fc50b1070e0aabfad4e893ee31828c7451b92236
+  integration HEAD when this backup was taken: 47e2169763aa15940fc6b808bdfa9335a42074e4
+  tag already on GitHub for the pre-Grok web engine: backup/pre-grok-merge-2026-08-21
+
+Content hashes of this snapshot (files only; ORIGIN/README/MANIFEST
+written after the copy so they are not in the tree hash):
+
+  kimi dump tree sha256: 15118bdceff7b791add3c2f5ea8c957c68b75d8dd0e16ac1034804cbf6a248f8
+  file count:            510
+  TopSpin-native.zip:    sha256 998ef4158494eda1c54254082f34474e86e2aaa9b63961978da7c1df4211b3ca  (157385 bytes)
+  TopSpin-repo.zip:      sha256 b773072c168437b3f6b735b7047b84a9ea29132820911edcf1f1dcb25a2dee85  (5880402 bytes)
+
+No live .env, PEM, or private-key files were present in the dump.  Placeholder
+demo strings such as sk-proj-REPLACE_ME in seed examples are not credentials.

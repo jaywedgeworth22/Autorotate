@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Web (apps/web)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install, typecheck, build
+        working-directory: apps/web
+        run: |
+          npm ci
+          npm run check
+          npm run build
+
+  apple:
+    name: Apple (TopSpinCore + iOS + macOS)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: |
+          if [ -d /Applications/Xcode_26.app/Contents/Developer ]; then
+            sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer
+          else
+            echo "Xcode_26.app not found, keeping default: $(xcode-select -p)"
+            xcode-select -p
+          fi
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Build & test TopSpinCore (SwiftPM)
+        working-directory: apple/TopSpinCore
+        run: |
+          swift build
+          swift test
+
+      - name: Generate Xcode project
+        working-directory: apple
+        run: xcodegen generate
+
+      - name: Build iOS app
+        run: >-
+          xcodebuild -project apple/TopSpin.xcodeproj -scheme TopSpin-iOS
+          -destination 'generic/platform=iOS Simulator'
+          build CODE_SIGNING_ALLOWED=NO
+
+      - name: Build macOS app
+        run: >-
+          xcodebuild -project apple/TopSpin.xcodeproj -scheme TopSpin-macOS
+          -destination 'platform=macOS'
+          build CODE_SIGNING_ALLOWED=NO
