@@ -3,7 +3,7 @@
 //  TopSpin-iOS
 //
 //  App entry point: builds the SwiftData container + AppModel, registers the
-//  BGAppRefreshTask (com.topspin.refresh) before launch completes, schedules
+//  BGAppRefreshTask (codes.autorotate.refresh) before launch completes, schedules
 //  background refreshes when the app moves to the background.
 //
 

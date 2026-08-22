@@ -5,7 +5,7 @@
 //  BGAppRefreshTask-based background rotation driver (architecture.md §2 —
 //  the scheduler that calls `RotationEngine.rotateDueSecrets()`).
 //
-//  - Task identifier `com.topspin.refresh` is declared in Info.plist
+//  - Task identifier `codes.autorotate.refresh` is declared in Info.plist
 //    (BGTaskSchedulerPermittedIdentifiers) and requires the "fetch"
 //    background mode.
 //  - Registration happens in `TopSpinApp.init` (before the app finishes
@@ -19,7 +19,7 @@ import Foundation
 enum BackgroundRotation {
 
     /// Registered BGAppRefreshTask identifier (must match Info.plist).
-    static let taskIdentifier = "com.topspin.refresh"
+    static let taskIdentifier = "codes.autorotate.refresh"
 
     /// Minimum spacing between background refresh passes. The system may
     /// deliver later (or not at all) based on usage patterns and battery.

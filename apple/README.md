@@ -42,7 +42,7 @@ native/
     └── Tests/TopSpinCoreTests/    XCTest suite for parsers, models, engine
 ├── project.yml                  ← XcodeGen spec (iOS target + macOS
 │                                  placeholder owned by the macOS agent)
-├── TopSpin-iOS/                 ← iOS 17+ SwiftUI app (bundle com.topspin.ios)
+├── TopSpin-iOS/                 ← iOS 17+ SwiftUI app (bundle codes.autorotate)
 │   ├── TopSpinApp.swift         ← @main App, BGTask registration, dark theme
 │   ├── ContentView.swift        ← TabView: Dashboard/Secrets/Runs/Settings
 │   ├── AppModel.swift           ← @Observable @MainActor engine wiring
@@ -52,10 +52,10 @@ native/
 │   ├── ConnectorFactory.swift   ← per-connector config fields + instantiation
 │   ├── SettingsStorage.swift    ← UserDefaults, non-secret only (Sendable)
 │   ├── KeychainInventory.swift  ← lists TopSpin-managed keychain items
-│   ├── BackgroundRotation.swift ← BGAppRefreshTask com.topspin.refresh
+│   ├── BackgroundRotation.swift ← BGAppRefreshTask codes.autorotate.refresh
 │   ├── NotificationManager.swift← local alerts on rotation failure
 │   ├── Theme.swift + Views/     ← security-instrument UI (green #2EE6A8)
-│   ├── TopSpin.entitlements     ← keychain-access-groups com.topspin.shared
+│   ├── TopSpin.entitlements     ← keychain-access-groups codes.autorotate.shared
 │   └── Info.plist               ← BGTaskSchedulerPermittedIdentifiers, fetch
 └── TopSpin-macOS/               ← placeholder, owned by the macOS agent
 ```
@@ -95,23 +95,23 @@ open TopSpin.xcodeproj
 Both app targets link the `TopSpinCore` SwiftPM package (local path
 `./TopSpinCore`) — no other dependencies.
 
-#### iOS app (`TopSpin-iOS/`, bundle id `com.topspin.ios`, iOS 17+)
+#### iOS app (`TopSpin-iOS/`, bundle id `codes.autorotate`, iOS 17+)
 
 1. `xcodegen generate` as above, then open `TopSpin.xcodeproj`.
 2. Select the `TopSpin-iOS` target → **Signing & Capabilities**:
    - Set your **Team** (Automatic signing is preconfigured).
    - Add the **Keychain Sharing** capability with group
-     `$(AppIdentifierPrefix)com.topspin.shared` (already in
+     `$(AppIdentifierPrefix)codes.autorotate.shared` (already in
      `TopSpin-iOS/TopSpin.entitlements`).
    - Add **Background Modes** → check **Background fetch**
-     (matches `BGTaskSchedulerPermittedIdentifiers` = `com.topspin.refresh`
+     (matches `BGTaskSchedulerPermittedIdentifiers` = `codes.autorotate.refresh`
      in `TopSpin-iOS/Info.plist`, merged with the `INFOPLIST_KEY_*` build
      settings because `GENERATE_INFOPLIST_FILE = YES`).
    - **Push is NOT needed** — notifications are local
      (`UNUserNotificationCenter`, rotation-failure alerts only).
 3. Run on a device or simulator (iOS 17+). Background refresh tasks only
    fire on real devices; from Xcode you can simulate one via
-   `e -l objc -- (void)[[BGTaskScheduler sharedScheduler] _simulateLaunchForTaskWithIdentifier:@"com.topspin.refresh"]`
+   `e -l objc -- (void)[[BGTaskScheduler sharedScheduler] _simulateLaunchForTaskWithIdentifier:@"codes.autorotate.refresh"]`
    in the debugger while paused.
 
 If you haven't enabled Keychain Sharing yet, the app still works: Settings →
@@ -136,12 +136,12 @@ shared across the iOS app, macOS app, and extensions via one access group:
 ```xml
 <key>keychain-access-groups</key>
 <array>
-    <string>$(AppIdentifierPrefix)com.topspin.shared</string>
+    <string>$(AppIdentifierPrefix)codes.autorotate.shared</string>
 </array>
 ```
 
 Enable the **Keychain Sharing** capability in Xcode and add
-`$(AppIdentifierPrefix)com.topspin.shared` to every target that must share
+`$(AppIdentifierPrefix)codes.autorotate.shared` to every target that must share
 items. `KeychainManager` defaults to this group
 (`KeychainManager.sharedAccessGroup`); pass `accessGroup: nil` for
 app-private items during development.
@@ -164,7 +164,7 @@ Managed-secret targets may set `synchronizable: true`
 
 The scheduler (`RotationEngine.rotateDueSecrets`) is driven by
 `BGTaskScheduler` — a `BGAppRefreshTask` registered as
-`com.topspin.refresh` (see `TopSpin-iOS/BackgroundRotation.swift`; a new
+`codes.autorotate.refresh` (see `TopSpin-iOS/BackgroundRotation.swift`; a new
 refresh is scheduled every time the app backgrounds). Items use
 `kSecAttrAccessibleAfterFirstUnlock` so background tasks can read admin
 credentials after the device's first unlock.

@@ -118,9 +118,9 @@ TopSpinCore is proven; the SwiftUI/SwiftData app code is not. Most likely issues
   you may raise it, but expect strict-concurrency errors if you jump to `6.0`; keep `5.0` until clean.
 
 ### Capabilities to enable for real device runs (Signing & Capabilities)
-- **Keychain Sharing** on both targets: `$(AppIdentifierPrefix)com.topspin.shared`
+- **Keychain Sharing** on both targets: `$(AppIdentifierPrefix)codes.autorotate.shared`
   (already declared in the entitlements files — Xcode needs your team to sign).
-- iOS: Background Modes → "Background fetch" (matches Info.plist BGTask identifier `com.topspin.refresh`).
+- iOS: Background Modes → "Background fetch" (matches Info.plist BGTask identifier `codes.autorotate.refresh`).
 - macOS: App Sandbox + User Selected File Read/Write + bookmarks + outgoing network (all pre-declared
   in `TopSpin-macOS/TopSpinMac.entitlements`).
 - Apps degrade gracefully without these (app-private keychain fallback) — fine for simulator/dev.

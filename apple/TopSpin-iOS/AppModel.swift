@@ -307,7 +307,7 @@ final class AppModel {
 
     // MARK: - Background refresh
 
-    /// Entry point for the BGAppRefreshTask (`com.topspin.refresh`).
+    /// Entry point for the BGAppRefreshTask (`codes.autorotate.refresh`).
     func handleBackgroundRefresh(_ task: BGAppRefreshTask) {
         task.expirationHandler = { [weak task] in
             task?.setTaskCompleted(success: false)

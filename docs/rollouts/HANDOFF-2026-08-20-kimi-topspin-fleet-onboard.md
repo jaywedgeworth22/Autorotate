@@ -31,7 +31,7 @@ Read first: `~/apps/AGENT-SYNC.md`, `~/apps/EFFORT-LOG-PROTOCOL.md`, repo `AGENT
 5. **Live `~/apps` lockstep edits applied directly** (not via git): AGENT-SYNC.md,
    EFFORT-LOG-PROTOCOL.md, FLEET-UI-COPY.md, AGENT-COORDINATION-QUICKSTART.md,
    FLEET-INFRA-EFFORT-LOG.md (claim row under In Progress), ios-fleet/apps.json
-   (`topspin` entry: bundleId `com.topspin.ios`, scheme `TopSpin-iOS`, pre-TestFlight note).
+   (`topspin` entry: bundleId `codes.autorotate`, scheme `TopSpin-iOS`, pre-TestFlight note).
 6. **CI first-run repairs** — commits `168863c` + `71f81c3` on PR #16:
    - secret-scan.yml: added `GITHUB_TOKEN` env (gitleaks-action v2 hard-requires it for PR scans — that was the 5s failure).
    - ci.yml web job: Node 20 → 22. Root cause of web failure: npm 10 on Node 20 crashed

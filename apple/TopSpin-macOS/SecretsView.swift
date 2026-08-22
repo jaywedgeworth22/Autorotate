@@ -222,7 +222,7 @@ private struct AddSecretSheet: View {
             SecureField(descriptor?.adminCredentialHint ?? "Admin credential",
                         text: $adminCredential)
                 .textFieldStyle(.roundedBorder)
-            Text("Stored in the Keychain only — never on disk. Access group: $(AppIdentifierPrefix)com.topspin.shared.")
+            Text("Stored in the Keychain only — never on disk. Access group: $(AppIdentifierPrefix)codes.autorotate.shared.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 

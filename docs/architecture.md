@@ -84,7 +84,7 @@ See [MERGE.md](../MERGE.md).
 
 - `KeychainManager`: generic-password items, service = `com.topspin.<secretId>`, account = secret name.
 - Accessibility: `kSecAttrAccessibleAfterFirstUnlock`; optional `kSecAttrSynchronizable = true` (iCloud Keychain) — user toggle, **"if allowed"** per entitlements.
-- Access group: `$(AppIdentifierPrefix)com.topspin.shared` so iOS + macOS + extensions share items (documented in entitlements files).
+- Access group: `$(AppIdentifierPrefix)codes.autorotate.shared` so iOS + macOS + extensions share items (documented in entitlements files).
 - Keychain is ALSO the credential store for connector admin credentials and Infisical clientSecret on native — the web server uses its DB (AES-GCM encrypted at rest) instead.
 
 ## 6. Storage rule (hard requirement)

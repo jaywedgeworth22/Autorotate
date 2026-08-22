@@ -75,7 +75,7 @@ struct SettingsStorage: Sendable {
         nonmutating set { defaults.set(newValue, forKey: Key.keychainSyncEnabled) }
     }
 
-    /// Whether to use the shared access group `com.topspin.shared`
+    /// Whether to use the shared access group `codes.autorotate.shared`
     /// (requires the Keychain Sharing capability / entitlements). When off,
     /// items are private to this app — useful before capabilities are
     /// configured in Xcode.

@@ -131,7 +131,7 @@ struct SettingsView: View {
 
             Toggle(isOn: $useSharedGroup) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Shared access group (com.topspin.shared)")
+                    Text("Shared access group (codes.autorotate.shared)")
                     Text("Requires the Keychain Sharing capability. Turn off for app-private items during development.")
                         .font(.caption2)
                         .foregroundStyle(Theme.textSecondary)
@@ -232,7 +232,7 @@ struct SettingsView: View {
         } header: {
             InstrumentSectionHeader(title: "Background rotation", systemImage: "clock.arrow.2.circlepath")
         } footer: {
-            Text("A BGAppRefreshTask (com.topspin.refresh) runs rotateDueSecrets() when iOS schedules it; a new refresh is requested every time the app backgrounds. Keychain items use AfterFirstUnlock so background runs can read credentials.")
+            Text("A BGAppRefreshTask (codes.autorotate.refresh) runs rotateDueSecrets() when iOS schedules it; a new refresh is requested every time the app backgrounds. Keychain items use AfterFirstUnlock so background runs can read credentials.")
                 .font(.caption2)
         }
         .listRowBackground(Theme.surface)

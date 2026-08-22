@@ -2,6 +2,15 @@
 
 ## Current Handoff
 
+### 2026-08-22 GROK — Apple IDs codes.autorotate
+
+Owner registered `autorotate.codes`.  Display name **Autorotate**.  iOS
+`codes.autorotate`, macOS `codes.autorotate.macos`, Keychain
+`codes.autorotate.shared`, BGTask `codes.autorotate.refresh`.  Repo/Slack
+name is still TopSpin until a rename lane.  Need owner: Apple Developer
+App IDs + Keychain Sharing before device/TestFlight.  Branch
+`grok/autorotate-ids`.  Board `56b80706`.
+
 ### 2026-08-21 CURSOR — Apache-2.0 + Kimi dump backup + catalog fold-in
 
 Relicensed to Apache License 2.0 (© Jay).  Backed up the Kimi dump at

@@ -28,7 +28,7 @@
   5. Keychain Sharing (keychain-access-groups)
      Shares managed secrets, admin credentials and the Infisical
      clientSecret with the iOS app / extensions via
-     $(AppIdentifierPrefix)com.topspin.shared. Also required on macOS 14+
+     $(AppIdentifierPrefix)codes.autorotate.shared. Also required on macOS 14+
      for kSecAttrSynchronizable (iCloud Keychain) items — used only when
      the user enables "Sync via iCloud Keychain" ("if allowed").
 -->
@@ -44,7 +44,7 @@
     <true/>
     <key>keychain-access-groups</key>
     <array>
-        <string>$(AppIdentifierPrefix)com.topspin.shared</string>
+        <string>$(AppIdentifierPrefix)codes.autorotate.shared</string>
     </array>
 </dict>
 </plist>

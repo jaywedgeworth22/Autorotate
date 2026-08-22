@@ -87,7 +87,7 @@ Enable in Xcode (Signing & Capabilities) or verify they're picked up from
   rotations keep access to user-picked files across launches
   (`Bookmarks.swift` resolves and refreshes stale bookmarks).
 - **Outgoing Connections (Client)** — provider APIs, Infisical, webhooks.
-- **Keychain Sharing** — `$(AppIdentifierPrefix)com.topspin.shared` in
+- **Keychain Sharing** — `$(AppIdentifierPrefix)codes.autorotate.shared` in
   `keychain-access-groups`, shared with the iOS app/extensions. Required on
   macOS 14+ for iCloud Keychain (`kSecAttrSynchronizable`) items; sync is
   "if allowed" (user's iCloud Keychain setting) and falls back to

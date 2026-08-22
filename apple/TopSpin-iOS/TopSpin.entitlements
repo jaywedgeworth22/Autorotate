@@ -3,7 +3,7 @@
 <!--
   TopSpin iOS entitlements.
 
-  Keychain Sharing: the shared access group `com.topspin.shared` lets the
+  Keychain Sharing: the shared access group `codes.autorotate.shared` lets the
   iOS app, the macOS app and any extensions share managed secret items,
   connector admin credentials and the Infisical clientSecret
   (docs/architecture.md §5). Enable the "Keychain Sharing" capability in
@@ -18,7 +18,7 @@
 
       <key>com.apple.developer.icloud-container-identifiers</key>
       <array>
-          <string>iCloud.com.topspin.shared</string>
+          <string>iCloud.codes.autorotate.shared</string>
       </array>
 
   and enable the iCloud capability. It is intentionally absent today.
@@ -27,7 +27,7 @@
 <dict>
     <key>keychain-access-groups</key>
     <array>
-        <string>$(AppIdentifierPrefix)com.topspin.shared</string>
+        <string>$(AppIdentifierPrefix)codes.autorotate.shared</string>
     </array>
 </dict>
 </plist>

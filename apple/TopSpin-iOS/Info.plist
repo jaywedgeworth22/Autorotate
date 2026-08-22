@@ -5,7 +5,7 @@
 
   This file carries the keys that cannot be expressed as INFOPLIST_KEY_*
   build settings (arrays): the BGTaskScheduler permitted identifiers and
-  background modes for `com.topspin.refresh` (see BackgroundRotation.swift).
+  background modes for `codes.autorotate.refresh` (see BackgroundRotation.swift).
   project.yml sets GENERATE_INFOPLIST_FILE = YES, so Xcode MERGES this file
   with the INFOPLIST_KEY_* build settings (display name, orientations,
   launch screen) at build time.
@@ -25,10 +25,10 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
 
-    <!-- Background rotation: BGAppRefreshTask "com.topspin.refresh". -->
+    <!-- Background rotation: BGAppRefreshTask "codes.autorotate.refresh". -->
     <key>BGTaskSchedulerPermittedIdentifiers</key>
     <array>
-        <string>com.topspin.refresh</string>
+        <string>codes.autorotate.refresh</string>
     </array>
     <key>UIBackgroundModes</key>
     <array>

@@ -14,12 +14,12 @@
 //  ---------------------
 //  Keychain Sharing (access groups):
 //    The app must enable the "Keychain Sharing" capability and list the
-//    access group `$(AppIdentifierPrefix)com.topspin.shared` in its
+//    access group `$(AppIdentifierPrefix)codes.autorotate.shared` in its
 //    entitlements file, e.g.:
 //
 //      <key>keychain-access-groups</key>
 //      <array>
-//        <string>$(AppIdentifierPrefix)com.topspin.shared</string>
+//        <string>$(AppIdentifierPrefix)codes.autorotate.shared</string>
 //      </array>
 //
 //    Every app/extension that must share items (iOS app, macOS app,
@@ -87,8 +87,8 @@ public struct KeychainManager: Sendable {
 
     /// Shared access group used by all TopSpin apps/extensions.
     /// Requires the Keychain Sharing entitlement
-    /// `$(AppIdentifierPrefix)com.topspin.shared` — see the file header.
-    public static let sharedAccessGroup = "com.topspin.shared"
+    /// `$(AppIdentifierPrefix)codes.autorotate.shared` — see the file header.
+    public static let sharedAccessGroup = "codes.autorotate.shared"
 
     /// Access group added to every query. `nil` = app-private keychain.
     public let accessGroup: String?

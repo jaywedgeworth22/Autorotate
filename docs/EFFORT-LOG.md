@@ -12,12 +12,15 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: /Users
 - **Apache-2.0 + Kimi dump backup + catalog fold-in** — CURSOR · PR [#42](https://github.com/jaywedgeworth22/TopSpin/pull/42) · branch `cursor/kimi-apache-merge`. Relicensed to Apache 2.0 (© Jay). Kimi dump at `backups/kimi-agent-topspin/`. Secret Rotator nickname (`app/`) at `backups/secret-rotator/` (not a standalone app). Grok extra catalog folded into live web + TopSpinCore.
 
 ## In Progress
+- **2026-08-22 — GROK — IN PROGRESS — Apple IDs codes.autorotate.**  Branch `grok/autorotate-ids`, worktree `~/apps/topspin-grok-autorotate`.  Display name Autorotate.  Board `56b80706`.  Need owner: Developer portal App IDs.
+
 - **Dependabot leftover radix/react PRs** — CURSOR · after #16. Remaining npm PRs blocked on serial lockfile rebase. PR #17 (`fix/no-target-commit`) is another seat — do not touch.
 
 ## Planned / Reserved
 - Owner dashboard items: branch protection on `main` (require PR + checks `web`, `apple`, `gitleaks`); Infisical project for prod secrets; App Store Connect records before TestFlight; `SENTRY_FLEET_DSN` then sentry-ci-report.
 
 ## Changelog of this log
+- 2026-08-22 — GROK reserved Apple IDs `codes.autorotate` after owner registered `autorotate.codes`.
 - 2026-08-21 — CURSOR completed Apache-2.0 relicensing + Kimi/Secret Rotator backup + extra catalog fold-in (PR #42).
 - 2026-08-21 — CURSOR reserved Apache-2.0 relicensing + Kimi/Secret Rotator backup + extra catalog fold-in (`cursor/kimi-apache-merge`).
 - 2026-08-21 — CURSOR closed Grok PWA merge row (PR #38 on main) and iOS update prompt (#36).

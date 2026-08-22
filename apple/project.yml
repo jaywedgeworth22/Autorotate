@@ -9,7 +9,7 @@
 #   open TopSpin.xcodeproj
 #
 # Capabilities to enable in Xcode after generating (Signing & Capabilities):
-#   - Keychain Sharing: $(AppIdentifierPrefix)com.topspin.shared
+#   - Keychain Sharing: $(AppIdentifierPrefix)codes.autorotate.shared
 #     (already declared in TopSpin-iOS/TopSpin.entitlements)
 #   - Background Modes: "Background fetch" (matches Info.plist)
 #   - Push Notifications: NOT needed (notifications are local-only)
@@ -20,7 +20,7 @@
 
 name: TopSpin
 options:
-  bundleIdPrefix: com.topspin
+  bundleIdPrefix: codes.autorotate
   createIntermediateGroups: true
   generateEmptyDirectories: true
 
@@ -56,13 +56,13 @@ targets:
       # and autolink on import — no explicit link entries needed.
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.topspin.ios
+        PRODUCT_BUNDLE_IDENTIFIER: codes.autorotate
         CODE_SIGN_ENTITLEMENTS: TopSpin-iOS/TopSpin.entitlements
         INFOPLIST_FILE: TopSpin-iOS/Info.plist
         # Xcode merges the checked-in Info.plist (BGTaskSchedulerPermittedIdentifiers,
         # UIBackgroundModes) with these INFOPLIST_KEY_* values at build time.
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: TopSpin
+        INFOPLIST_KEY_CFBundleDisplayName: Autorotate
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
@@ -88,14 +88,14 @@ targets:
         product: TopSpinCore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.topspin.macos
+        PRODUCT_BUNDLE_IDENTIFIER: codes.autorotate.macos
         PRODUCT_NAME: TopSpin
         CODE_SIGN_ENTITLEMENTS: TopSpin-macOS/TopSpinMac.entitlements
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES
         # Info.plist is generated — no checked-in plist needed.
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: TopSpin
+        INFOPLIST_KEY_CFBundleDisplayName: Autorotate
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
         ENABLE_PREVIEWS: YES
 

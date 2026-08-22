@@ -40,7 +40,7 @@ other merits.
   untracked `.env` files.
 - Never hard-code tokens, connection strings, or encryption keys in source.
 - On Apple platforms, credentials belong in the Keychain (shared access
-  group `com.topspin.shared`), never in `UserDefaults` or plain files.
+  group `codes.autorotate.shared`), never in `UserDefaults` or plain files.
 - Webhook targets must use HTTPS; never disable certificate validation.
 - Rotate any credential immediately if you suspect it entered logs, git
   history, or a ticket.
