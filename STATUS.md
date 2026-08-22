@@ -2,6 +2,15 @@
 
 ## Current Handoff
 
+### 2026-08-22 CURSOR — Owner App IDs (do not use Grok #50)
+
+Git IDs are on AG PR #48.  Duplicate #50 stays closed.  Need owner: Developer
+portal App IDs `codes.autorotate` / `codes.autorotate.macos` with Keychain
+Sharing group `codes.autorotate.shared`.  ASC New App has no capability list.
+Site https://autorotate.codes.  Cheat sheet
+`docs/rollouts/2026-08-22-autorotate-apple-ids.md`.  #48 is still CONFLICTING
+with `main` — rebase is AG/land, not a merge of `grok/autorotate-ids`.
+
 ### 2026-08-22 ANTIGRAVITY — Autorotate Rebrand (`Autorotate.codes`), Android Companion App & Bidirectional Board Sync
 
 1. **Rebranding**: Rebranded app to **Autorotate** across all platforms with domain `Autorotate.codes`. Configured Apple bundle IDs `codes.autorotate`, `codes.autorotate.macos`, and `codes.autorotate.shared`. Linked developer account (Jay Wedgeworth, LLC, `CC8UTF7ATG`), set minimum iOS 17.0 / macOS 14.0, Xcode document format 26ish, category `public.app-category.developer-tools`.

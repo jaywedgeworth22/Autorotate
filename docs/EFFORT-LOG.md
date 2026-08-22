@@ -16,7 +16,7 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - **Apache-2.0 + Kimi dump backup + catalog fold-in** — CURSOR · PR [#42](https://github.com/jaywedgeworth22/TopSpin/pull/42) · branch `cursor/kimi-apache-merge`. Relicensed to Apache 2.0 (© Jay). Kimi dump at `backups/kimi-agent-topspin/`. Secret Rotator nickname (`app/`) at `backups/secret-rotator/` (not a standalone app). Grok extra catalog folded into live web + TopSpinCore.
 
 ## In Progress
-- **Autorotate Apple IDs codes.autorotate after autorotate.codes** — GROK · in progress.
+- **Owner: Developer portal App IDs for Autorotate** — CURSOR leftover from Grok.  Git IDs on AG [#48](https://github.com/jaywedgeworth22/TopSpin/pull/48).  #50 stays closed.  Product https://autorotate.codes.  Agents cannot create portal IDs.
 - **Dependabot leftover radix/react PRs** — CURSOR · after #16. Remaining npm PRs blocked on serial lockfile rebase. Auto-merge not enabled on the repo. PR #17 (`fix/no-target-commit`) is another seat — do not touch.
 
 
@@ -24,6 +24,7 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - Owner dashboard items: branch protection on `main` (require PR + checks `web`, `apple`, `gitleaks`); Infisical project for prod secrets; App Store Connect records before TestFlight; `SENTRY_FLEET_DSN` then sentry-ci-report.
 
 ## Changelog of this log
+- 2026-08-22 — CURSOR: Grok #50 closed duplicate.  Portal App IDs still owner.  Do not merge grok/autorotate-ids onto #48.
 - 2026-08-21 — AG implemented full power enhancements across Web, iOS, and TopSpinCore, opening PR [#48](https://github.com/jaywedgeworth22/TopSpin/pull/48).
 - 2026-08-21 — AG reserved Web and iOS utility and power enhancements (`ag/utility-power-enhancements`).
 - 2026-08-21 — CURSOR completed Apache-2.0 relicensing + Kimi/Secret Rotator backup + extra catalog fold-in (PR #42).
