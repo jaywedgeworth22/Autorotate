@@ -2,6 +2,14 @@
 
 ## Current Handoff
 
+### 2026-08-21 CURSOR — Apache-2.0 + Kimi dump backup + catalog fold-in
+
+Relicensed to Apache License 2.0 (© Jay).  Backed up the Kimi dump at
+`backups/kimi-agent-topspin/` and dump `app/` at `backups/secret-rotator/`
+(Secret Rotator is not a standalone app).  Folded Grok's extra platform
+catalog into the live web registry and TopSpinCore.  Branch
+`cursor/kimi-apache-merge`.  See `MERGE.md` and `NOTICE`.
+
 ### 2026-08-21 GROK — merge Grok App Builder PWA with this monorepo
 
 Merged the App Builder TopSpin (encrypted vault, 40+ platforms, live rotators,

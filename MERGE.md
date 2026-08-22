@@ -34,6 +34,29 @@ backups/
 
 Git tag: `backup/pre-grok-merge-2026-08-21` points at the GitHub tree before this merge.
 
+## Kimi dump (2026-08-21)
+
+A third tree existed on disk as `/Users/jay/Code/Kimi_Agent_TopSpin Secret Rotator`
+(no git remote, no `.git`).  That dump **is** the origin of this GitHub repo
+(first commit `fc50b10` packaged `TopSpin-repo/`).  It is now backed up at
+`backups/kimi-agent-topspin/` so the zips and pre-packaged `native/` layout
+cannot be lost.  `app/` in the dump is the web control center; it is also
+copied to `backups/secret-rotator/` because the dump folder used that nickname.
+There is no separate Secret Rotator GitHub repo.
+
+### Feature winners
+
+| Area | Kimi dump / GitHub TopSpin | Grok PWA | Secret Rotator (`app/`) | Live winner |
+|---|---|---|---|---|
+| License | MIT, placeholder "TopSpin Systems" | (App Builder) | none | Apache-2.0, © Jay |
+| Pipeline | LOCK → AUDIT | Direct rotate-then-write | Same as Kimi | Kimi six-step |
+| Storage | Zero plaintext MySQL | AES-GCM IndexedDB vault | Same as Kimi | Kimi control center + Grok on-device vault backup |
+| Native iOS/macOS | TopSpinCore + XcodeGen | PWA only | n/a | Kimi native (plus later iOS update prompt) |
+| Live rotators | AWS, Stripe, OpenAI, CF, Twilio, SendGrid, npm, Docker, K8s | + Resend, Slack, HF, Neon, Vercel token create | Same as Kimi | Union (already in 1.1.0) |
+| Catalog | ~15 connectors | 40+ platforms | ~15 | Grok catalog now in live web + TopSpinCore |
+| Mac agent / `global-api-keys` | Native Keychain | Python agent + parser | n/a | Grok agent + parser (already in 1.1.0) |
+| Marketing landing | Full `Home.tsx` | PWA routes | Same as Kimi | Kimi landing, catalog badges updated |
+
 ## Invariants (unchanged)
 
 1. Zero plaintext in the web database and audit log — fingerprints only.

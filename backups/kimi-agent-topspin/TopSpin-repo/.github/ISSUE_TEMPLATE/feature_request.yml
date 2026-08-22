@@ -1,0 +1,56 @@
+name: Feature Request
+description: Propose a new capability for TopSpin
+title: "[Feature]: "
+labels: [enhancement, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the capability you want. If it changes connector behavior,
+        note that the capability matrix in `docs/architecture.md` will need
+        an update too.
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Module
+      options:
+        - Web control center (apps/web)
+        - iOS app (apple/TopSpin-iOS)
+        - macOS app (apple/TopSpin-macOS)
+        - TopSpinCore (apple/TopSpinCore)
+        - Cross-module / new interface
+        - Repo tooling / CI
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What use case or pain point does this address?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How should it work? Include API/UI sketches if helpful.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+
+  - type: checkboxes
+    id: invariants
+    attributes:
+      label: Invariant impact
+      options:
+        - label: This feature does not require persisting plaintext secrets
+          required: true
+        - label: This feature preserves the append-only hash-chained audit log
+          required: true

@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.build/
+DerivedData/
+
+# Environment & secrets — never commit real env files
+.env
+.env.*
+!.env.example
+
+# Apple / Xcode
+*.xcworkspace
+xcuserdata/
+**/*.xcodeproj/project.xcworkspace/
+**/*.xcodeproj/xcuserdata/
+
+# TopSpin local file targets
+topspin-files/
+
+# Logs
+*.log
+
+# OS noise
+.DS_Store

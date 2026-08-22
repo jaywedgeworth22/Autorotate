@@ -130,8 +130,8 @@ public struct ConnectorDescriptor: Codable, Sendable, Identifiable {
 /// (account ids, project ids, …).
 public enum ConnectorRegistry {
 
-    /// All connectors with capability metadata (architecture.md §3 matrix).
-    public static let all: [ConnectorDescriptor] = [
+    /// Dedicated live connector types shipped with TopSpinCore.
+    public static let shipped: [ConnectorDescriptor] = [
         ConnectorDescriptor(
             id: InfisicalSourceConnector.connectorId,
             displayName: "Infisical (source)",
@@ -223,6 +223,10 @@ public enum ConnectorRegistry {
             mechanism: "Configurable request template (URL/method/headers/body + response JSON path).",
             adminCredentialHint: "Whatever the template's {{adminCredential}} placeholder expects"),
     ]
+
+    /// All connectors with capability metadata (architecture.md §3 matrix),
+    /// including the Grok/Kimi extra catalog.
+    public static let all: [ConnectorDescriptor] = shipped + extraCatalog
 
     /// Looks up a descriptor by connector id.
     public static func descriptor(for id: String) -> ConnectorDescriptor? {

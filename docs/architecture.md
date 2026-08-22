@@ -58,6 +58,8 @@ rotate(secretId):
 | `.env` / JSON / YAML / TOML / INI files | ✅ | File target engine |
 | `global-api-keys` | ✅ | Env-style parser (trailing Mac agent token, `export`, comments) |
 | Mac agent (`mac.jays.services`) | ✅ | Writes `~/.secrets`, Drive copy, and Apple Keychain history |
+| Extra catalog (Grok) | ⚠️ update-only or local generate | HashiCorp Vault, Doppler, 1Password Connect, xAI, Groq, Google AI, GitLab, Bitbucket, GCP, Azure, Netlify, Railway, Render API token (credential target only — this fleet does not host on Render), Fly.io, DigitalOcean, Coolify, Heroku, Discord, Mailgun, Postmark, Supabase, PlanetScale, MongoDB Atlas, FMP, SSH import, App Store Connect, Linear, Notion |
+| Local generators | ✅ | JWT signing key, database password, webhook HMAC, generic secret (CSPRNG, then PUSH) |
 
 The Grok App Builder PWA snapshot (`backups/grok-web-2026-08-21/`) also catalogs 40+ platforms (xAI, Groq, Anthropic, Coolify, FMP, App Store Connect, …) with live / generate / console rotation kinds. Native iOS and macOS apps keep the TopSpinCore engine.
 

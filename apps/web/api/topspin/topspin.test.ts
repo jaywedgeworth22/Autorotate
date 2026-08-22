@@ -131,4 +131,13 @@ describe("merged live connectors", () => {
     expect(getConnector("vercel")?.capability).toBe("programmatic");
     expect(getConnector("slack")?.capability).toBe("partial");
   });
+
+  it("registers the Grok/Kimi extra catalog", () => {
+    expect(getConnector("coolify")?.capability).toBe("update_only");
+    expect(getConnector("xai")?.capability).toBe("update_only");
+    expect(getConnector("vault")?.capability).toBe("update_only");
+    expect(getConnector("jwt")?.capability).toBe("programmatic");
+    expect(getConnector("database")?.capability).toBe("programmatic");
+    expect(getConnector("generic_secret")?.capability).toBe("programmatic");
+  });
 });

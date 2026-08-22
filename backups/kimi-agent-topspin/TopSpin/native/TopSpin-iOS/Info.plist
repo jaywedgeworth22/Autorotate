@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  TopSpin iOS Info.plist.
+
+  This file carries the keys that cannot be expressed as INFOPLIST_KEY_*
+  build settings (arrays): the BGTaskScheduler permitted identifiers and
+  background modes for `com.topspin.refresh` (see BackgroundRotation.swift).
+  project.yml sets GENERATE_INFOPLIST_FILE = YES, so Xcode MERGES this file
+  with the INFOPLIST_KEY_* build settings (display name, orientations,
+  launch screen) at build time.
+-->
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleVersion</key>
+    <string>$(CURRENT_PROJECT_VERSION)</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(MARKETING_VERSION)</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <!-- Background rotation: BGAppRefreshTask "com.topspin.refresh". -->
+    <key>BGTaskSchedulerPermittedIdentifiers</key>
+    <array>
+        <string>com.topspin.refresh</string>
+    </array>
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>fetch</string>
+    </array>
+
+    <!-- No location/photo/push usage strings needed. Notifications are
+         local-only (rotation failure alerts) and require no plist keys. -->
+</dict>
+</plist>

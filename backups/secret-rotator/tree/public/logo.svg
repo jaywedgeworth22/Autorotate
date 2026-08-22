@@ -1,0 +1,23 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- dark ring -->
+  <circle cx="32" cy="32" r="26" stroke="#1B2130" stroke-width="2"/>
+  <!-- 12 tick marks, 2px strokes -->
+  <g stroke="#5C6679" stroke-width="2" stroke-linecap="round">
+    <line x1="32" y1="7.5" x2="32" y2="12.5"/>
+    <line x1="44.24" y1="10.88" x2="42.07" y2="14.63"/>
+    <line x1="53.12" y1="19.76" x2="49.37" y2="21.93"/>
+    <line x1="56.5" y1="32" x2="51.5" y2="32"/>
+    <line x1="53.12" y1="44.24" x2="49.37" y2="42.07"/>
+    <line x1="44.24" y1="53.12" x2="42.07" y2="49.37"/>
+    <line x1="32" y1="56.5" x2="32" y2="51.5"/>
+    <line x1="19.76" y1="53.12" x2="21.93" y2="49.37"/>
+    <line x1="10.88" y1="44.24" x2="14.63" y2="42.07"/>
+    <line x1="7.5" y1="32" x2="12.5" y2="32"/>
+    <line x1="10.88" y1="19.76" x2="14.63" y2="21.93"/>
+    <line x1="19.76" y1="10.88" x2="21.93" y2="14.63"/>
+  </g>
+  <!-- quarter-arc highlighted in spin green -->
+  <path d="M 32 6 A 26 26 0 0 1 58 32" stroke="#2EE6A8" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <!-- filled center dot -->
+  <circle cx="32" cy="32" r="4" fill="#2EE6A8"/>
+</svg>

@@ -28,20 +28,27 @@ const STEP_COPY: { title: string; body: string; icon: LucideIcon }[] = [
 ]
 
 const CONNECTORS: { name: string; letters: string; capability: Capability }[] = [
+  { name: 'Infisical', letters: 'inf', capability: 'programmatic' },
   { name: 'AWS IAM', letters: 'aws', capability: 'programmatic' },
-  { name: 'GitHub', letters: 'gh', capability: 'programmatic' },
+  { name: 'GitHub', letters: 'gh', capability: 'partial' },
   { name: 'Stripe', letters: 'str', capability: 'programmatic' },
   { name: 'OpenAI', letters: 'oai', capability: 'programmatic' },
-  { name: 'Anthropic', letters: 'ant', capability: 'programmatic' },
+  { name: 'Anthropic', letters: 'ant', capability: 'partial' },
   { name: 'Cloudflare', letters: 'cf', capability: 'programmatic' },
   { name: 'Vercel', letters: 'vcl', capability: 'programmatic' },
   { name: 'Twilio', letters: 'tw', capability: 'programmatic' },
   { name: 'SendGrid', letters: 'sg', capability: 'programmatic' },
-  { name: 'Slack', letters: 'slk', capability: 'update-only' },
-  { name: 'npm', letters: 'npm', capability: 'partial' },
-  { name: 'Docker Hub', letters: 'dkr', capability: 'partial' },
+  { name: 'Resend', letters: 're', capability: 'programmatic' },
+  { name: 'Slack', letters: 'slk', capability: 'partial' },
+  { name: 'npm', letters: 'npm', capability: 'programmatic' },
+  { name: 'Docker Hub', letters: 'dkr', capability: 'programmatic' },
   { name: 'Kubernetes', letters: 'k8s', capability: 'programmatic' },
-  { name: 'Generic REST', letters: 'rest', capability: 'update-only' },
+  { name: 'Coolify', letters: 'cy', capability: 'update-only' },
+  { name: 'xAI', letters: 'xai', capability: 'update-only' },
+  { name: 'Groq', letters: 'gq', capability: 'update-only' },
+  { name: 'Hugging Face', letters: 'hf', capability: 'programmatic' },
+  { name: 'Neon', letters: 'ne', capability: 'programmatic' },
+  { name: 'Generic REST', letters: 'rest', capability: 'programmatic' },
 ]
 
 const RUN_CAPTION = 'run_01H… · 6/6 steps · 3.4s · verified ✓'

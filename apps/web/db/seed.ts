@@ -98,6 +98,41 @@ const SECRET_NAMES: Record<string, string[]> = {
   dockerhub: ["DOCKERHUB_ACCESS_TOKEN"],
   kubernetes: ["K8S_SERVICE_ACCOUNT_TOKEN"],
   generic_rest: ["DOPPLER_SERVICE_TOKEN"],
+  resend: ["RESEND_API_KEY"],
+  huggingface: ["HF_TOKEN"],
+  neon: ["NEON_API_KEY"],
+  vault: ["VAULT_TOKEN"],
+  doppler: ["DOPPLER_TOKEN"],
+  onepassword: ["OP_CONNECT_TOKEN"],
+  xai: ["XAI_API_KEY"],
+  groq: ["GROQ_API_KEY"],
+  google_ai: ["GEMINI_API_KEY"],
+  gitlab: ["GITLAB_TOKEN"],
+  bitbucket: ["BITBUCKET_TOKEN"],
+  gcp: ["GCP_SA_KEY"],
+  azure: ["AZURE_CLIENT_SECRET"],
+  netlify: ["NETLIFY_AUTH_TOKEN"],
+  railway: ["RAILWAY_TOKEN"],
+  render: ["RENDER_API_KEY"],
+  fly: ["FLY_API_TOKEN"],
+  digitalocean: ["DIGITALOCEAN_TOKEN"],
+  coolify: ["COOLIFY_TOKEN"],
+  heroku: ["HEROKU_API_KEY"],
+  discord: ["DISCORD_BOT_TOKEN"],
+  mailgun: ["MAILGUN_API_KEY"],
+  postmark: ["POSTMARK_SERVER_TOKEN"],
+  supabase: ["SUPABASE_SERVICE_ROLE_KEY"],
+  planetscale: ["PLANETSCALE_TOKEN"],
+  mongodb: ["MONGODB_ATLAS_API_KEY"],
+  fmp: ["FMP_API_KEY"],
+  ssh: ["SSH_PRIVATE_KEY"],
+  database: ["DATABASE_PASSWORD"],
+  webhook_hmac: ["WEBHOOK_SECRET"],
+  jwt: ["JWT_SECRET"],
+  apple_asc: ["ASC_API_KEY"],
+  linear: ["LINEAR_API_KEY"],
+  notion: ["NOTION_TOKEN"],
+  generic_secret: ["GENERIC_SECRET"],
 };
 
 const ENVIRONMENTS = ["production", "production", "staging", "development"];
@@ -183,7 +218,7 @@ async function seed() {
   while (secretIdx < statusPlan.length) {
     const platform = platforms[platformIdx % platforms.length];
     platformIdx++;
-    const names = SECRET_NAMES[platform];
+    const names = SECRET_NAMES[platform] ?? [`${platform.replace(/-/g, "_").toUpperCase()}_TOKEN`];
     const baseName = names[secretIdx % names.length];
     const environment = ENVIRONMENTS[secretIdx % ENVIRONMENTS.length];
     const name =
