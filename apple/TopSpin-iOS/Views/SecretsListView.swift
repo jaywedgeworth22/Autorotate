@@ -17,6 +17,8 @@ struct SecretsListView: View {
     @Query(sort: \SDSecretRecord.createdAt) private var rows: [SDSecretRecord]
 
     @State private var showingAddSecret = false
+    @State private var showingImportEnv = false
+    @State private var showingQRScanner = false
     @State private var rotationCandidate: SecretRecord?
     @State private var showingRotateConfirmation = false
     @State private var lastRunResult: RotationRun?
@@ -62,16 +64,37 @@ struct SecretsListView: View {
             }
             .navigationTitle("Secrets")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button {
+                        showingQRScanner = true
+                    } label: {
+                        Image(systemName: "qrcode.viewfinder")
+                    }
+                    .accessibilityLabel("Scan Pairing QR")
+
+                    Button {
+                        showingImportEnv = true
+                    } label: {
+                        Image(systemName: "square.and.arrow.down")
+                    }
+                    .accessibilityLabel("Import .env")
+
                     Button {
                         showingAddSecret = true
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityLabel("Add Secret")
                 }
             }
             .sheet(isPresented: $showingAddSecret) {
                 AddSecretView()
+            }
+            .sheet(isPresented: $showingImportEnv) {
+                ImportEnvView()
+            }
+            .sheet(isPresented: $showingQRScanner) {
+                QRCodeScannerView()
             }
             .confirmationDialog(
                 "Rotate “\(rotationCandidate?.name ?? "")” now?",
