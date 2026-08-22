@@ -248,7 +248,13 @@ final class RotationEngineTests: XCTestCase {
     func testLockSkipsConcurrentRun() async throws {
         let secrets = InMemorySecretStore()
         let audit = InMemoryAuditStore()
-        let record = SecretRecord(name: "S", connectorId: "stub")
+        let envPath = (NSTemporaryDirectory() as NSString)
+            .appendingPathComponent("topspin-lock-\(UUID().uuidString).env")
+        defer { try? FileManager.default.removeItem(atPath: envPath) }
+        let record = SecretRecord(
+            name: "S",
+            connectorId: "stub",
+            targets: [.file(FileTargetConfig(path: envPath, format: .dotenv, keyPath: "S"))])
         try await secrets.saveSecret(record)
 
         struct SlowConnector: SecretConnector {
@@ -274,6 +280,71 @@ final class RotationEngineTests: XCTestCase {
         let firstResult = await first
         XCTAssertEqual(firstResult.status, .committed)
         XCTAssertEqual(second.status, .skippedLocked)
+    }
+
+    func testNoEnabledTargetsRefusesToRotate() async throws {
+        let secrets = InMemorySecretStore()
+        let audit = InMemoryAuditStore()
+        let record = SecretRecord(name: "AWS_KEY", connectorId: "stub")
+        try await secrets.saveSecret(record)
+
+        final class CountingConnector: SecretConnector, @unchecked Sendable {
+            var rotations = 0
+            var id: String { "stub" }
+            var displayName: String { "Stub" }
+            var capability: ConnectorCapability { .programmatic }
+            func rotate(adminCredential: String) async throws -> String {
+                rotations += 1
+                return "minted-then-lost"
+            }
+        }
+        let connector = CountingConnector()
+
+        let engine = RotationEngine(dependencies: .init(
+            secretStore: secrets,
+            auditStore: audit,
+            credentialProvider: ClosureCredentialProvider { _, _ in "admin" },
+            connectorProvider: { _ in connector },
+            infisicalClientProvider: { _ in InfisicalClient() }))
+
+        let run = await engine.rotate(secretId: record.id, actor: "user:test")
+        XCTAssertEqual(run.status, .failed)
+        XCTAssertEqual(connector.rotations, 0, "must not mint a provider credential with nowhere to land it")
+        let stored = try await secrets.secret(id: record.id)!
+        XCTAssertEqual(stored.version, 0)
+        XCTAssertNil(stored.fingerprint)
+        XCTAssertTrue(run.steps.contains {
+            $0.step == .rotate && $0.status == .failed
+                && ($0.detail ?? "").contains("No enabled target")
+        })
+    }
+
+    func testOptionalOnlyAllFailedDoesNotCommit() async throws {
+        let secrets = InMemorySecretStore()
+        let audit = InMemoryAuditStore()
+        var optional = FileTargetConfig(
+            path: "/tmp/topspin-does-not-exist-\(UUID().uuidString)/missing.env",
+            format: .json,
+            keyPath: "KEY")
+        optional.required = false
+        let record = SecretRecord(
+            name: "OPTIONAL_ONLY",
+            connectorId: "stub",
+            targets: [.file(optional)])
+        try await secrets.saveSecret(record)
+
+        let engine = RotationEngine(dependencies: .init(
+            secretStore: secrets,
+            auditStore: audit,
+            credentialProvider: ClosureCredentialProvider { _, _ in "admin" },
+            connectorProvider: { _ in StubConnector() },
+            infisicalClientProvider: { _ in InfisicalClient() }))
+
+        let run = await engine.rotate(secretId: record.id, actor: "user:test")
+        XCTAssertEqual(run.status, .failed)
+        let stored = try await secrets.secret(id: record.id)!
+        XCTAssertEqual(stored.version, 0)
+        XCTAssertNotEqual(stored.status, .active)
     }
 }
 
