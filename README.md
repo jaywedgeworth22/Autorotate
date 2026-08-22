@@ -21,8 +21,8 @@ plaintext secrets.
   [docs/architecture.md](docs/architecture.md).
 - **Audit chain** — every run appends a hash-chained audit record, so the
   history is tamper-evident.
-- **Mac agent** — optional Python agent writes `~/.secrets/global-api-keys`,
-  Drive, and Keychain history on `mac.jays.services`.
+- **Mac agent** — optional Python agent writes `~/.secrets/global-api-keys`
+  and Keychain history on `mac.jays.services`.
 
 The 2026-08-21 merge with the Grok App Builder PWA is documented in
 [MERGE.md](MERGE.md).  Native iOS/macOS apps were not rewritten.  The Kimi

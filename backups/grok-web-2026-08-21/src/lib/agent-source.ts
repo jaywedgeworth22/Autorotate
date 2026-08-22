@@ -1,5 +1,5 @@
 export const AGENT_PY = `#!/usr/bin/env python3
-"""TopSpin Mac agent — writes ~/.secrets/global-api-keys, Google Drive copy, and Apple Keychain history."""
+"""TopSpin Mac agent — writes ~/.secrets/global-api-keys and Apple Keychain history."""
 from __future__ import annotations
 
 import base64
@@ -85,7 +85,7 @@ def keychain_add(service: str, account: str, password: str, replace: bool) -> st
 
 def drive_copy(content: str, filename: str) -> str:
     roots = list((HOME / "Library" / "CloudStorage").glob("GoogleDrive-*"))
-    roots.append(HOME / "Google Drive")
+    # local storage only
     roots.append(HOME / "My Drive")
     written = []
     for root in roots:

@@ -1,6 +1,6 @@
 # TopSpin Mac agent
 
-Python agent that writes `~/.secrets/global-api-keys`, a Google Drive copy, and
+Python agent that writes `~/.secrets/global-api-keys` and
 Apple Keychain history items. Runs on the Mac reachable at
 `https://mac.jays.services`.
 

@@ -33,7 +33,7 @@ function SettingsPage() {
         <Card className="space-y-3">
           <h2 className="text-sm font-medium">Import global-api-keys</h2>
           <p className="text-xs text-muted">
-            Paste the file from the Mac or Google Drive. The last token line becomes the Mac agent token.
+            Paste the file from the Mac. The last token line becomes the Mac agent token.
           </p>
           <Textarea
             className="font-mono"

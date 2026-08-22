@@ -25,7 +25,7 @@ const DEST_LABEL: Record<DestinationId, string> = {
   file: "global-api-keys file",
   keychain: "Apple Keychain + history",
   mac: "Mac agent",
-  drive: "Google Drive .secrets",
+  drive: "Keychain .secrets",
   "github-actions": "GitHub Actions",
 };
 

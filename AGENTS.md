@@ -27,6 +27,13 @@ wait for the owner to ask. After each coherent finished unit: commit → push
 → `gh pr create` (or update) → merge when CI is green. Canonical:
 `/Users/jay/apps/AGENT-SYNC.md` "Always commit + land finished work".
 
+## Private Infrastructure Hub & Secrets (Binding for all agents)
+
+This repository is **public**. Do **not** commit host IPs, Tailscale IPs, Coolify container/server UUIDs, hardware serials, or secret values here.
+- **Canonical private infrastructure inventory:** `jaywedgeworth22/fleet-ops:ATTACK-MAP.md` (local clone at `/Users/jay/Code/fleet-ops/ATTACK-MAP.md`).
+- **Cloud agents without direct repo access:** Request via `GET https://mac.jays.services/files/ATTACK-MAP.md` with `MAC_COLLAB_TOKEN`.
+- **Secret handoff:** Read secrets from `~/.secrets/global-api-keys` or Infisical. Never log or grep raw `KEY=value` lines.
+
 ## Before you start
 
 > [!CAUTION]
