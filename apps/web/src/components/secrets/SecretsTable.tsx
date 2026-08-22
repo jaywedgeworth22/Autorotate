@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { AnimatePresence, motion } from 'framer-motion'
-import { MoreHorizontal, Pause, Play, Pencil, RotateCw, ScrollText, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Pause, Play, Pencil, RotateCw, ScrollText, ShieldAlert, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   CapabilityBadge,
@@ -129,22 +129,60 @@ function RowMenu({
 export function SecretsTable({
   rows,
   rotatingId,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
   onOpen,
   onRotate,
+  onInspectDrift,
   onTogglePause,
   onUntrack,
   empty,
 }: {
   rows: SecretWithRelations[]
   rotatingId?: number | null
+  selectedIds?: Set<number>
+  onToggleSelect?: (id: number) => void
+  onToggleSelectAll?: () => void
   onOpen: (s: SecretWithRelations) => void
   onRotate: (s: SecretWithRelations) => void
+  onInspectDrift?: (s: SecretWithRelations) => void
   onTogglePause: (s: SecretWithRelations) => void
   onUntrack: (s: SecretWithRelations) => void
   empty?: React.ReactNode
 }) {
+  const allSelected = rows.length > 0 && rows.every((r) => selectedIds?.has(r.id))
+  const someSelected = rows.some((r) => selectedIds?.has(r.id))
+
   const columns = useMemo<Column<SecretWithRelations>[]>(
     () => [
+      {
+        key: 'select',
+        title: (
+          <input
+            type="checkbox"
+            checked={allSelected}
+            ref={(el) => {
+              if (el) el.indeterminate = !allSelected && someSelected
+            }}
+            onChange={onToggleSelectAll}
+            className="size-3.5 accent-emerald-400"
+          />
+        ),
+        width: '32px',
+        render: (s) => (
+          <input
+            type="checkbox"
+            checked={selectedIds?.has(s.id) ?? false}
+            onChange={(e) => {
+              e.stopPropagation()
+              onToggleSelect?.(s.id)
+            }}
+            onClick={(e) => e.stopPropagation()}
+            className="size-3.5 accent-emerald-400"
+          />
+        ),
+      },
       {
         key: 'status',
         title: 'Status',
@@ -248,6 +286,16 @@ export function SecretsTable({
         width: '1%',
         render: (s) => (
           <span className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+            {onInspectDrift && (
+              <button
+                type="button"
+                onClick={() => onInspectDrift(s)}
+                title="Verify target delivery & check drift"
+                className="rounded-control border border-line-subtle p-1.5 text-ink-muted transition-colors hover:border-spin-dim hover:text-spin"
+              >
+                <ShieldAlert className="size-3.5" />
+              </button>
+            )}
             <button
               onClick={() => onRotate(s)}
               disabled={rotatingId === s.id || s.status === 'rotating'}
@@ -270,7 +318,7 @@ export function SecretsTable({
         ),
       },
     ],
-    [rotatingId, onOpen, onRotate, onTogglePause, onUntrack],
+    [rotatingId, selectedIds, allSelected, someSelected, onToggleSelect, onToggleSelectAll, onOpen, onRotate, onInspectDrift, onTogglePause, onUntrack],
   )
 
   return <DataTable columns={columns} rows={rows} onRowClick={onOpen} empty={empty} />

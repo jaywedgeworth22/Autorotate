@@ -176,6 +176,91 @@ export const targetUpsertInput = z.object({
   enabled: z.boolean().default(true),
 });
 
+// ── Batch & Import input schemas ──────────────────────────────
+export const secretImportItemSchema = z.object({
+  name: z.string().min(1).max(255),
+  platform: z.string(),
+  value: z.string().optional(),
+  environment: z.string().default("production"),
+  policy: policySchema.partial().optional(),
+  targets: z
+    .array(
+      z.object({
+        kind: targetKindSchema,
+        config: z.record(z.string(), z.unknown()),
+        enabled: z.boolean().default(true),
+      }),
+    )
+    .optional(),
+});
+export type SecretImportItem = z.infer<typeof secretImportItemSchema>;
+
+export const secretImportBatchInput = z.object({
+  items: z.array(secretImportItemSchema),
+});
+export type SecretImportBatchInput = z.infer<typeof secretImportBatchInput>;
+
+export const secretBatchUpdatePolicyInput = z.object({
+  secretIds: z.array(z.number()),
+  policy: policySchema.partial(),
+});
+
+export const secretBatchSetStatusInput = z.object({
+  secretIds: z.array(z.number()),
+  status: secretStatusSchema,
+});
+
+export const secretBatchDeleteInput = z.object({
+  secretIds: z.array(z.number()),
+});
+
+export const secretBatchRotateInput = z.object({
+  secretIds: z.array(z.number()),
+});
+
+// ── Drift check schemas ───────────────────────────────────────
+export const secretCheckDriftInput = z.object({
+  secretId: z.number(),
+});
+
+export const targetDriftResultSchema = z.object({
+  targetId: z.number(),
+  kind: targetKindSchema,
+  status: z.enum(["in_sync", "drifted", "error", "unsupported"]),
+  detail: z.string(),
+  expectedFingerprint: z.string().nullable(),
+  actualFingerprint: z.string().nullable(),
+});
+export type TargetDriftResult = z.infer<typeof targetDriftResultSchema>;
+
+export const secretDriftResultSchema = z.object({
+  secretId: z.number(),
+  secretName: z.string(),
+  hasDrift: z.boolean(),
+  targets: z.array(targetDriftResultSchema),
+});
+export type SecretDriftResult = z.infer<typeof secretDriftResultSchema>;
+
+// ── Workspace alert settings schema ───────────────────────────
+export const workspaceAlertConfigSchema = z.object({
+  slackWebhookUrl: z.string().url().optional().or(z.literal("")),
+  discordWebhookUrl: z.string().url().optional().or(z.literal("")),
+  notifyOnFailure: z.boolean().default(true),
+  notifyOnPartial: z.boolean().default(true),
+  notifyOnOverdue: z.boolean().default(true),
+});
+export type WorkspaceAlertConfig = z.infer<typeof workspaceAlertConfigSchema>;
+
+// ── QR Code Pairing payload schema ────────────────────────────
+export const pairingPayloadSchema = z.object({
+  version: z.number().default(1),
+  appName: z.string().default("TopSpin"),
+  baseUrl: z.string(),
+  environment: z.string().default("production"),
+  timestamp: z.string(),
+});
+export type PairingPayload = z.infer<typeof pairingPayloadSchema>;
+
 // ── Composite/response types used by the frontend ─────────────
 export type SecretWithRelations = Secret & {
   connector: Connector | null;
@@ -208,3 +293,4 @@ export type ChainVerification = {
   checked: number;
   brokenAtId: number | null;
 };
+

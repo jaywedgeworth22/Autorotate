@@ -309,7 +309,7 @@ export function Sparkline({
 
 export interface Column<T> {
   key: string
-  title: string
+  title: string | ReactNode
   sortable?: boolean
   width?: string
   render: (row: T) => ReactNode
@@ -701,3 +701,78 @@ export function ConfirmRotationModal({
     </AnimatePresence>
   )
 }
+
+/* ------------------------------------------------------------------ */
+/* Modal — centered dialog with backdrop, escape listener & animations */
+/* ------------------------------------------------------------------ */
+
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  size = 'md',
+}: {
+  open: boolean
+  onClose: () => void
+  title: ReactNode
+  children: ReactNode
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    if (open) window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  const maxW =
+    size === 'sm'
+      ? 'max-w-[420px]'
+      : size === 'lg'
+        ? 'max-w-[720px]'
+        : size === 'xl'
+          ? 'max-w-[960px]'
+          : 'max-w-[560px]'
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={onClose}
+          />
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            className={cn(
+              'fixed left-1/2 top-1/2 z-[110] max-h-[90vh] w-[calc(100%-32px)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-modal border border-line-subtle bg-raised p-6 shadow-pop',
+              maxW,
+            )}
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <div className="mb-5 flex items-center justify-between">
+              <div>{title}</div>
+              <button
+                onClick={onClose}
+                aria-label="Close"
+                className="rounded-control p-1.5 text-ink-muted hover:bg-panel hover:text-ink-primary"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            {children}
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  )
+}
+

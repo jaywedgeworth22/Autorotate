@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Cloud, FileKey2, KeyRound, Plus, Webhook } from 'lucide-react'
+import { Bell, Cloud, FileKey2, KeyRound, Plus, Webhook } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
 import { StatusDot } from '@/components/primitives'
 import { cn } from '@/lib/utils'
@@ -10,6 +10,7 @@ import { GroupTable } from '@/components/targets/GroupTable'
 import { KeychainTab } from '@/components/targets/KeychainTab'
 import { TargetWizard, type WizardRequest } from '@/components/targets/TargetWizard'
 import { DeliveryDrawer } from '@/components/targets/DeliveryDrawer'
+import { AlertSettingsModal } from '@/components/targets/AlertSettingsModal'
 
 const TABS: { kind: TargetKind; icon: typeof Cloud }[] = [
   { kind: 'infisical', icon: Cloud },
@@ -46,6 +47,7 @@ function TableSkeleton() {
 export default function Targets() {
   const secretsQuery = trpc.secrets.list.useQuery()
   const [tab, setTab] = useState<TargetKind>('infisical')
+  const [alertModalOpen, setAlertModalOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const addRef = useRef<HTMLDivElement>(null)
   const [wizard, setWizard] = useState<WizardRequest | null>(null)
@@ -107,14 +109,23 @@ export default function Targets() {
             done when every target confirms.
           </p>
         </div>
-        <div className="relative" ref={addRef}>
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => setAddOpen((v) => !v)}
-            className="inline-flex items-center gap-2 rounded-control bg-spin px-4 py-2 text-sm font-semibold text-[#06231A] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] transition-all hover:brightness-110 active:scale-[0.98]"
+            type="button"
+            onClick={() => setAlertModalOpen(true)}
+            className="flex items-center gap-2 rounded-control border border-line-subtle px-3.5 py-2 text-xs font-medium text-ink-secondary hover:border-line-strong hover:text-ink-primary"
           >
-            <Plus className="size-4" />
-            Add target
+            <Bell className="size-3.5 text-spin" />
+            Alert Webhooks
           </button>
+          <div className="relative" ref={addRef}>
+            <button
+              onClick={() => setAddOpen((v) => !v)}
+              className="inline-flex items-center gap-2 rounded-control bg-spin px-4 py-2 text-sm font-semibold text-[#06231A] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] transition-all hover:brightness-110 active:scale-[0.98]"
+            >
+              <Plus className="size-4" />
+              Add target
+            </button>
           <AnimatePresence>
             {addOpen && (
               <>
@@ -143,6 +154,7 @@ export default function Targets() {
               </>
             )}
           </AnimatePresence>
+          </div>
         </div>
       </motion.div>
 
@@ -278,6 +290,7 @@ export default function Targets() {
       {/* overlays */}
       <TargetWizard request={wizard} onClose={() => setWizard(null)} />
       <DeliveryDrawer group={historyGroup} onClose={() => setHistoryGroup(null)} />
+      <AlertSettingsModal open={alertModalOpen} onClose={() => setAlertModalOpen(false)} />
     </div>
   )
 }

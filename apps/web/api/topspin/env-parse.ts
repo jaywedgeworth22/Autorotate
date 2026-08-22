@@ -102,3 +102,64 @@ function escapeValue(value: string): string {
   }
   return value;
 }
+
+export function detectPlatformForKey(key: string, value = ""): string {
+  const k = key.toLowerCase();
+  const v = value.trim();
+
+  // 1. Value prefix heuristics
+  if (v.startsWith("sk_live_") || v.startsWith("rk_live_") || v.startsWith("sk_test_")) return "stripe";
+  if (v.startsWith("sk-proj-") || v.startsWith("sk-admin-")) return "openai";
+  if (v.startsWith("sk-ant-")) return "anthropic";
+  if (v.startsWith("re_")) return "resend";
+  if (v.startsWith("AKIA")) return "aws_iam";
+  if (v.startsWith("ghp_") || v.startsWith("github_pat_") || v.startsWith("gho_")) return "github";
+  if (v.startsWith("xoxb-") || v.startsWith("xoxp-") || v.startsWith("xapp-")) return "slack";
+  if (v.startsWith("SG.")) return "sendgrid";
+  if (v.startsWith("hf_")) return "huggingface";
+  if (v.startsWith("npm_")) return "npm";
+  if (v.startsWith("dckr_pat_")) return "dockerhub";
+  if (v.startsWith("sbp_")) return "supabase";
+  if (v.startsWith("lin_api_")) return "linear";
+  if (v.startsWith("ntn_")) return "notion";
+  if (v.startsWith("whsec_")) return "webhook_hmac";
+  if (v.startsWith("dp.st.")) return "doppler";
+  if (v.startsWith("hvs.")) return "vault";
+  if (v.startsWith("gsk_")) return "groq";
+  if (v.startsWith("xai-")) return "xai";
+  if (v.startsWith("AIza")) return "google_ai";
+  if (v.startsWith("glpat-")) return "gitlab";
+
+  // 2. Key name heuristics
+  if (k.includes("stripe")) return "stripe";
+  if (k.includes("openai")) return "openai";
+  if (k.includes("anthropic") || k.includes("claude")) return "anthropic";
+  if (k.includes("resend")) return "resend";
+  if (k.includes("aws") || k.includes("access_key")) return "aws_iam";
+  if (k.includes("github")) return "github";
+  if (k.includes("slack")) return "slack";
+  if (k.includes("cloudflare") || k.includes("cf_token")) return "cloudflare";
+  if (k.includes("vercel")) return "vercel";
+  if (k.includes("twilio")) return "twilio";
+  if (k.includes("sendgrid")) return "sendgrid";
+  if (k.includes("huggingface") || k.includes("hf_token")) return "huggingface";
+  if (k.includes("neon")) return "neon";
+  if (k.includes("npm")) return "npm";
+  if (k.includes("docker")) return "dockerhub";
+  if (k.includes("supabase")) return "supabase";
+  if (k.includes("coolify")) return "coolify";
+  if (k.includes("linear")) return "linear";
+  if (k.includes("notion")) return "notion";
+  if (k.includes("jwt") || k.includes("signing_key")) return "jwt";
+  if (k.includes("db_pass") || k.includes("database_pass") || k.includes("postgres_password") || k.includes("mysql_password")) return "database";
+  if (k.includes("webhook") || k.includes("hmac")) return "webhook_hmac";
+  if (k.includes("infisical")) return "infisical";
+  if (k.includes("sentry")) return "generic_rest";
+  if (k.includes("postmark")) return "postmark";
+  if (k.includes("mailgun")) return "mailgun";
+  if (k.includes("groq")) return "groq";
+  if (k.includes("gemini") || k.includes("google_ai")) return "google_ai";
+
+  return "generic_secret";
+}
+
