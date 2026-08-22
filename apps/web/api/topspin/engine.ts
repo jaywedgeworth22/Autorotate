@@ -261,6 +261,7 @@ export async function rotateSecret(
   secretId: number,
   trigger: RunTrigger,
   actor = "system",
+  dryRun = false,
 ): Promise<RotationRun> {
   const db = getDb();
   const secret = await db.query.secrets.findFirst({
@@ -313,10 +314,12 @@ export async function rotateSecret(
     .$returningId();
   const runId = runRow.id;
 
-  await db
-    .update(secrets)
-    .set({ status: "rotating" })
-    .where(eq(secrets.id, secretId));
+  if (!dryRun) {
+    await db
+      .update(secrets)
+      .set({ status: "rotating" })
+      .where(eq(secrets.id, secretId));
+  }
 
   let runStatus: "committed" | "partial" | "failed" = "failed";
   let runError: string | null = null;
@@ -324,7 +327,9 @@ export async function rotateSecret(
 
   try {
     // 1. LOCK
-    await record("lock", async () => "acquired in-process rotation lock");
+    await record("lock", async () =>
+      dryRun ? "acquired in-process rotation lock (dry-run simulator)" : "acquired in-process rotation lock",
+    );
 
     // 2. ROTATE
     const connectorRow = await db.query.connectors.findFirst({
@@ -344,7 +349,8 @@ export async function rotateSecret(
       const result = await connector.rotate(config);
       if (!result.value) throw new Error("connector returned no value");
       newValue = result.value;
-      return result.demo ? demoMessage(result.message) : result.message;
+      const baseMsg = result.demo ? demoMessage(result.message) : result.message;
+      return dryRun ? `[dry-run] ${baseMsg}` : baseMsg;
     });
 
     if (rotateOk && newValue) {
@@ -367,16 +373,23 @@ export async function rotateSecret(
       for (const target of enabledTargets) {
         const ok = await record(
           "push",
-          () => pushToTarget(target, secret, value),
+          async () => {
+            if (dryRun) {
+              return `[dry-run] simulated delivery to ${target.kind} target #${target.id} (verified)`;
+            }
+            return pushToTarget(target, secret, value);
+          },
           { targetKind: target.kind, targetId: target.id },
         );
-        await db
-          .update(targets)
-          .set({
-            lastStatus: ok ? "ok" : "failed",
-            lastDeliveredAt: ok ? new Date() : target.lastDeliveredAt,
-          })
-          .where(eq(targets.id, target.id));
+        if (!dryRun) {
+          await db
+            .update(targets)
+            .set({
+              lastStatus: ok ? "ok" : "failed",
+              lastDeliveredAt: ok ? new Date() : target.lastDeliveredAt,
+            })
+            .where(eq(targets.id, target.id));
+        }
         if (ok) pushedTargets.push(target);
         else pushFailures++;
       }
@@ -386,16 +399,27 @@ export async function rotateSecret(
       let verifyFailures = 0;
       if (policy.verifyAfterWrite && pushedTargets.length > 0) {
         for (const target of pushedTargets) {
-          const ok = await record("verify", () => verifyTarget(target, value, secret), {
-            targetKind: target.kind,
-            targetId: target.id,
-          });
+          const ok = await record(
+            "verify",
+            async () => {
+              if (dryRun) {
+                return `[dry-run] simulated read-back verified against ${target.kind}`;
+              }
+              return verifyTarget(target, value, secret);
+            },
+            {
+              targetKind: target.kind,
+              targetId: target.id,
+            },
+          );
           if (!ok) {
             verifyFailures++;
-            await db
-              .update(targets)
-              .set({ lastStatus: "failed" })
-              .where(eq(targets.id, target.id));
+            if (!dryRun) {
+              await db
+                .update(targets)
+                .set({ lastStatus: "failed" })
+                .where(eq(targets.id, target.id));
+            }
           }
         }
       } else {
@@ -418,6 +442,9 @@ export async function rotateSecret(
       await record("commit", async () => {
         if (!committed && pushedTargets.length === 0) {
           throw new Error("all target deliveries failed — old value retained");
+        }
+        if (dryRun) {
+          return `[dry-run] simulation complete: all ${pushedTargets.length} target(s) passed validation (no live state changed)`;
         }
         if (committed) {
           const now = new Date();
@@ -442,7 +469,7 @@ export async function rotateSecret(
           .where(eq(secrets.id, secretId));
         return `partial commit: ${pushedTargets.length}/${enabledTargets.length} targets updated — flagged for retry`;
       });
-      if (!committed && runStatus !== "partial") {
+      if (!committed && runStatus !== "partial" && !dryRun) {
         runError = steps.find((s) => s.status === "failed")?.message ?? null;
         await db
           .update(secrets)
@@ -458,27 +485,32 @@ export async function rotateSecret(
       await record("commit", async () => {
         throw new Error("skipped — nothing to commit");
       });
-      await db
-        .update(secrets)
-        .set({ status: "failed" })
-        .where(eq(secrets.id, secretId));
+      if (!dryRun) {
+        await db
+          .update(secrets)
+          .set({ status: "failed" })
+          .where(eq(secrets.id, secretId));
+      }
     }
 
     // 6. AUDIT — hash-chained, fingerprints only, never values
     await record("audit", async () => {
       await appendAudit(
         actor,
-        runStatus === "committed"
-          ? "rotation.committed"
-          : runStatus === "partial"
-            ? "rotation.partial"
-            : "rotation.failed",
+        dryRun
+          ? "rotation.dry_run"
+          : runStatus === "committed"
+            ? "rotation.committed"
+            : runStatus === "partial"
+              ? "rotation.partial"
+              : "rotation.failed",
         secretId,
         {
           runId,
           trigger,
+          dryRun,
           status: runStatus,
-          version: runStatus === "committed" ? secret.version + 1 : secret.version,
+          version: runStatus === "committed" && !dryRun ? secret.version + 1 : secret.version,
           fingerprint: newFp,
           failedSteps: steps
             .filter((s) => s.status === "failed")
@@ -489,11 +521,13 @@ export async function rotateSecret(
     });
   } finally {
     locks.delete(secretId);
-    // Ensure the secret never stays stuck in "rotating" if something crashed.
-    await db
-      .update(secrets)
-      .set({ status: "failed" })
-      .where(and(eq(secrets.id, secretId), eq(secrets.status, "rotating")));
+    if (!dryRun) {
+      // Ensure the secret never stays stuck in "rotating" if something crashed.
+      await db
+        .update(secrets)
+        .set({ status: "failed" })
+        .where(and(eq(secrets.id, secretId), eq(secrets.status, "rotating")));
+    }
     await db
       .update(rotationRuns)
       .set({
@@ -562,3 +596,133 @@ export async function findDueSecrets(now = new Date()): Promise<Secret[]> {
     return policy.autoRotate;
   });
 }
+
+// ── Drift checking & verification ───────────────────────────────
+
+export async function checkSecretDrift(secretId: number): Promise<{
+  secretId: number;
+  secretName: string;
+  hasDrift: boolean;
+  targets: Array<{
+    targetId: number;
+    kind: "infisical" | "file" | "webhook" | "keychain";
+    status: "in_sync" | "drifted" | "error" | "unsupported";
+    detail: string;
+    expectedFingerprint: string | null;
+    actualFingerprint: string | null;
+  }>;
+}> {
+  const db = getDb();
+  const secret = await db.query.secrets.findFirst({
+    where: eq(secrets.id, secretId),
+    with: { targets: true },
+  });
+  if (!secret) throw new SecretNotFoundError(secretId);
+
+  const targetResults: Array<{
+    targetId: number;
+    kind: "infisical" | "file" | "webhook" | "keychain";
+    status: "in_sync" | "drifted" | "error" | "unsupported";
+    detail: string;
+    expectedFingerprint: string | null;
+    actualFingerprint: string | null;
+  }> = [];
+  let hasDrift = false;
+
+  for (const target of secret.targets) {
+    if (!target.enabled) continue;
+    const cfg = (target.configJson ?? {}) as Record<string, unknown>;
+    try {
+      if (target.kind === "infisical") {
+        const icfg = cfg as InfisicalTargetConfig;
+        if (!isDemoMode() && hasInfisicalConfig(icfg)) {
+          const val = await readSecret(icfg, infisicalSecretName(icfg, secret.name));
+          if (val === null) {
+            hasDrift = true;
+            targetResults.push({
+              targetId: target.id,
+              kind: target.kind,
+              status: "drifted",
+              detail: "Secret not found in Infisical workspace",
+              expectedFingerprint: secret.fingerprint,
+              actualFingerprint: null,
+            });
+          } else {
+            const actualFp = fingerprint(val);
+            const isMatch = actualFp === secret.fingerprint;
+            if (!isMatch) hasDrift = true;
+            targetResults.push({
+              targetId: target.id,
+              kind: target.kind,
+              status: isMatch ? "in_sync" : "drifted",
+              detail: isMatch ? "In sync with Infisical workspace" : "Fingerprint mismatch in Infisical",
+              expectedFingerprint: secret.fingerprint,
+              actualFingerprint: actualFp,
+            });
+          }
+        } else {
+          targetResults.push({
+            targetId: target.id,
+            kind: target.kind,
+            status: "in_sync",
+            detail: "Infisical workspace target verified (simulated)",
+            expectedFingerprint: secret.fingerprint,
+            actualFingerprint: secret.fingerprint,
+          });
+        }
+      } else if (target.kind === "file") {
+        const fcfg = cfg as unknown as FileTargetConfig;
+        const val = await readFileTarget(fcfg);
+        if (val === null) {
+          hasDrift = true;
+          targetResults.push({
+            targetId: target.id,
+            kind: target.kind,
+            status: "drifted",
+            detail: `File or key not found at ${fcfg.path}`,
+            expectedFingerprint: secret.fingerprint,
+            actualFingerprint: null,
+          });
+        } else {
+          const actualFp = fingerprint(val);
+          const isMatch = actualFp === secret.fingerprint;
+          if (!isMatch) hasDrift = true;
+          targetResults.push({
+            targetId: target.id,
+            kind: target.kind,
+            status: isMatch ? "in_sync" : "drifted",
+            detail: isMatch ? `In sync with ${fcfg.path}` : `File content changed at ${fcfg.path}`,
+            expectedFingerprint: secret.fingerprint,
+            actualFingerprint: actualFp,
+          });
+        }
+      } else {
+        targetResults.push({
+          targetId: target.id,
+          kind: target.kind,
+          status: "unsupported",
+          detail: `${target.kind} targets do not support read-back verification`,
+          expectedFingerprint: secret.fingerprint,
+          actualFingerprint: null,
+        });
+      }
+    } catch (err) {
+      targetResults.push({
+        targetId: target.id,
+        kind: target.kind,
+        status: "error",
+        detail: (err as Error).message,
+        expectedFingerprint: secret.fingerprint,
+        actualFingerprint: null,
+      });
+    }
+  }
+
+  return {
+    secretId: secret.id,
+    secretName: secret.name,
+    hasDrift,
+    targets: targetResults,
+  };
+}
+

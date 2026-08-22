@@ -23,6 +23,13 @@ import {
   fileTargetConfigSchema,
   webhookTargetConfigSchema,
   keychainTargetConfigSchema,
+  secretImportBatchInput,
+  secretBatchUpdatePolicyInput,
+  secretBatchSetStatusInput,
+  secretBatchDeleteInput,
+  secretBatchRotateInput,
+  secretCheckDriftInput,
+  workspaceAlertConfigSchema,
   type StatsOverview,
   type RotationPolicy,
   type FileTargetConfig,
@@ -37,6 +44,7 @@ import { hasInfisicalConfig, upsertSecret } from "../topspin/infisical";
 import { writeFileTarget } from "../topspin/files";
 import {
   rotateSecret,
+  checkSecretDrift,
   appendAudit,
   verifyAuditChain,
   RotationLockedError,
@@ -334,6 +342,157 @@ export const secretsRouter = createRouter({
       } catch (err) {
         toTrpcError(err);
       }
+    }),
+
+  dryRun: publicQuery
+    .input(z.object({ secretId: z.number() }))
+    .mutation(async ({ input }) => {
+      try {
+        return await rotateSecret(input.secretId, "manual", ACTOR, true);
+      } catch (err) {
+        toTrpcError(err);
+      }
+    }),
+
+  checkDrift: publicQuery
+    .input(secretCheckDriftInput)
+    .query(async ({ input }) => {
+      try {
+        return await checkSecretDrift(input.secretId);
+      } catch (err) {
+        toTrpcError(err);
+      }
+    }),
+
+  importBatch: publicQuery
+    .input(secretImportBatchInput)
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const createdIds: number[] = [];
+
+      for (const item of input.items) {
+        let connector = await db.query.connectors.findFirst({
+          where: eq(connectors.platform, item.platform),
+        });
+
+        if (!connector) {
+          const known = getConnector(item.platform);
+          const capability = known?.capability ?? "programmatic";
+          const [newConn] = await db
+            .insert(connectors)
+            .values({
+              platform: item.platform,
+              displayName: known?.displayName ?? item.platform,
+              capability,
+              status: "connected",
+            })
+            .$returningId();
+          connector = await db.query.connectors.findFirst({
+            where: eq(connectors.id, newConn.id),
+          });
+        }
+        if (!connector) continue;
+
+        const policy: RotationPolicy = { ...DEFAULT_POLICY, ...(item.policy ?? {}) };
+        const now = new Date();
+        const initialFp = item.value ? fingerprint(item.value) : null;
+        const [secretRow] = await db
+          .insert(secrets)
+          .values({
+            name: item.name,
+            connectorId: connector.id,
+            environment: item.environment,
+            status: "healthy",
+            policyJson: policy as never,
+            fingerprint: initialFp,
+            lastRotatedAt: item.value ? now : null,
+            nextDueAt: new Date(now.getTime() + policy.intervalHours * 3600 * 1000),
+          })
+          .$returningId();
+
+        if (item.targets && item.targets.length > 0) {
+          for (const t of item.targets) {
+            const config = validateTargetConfig(t.kind, t.config);
+            await db.insert(targets).values({
+              secretId: secretRow.id,
+              kind: t.kind,
+              configJson: config as never,
+              enabled: t.enabled,
+            });
+          }
+        }
+
+        await appendAudit(ACTOR, "secret.imported", secretRow.id, {
+          name: item.name,
+          platform: item.platform,
+          environment: item.environment,
+          targetCount: item.targets?.length ?? 0,
+        });
+
+        createdIds.push(secretRow.id);
+      }
+
+      return { ok: true, importedCount: createdIds.length, ids: createdIds };
+    }),
+
+  batchUpdatePolicy: publicQuery
+    .input(secretBatchUpdatePolicyInput)
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      for (const secretId of input.secretIds) {
+        const row = await db.query.secrets.findFirst({ where: eq(secrets.id, secretId) });
+        if (!row) continue;
+        const current = policySchema.partial().safeParse(row.policyJson ?? {});
+        const merged: RotationPolicy = {
+          ...DEFAULT_POLICY,
+          ...(current.success ? current.data : {}),
+          ...input.policy,
+        };
+        const base = row.lastRotatedAt ?? new Date();
+        const nextDueAt = new Date(base.getTime() + merged.intervalHours * 3600 * 1000);
+        await db.update(secrets).set({ policyJson: merged as never, nextDueAt }).where(eq(secrets.id, secretId));
+        await appendAudit(ACTOR, "policy.updated", secretId, { ...merged, batch: true });
+      }
+      return { ok: true, count: input.secretIds.length };
+    }),
+
+  batchSetStatus: publicQuery
+    .input(secretBatchSetStatusInput)
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      for (const secretId of input.secretIds) {
+        await db.update(secrets).set({ status: input.status }).where(eq(secrets.id, secretId));
+        await appendAudit(ACTOR, "secret.updated", secretId, { status: input.status, batch: true });
+      }
+      return { ok: true, count: input.secretIds.length };
+    }),
+
+  batchDelete: publicQuery
+    .input(secretBatchDeleteInput)
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      for (const secretId of input.secretIds) {
+        await db.delete(targets).where(eq(targets.secretId, secretId));
+        await db.delete(rotationRuns).where(eq(rotationRuns.secretId, secretId));
+        await db.delete(secrets).where(eq(secrets.id, secretId));
+        await appendAudit(ACTOR, "secret.deleted", secretId, { batch: true });
+      }
+      return { ok: true, count: input.secretIds.length };
+    }),
+
+  batchRotate: publicQuery
+    .input(secretBatchRotateInput)
+    .mutation(async ({ input }) => {
+      const runs = [];
+      for (const secretId of input.secretIds) {
+        try {
+          const run = await rotateSecret(secretId, "manual", ACTOR);
+          runs.push(run);
+        } catch {
+          // continue
+        }
+      }
+      return { ok: true, runsCount: runs.length };
     }),
 });
 
@@ -671,6 +830,79 @@ export const statsRouter = createRouter({
   }),
 });
 
+// ── workspace & alerts ──────────────────────────────────────────
+
+let memoryAlertConfig = {
+  slackWebhookUrl: "",
+  discordWebhookUrl: "",
+  notifyOnFailure: true,
+  notifyOnPartial: true,
+  notifyOnOverdue: true,
+};
+
+export const workspaceRouter = createRouter({
+  getAlerts: publicQuery.query(() => memoryAlertConfig),
+
+  updateAlerts: publicQuery
+    .input(workspaceAlertConfigSchema)
+    .mutation(async ({ input }) => {
+      memoryAlertConfig = { ...memoryAlertConfig, ...input };
+      await appendAudit(ACTOR, "workspace.alerts_updated", null, {
+        hasSlack: !!input.slackWebhookUrl,
+        hasDiscord: !!input.discordWebhookUrl,
+      });
+      return memoryAlertConfig;
+    }),
+
+  testAlert: publicQuery
+    .input(z.object({ service: z.enum(["slack", "discord"]) }))
+    .mutation(async ({ input }) => {
+      const url =
+        input.service === "slack"
+          ? memoryAlertConfig.slackWebhookUrl
+          : memoryAlertConfig.discordWebhookUrl;
+      if (!url) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `No ${input.service} webhook URL configured`,
+        });
+      }
+      try {
+        const payload =
+          input.service === "slack"
+            ? {
+                text: `[TopSpin Alert Test] Test notification delivered successfully at ${new Date().toISOString()}`,
+              }
+            : {
+                content: `[TopSpin Alert Test] Test notification delivered successfully at ${new Date().toISOString()}`,
+              };
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return { ok: true, message: `Test alert sent to ${input.service}` };
+      } catch (err) {
+        return { ok: false, message: `Failed to deliver test alert: ${(err as Error).message}` };
+      }
+    }),
+});
+
+// ── pairing ─────────────────────────────────────────────────────
+
+export const pairingRouter = createRouter({
+  getPayload: publicQuery.query(async () => {
+    return {
+      version: 1,
+      appName: "TopSpin",
+      baseUrl: "https://mac.jays.services",
+      environment: "production",
+      timestamp: new Date().toISOString(),
+    };
+  }),
+});
+
 export const topspinRouters = {
   connectors: connectorsRouter,
   secrets: secretsRouter,
@@ -679,4 +911,7 @@ export const topspinRouters = {
   runs: runsRouter,
   audit: auditRouter,
   stats: statsRouter,
+  workspace: workspaceRouter,
+  pairing: pairingRouter,
 };
+
