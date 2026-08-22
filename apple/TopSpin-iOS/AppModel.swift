@@ -15,6 +15,7 @@
 import Foundation
 import SwiftData
 import BackgroundTasks
+import LocalAuthentication
 import TopSpinCore
 
 /// Input collected by the add-secret flow.
@@ -58,6 +59,8 @@ final class AppModel {
     private(set) var isRotatingDueSecrets = false
     /// Last completed background refresh timestamp (mirrors UserDefaults).
     private(set) var lastBackgroundRefreshAt: Date?
+    /// Whether biometrics/passcode authentication has succeeded this session.
+    private(set) var isUnlocked: Bool = false
 
     /// Audit actor label for user-initiated actions.
     private let userActor = "user:ios"
@@ -343,6 +346,68 @@ final class AppModel {
                                                       status: run.status,
                                                       detail: detail,
                                                       settings: settings)
+    }
+
+    // MARK: - Biometric Security
+    @discardableResult
+    func authenticateWithBiometrics() async -> Bool {
+        guard settings.biometricsEnabled else {
+            isUnlocked = true
+            return true
+        }
+        let context = LAContext()
+        var error: NSError?
+        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
+            isUnlocked = true
+            return true
+        }
+        do {
+            let success = try await context.evaluatePolicy(
+                .deviceOwnerAuthenticationWithBiometrics,
+                localizedReason: "Unlock TopSpin to manage zero-plaintext secrets"
+            )
+            isUnlocked = success
+            return success
+        } catch {
+            isUnlocked = false
+            return false
+        }
+    }
+
+    func lockApp() {
+        if settings.biometricsEnabled {
+            isUnlocked = false
+        }
+    }
+
+    // MARK: - Batch .env Importer
+    func importEnvBatch(items: [(name: String, connectorId: String, value: String, targetInfisical: Bool)]) async throws -> Int {
+        var count = 0
+        for item in items {
+            var targets: [TargetBinding] = []
+            if item.targetInfisical && settings.infisicalConfigured {
+                targets.append(.infisical(InfisicalTargetConfig(
+                    workspaceId: settings.infisicalWorkspaceId,
+                    environment: settings.infisicalEnvironment,
+                    secretPath: "/",
+                    secretName: item.name
+                )))
+            }
+
+
+            let draft = NewSecretDraft(
+                name: item.name,
+                connectorId: item.connectorId,
+                connectorConfig: [:],
+                adminCredential: item.value,
+                policy: RotationPolicy(),
+                targets: targets,
+                note: "Imported via .env Importer"
+            )
+            try await addSecret(draft)
+            count += 1
+        }
+        return count
     }
 
     private func secretNamesById() async -> [UUID: String] {

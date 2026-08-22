@@ -32,10 +32,14 @@ struct SettingsView: View {
     // Keychain inventory
     @State private var keychainItems: [KeychainItemInfo] = []
 
+    // Biometrics
+    @State private var biometricsEnabled = false
+
     // Notifications
-    @State private var notificationsEnabled = true
+    @State private var notificationsEnabled = false
 
     @State private var errorMessage: String?
+
 
     // Dismissable binding for the error alert.
     private var errorAlertBinding: Binding<Bool> {
@@ -45,6 +49,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                securitySection
                 infisicalSection
                 keychainOptionsSection
                 keychainInventorySection
@@ -62,6 +67,31 @@ struct SettingsView: View {
                 Text(errorMessage ?? "")
             }
         }
+    }
+
+    // MARK: Security & Biometrics
+
+    private var securitySection: some View {
+        Section {
+            Toggle(isOn: $biometricsEnabled) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Require Face ID / Touch ID")
+                    Text("Protects admin credentials and rotation triggers behind local device biometrics.")
+                        .font(.caption2)
+                        .foregroundStyle(Theme.textSecondary)
+                }
+            }
+            .tint(Theme.accent)
+            .onChange(of: biometricsEnabled) { _, newValue in
+                model.settings.biometricsEnabled = newValue
+                if newValue {
+                    Task { await model.authenticateWithBiometrics() }
+                }
+            }
+        } header: {
+            InstrumentSectionHeader(title: "Security", systemImage: "faceid")
+        }
+        .listRowBackground(Theme.surface)
     }
 
     // MARK: Infisical workspace
@@ -277,6 +307,7 @@ struct SettingsView: View {
         syncEnabled = model.settings.keychainSyncEnabled
         useSharedGroup = model.settings.useSharedAccessGroup
         notificationsEnabled = model.settings.notificationsEnabled
+        biometricsEnabled = model.settings.biometricsEnabled
         hasStoredSecret = model.settings.infisicalWorkspaceId.isEmpty
             ? false
             : model.hasInfisicalClientSecret(workspaceId: model.settings.infisicalWorkspaceId)

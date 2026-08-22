@@ -1,15 +1,16 @@
-# TopSpin — Native (iOS / macOS)
+# Autorotate — Native Apple Apps (iOS / macOS)
 
-This folder contains the Apple-platform deliverables for TopSpin, the
-secret-rotation product. Everything follows `../docs/architecture.md`:
+This folder contains the Apple-platform deliverables for Autorotate (`Autorotate.codes`), the
+zero-plaintext secret-rotation product. Everything follows `../docs/architecture.md`:
 the six-step rotation pipeline (LOCK → ROTATE → PUSH → VERIFY → COMMIT →
 AUDIT), no plaintext persistence, fingerprint-only audit logs.
 
 ## Layout
 
 ```
-native/
+apple/
 ├── README.md                    ← this file
+├── README-macOS.md              ← macOS companion documentation
 └── TopSpinCore/                 ← SwiftPM package (no third-party deps)
     ├── Package.swift            ← swift-tools 5.9, iOS 17 / macOS 14
     ├── Sources/TopSpinCore/
@@ -22,12 +23,12 @@ native/
     │   │                                OpenAI, Anthropic, Cloudflare
     │   ├── Connectors+More.swift        Vercel, Twilio, SendGrid, Slack, npm,
     │   │                                Docker Hub, Kubernetes, Infisical
-    │   │                                (source), GenericREST
+    │   │                                (source), GenericREST, Resend, Hugging Face, Neon
     │   ├── InfisicalClient.swift    Universal Auth login, raw secrets v3
     │   │                            upsert/read-back, configurable baseUrl
     │   ├── KeychainManager.swift    Security-framework wrapper (see
     │   │                            entitlements below); credential store AND
-    │   │                            rotation target
+    │   │                            rotation target (codes.autorotate.shared)
     │   ├── FileTargets.swift        .env / JSON / YAML / TOML / INI key
     │   │                            updaters with atomic writes (tmp+rename)
     │   ├── RotationEngine.swift     actor running the full pipeline,
@@ -39,10 +40,9 @@ native/
     │   │                            platforms, pure-Swift fallback for CI)
     │   └── Fingerprint.swift        sha256(value)[0:8] fingerprints + CSPRNG
     │                                secret generation
-    └── Tests/TopSpinCoreTests/    XCTest suite for parsers, models, engine
-├── project.yml                  ← XcodeGen spec (iOS target + macOS
-│                                  placeholder owned by the macOS agent)
-├── TopSpin-iOS/                 ← iOS 17+ SwiftUI app (bundle com.topspin.ios)
+    └── Tests/TopSpinCoreTests/    XCTest suite (27 tests)
+├── project.yml                  ← XcodeGen spec → Autorotate.xcodeproj
+├── TopSpin-iOS/                 ← iOS 17+ SwiftUI app (bundle codes.autorotate)
 │   ├── TopSpinApp.swift         ← @main App, BGTask registration, dark theme
 │   ├── ContentView.swift        ← TabView: Dashboard/Secrets/Runs/Settings
 │   ├── AppModel.swift           ← @Observable @MainActor engine wiring
@@ -51,94 +51,63 @@ native/
 │   ├── AdminCredentialProvider.swift  ← Keychain-backed AdminCredentialProvider
 │   ├── ConnectorFactory.swift   ← per-connector config fields + instantiation
 │   ├── SettingsStorage.swift    ← UserDefaults, non-secret only (Sendable)
-│   ├── KeychainInventory.swift  ← lists TopSpin-managed keychain items
-│   ├── BackgroundRotation.swift ← BGAppRefreshTask com.topspin.refresh
+│   ├── KeychainInventory.swift  ← lists Autorotate-managed keychain items
+│   ├── BackgroundRotation.swift ← BGAppRefreshTask codes.autorotate.refresh
 │   ├── NotificationManager.swift← local alerts on rotation failure
-│   ├── Theme.swift + Views/     ← security-instrument UI (green #2EE6A8)
-│   ├── TopSpin.entitlements     ← keychain-access-groups com.topspin.shared
+│   ├── Theme.swift + Views/     ← security-instrument UI (green #4ECCA3)
+│   ├── TopSpin.entitlements     ← keychain-access-groups codes.autorotate.shared
 │   └── Info.plist               ← BGTaskSchedulerPermittedIdentifiers, fetch
-└── TopSpin-macOS/               ← placeholder, owned by the macOS agent
+└── TopSpin-macOS/               ← macOS 14+ app (bundle codes.autorotate.macos)
 ```
 
-The SwiftUI app targets (`TopSpin-iOS`, `TopSpin-macOS`) consume
+The SwiftUI app targets (`Autorotate-iOS`, `Autorotate-macOS`) consume
 `TopSpinCore` and back the store protocols with SwiftData/UserDefaults.
-They are generated from the XcodeGen `project.yml` (see below).
+They are generated from the XcodeGen `project.yml`.
 
 ## Building
 
 ### The core package (no Xcode required)
 
 ```bash
-cd native/TopSpinCore
+cd apple/TopSpinCore
 swift build        # builds the library
-swift test         # runs the parser/model/engine unit tests
+swift test         # runs the 27 unit tests
 ```
-
-Works on any Mac with Xcode 15+ (Swift 5.9). The package is platform-gated
-to iOS 17 / macOS 14; on Linux everything except the `Security`-framework
-`KeychainManager` compiles, which keeps CI possible. `swift build` and the
-22-case `swift test` suite (parsers, models, fingerprint vectors, and an
-end-to-end engine run incl. the per-secret lock) pass on Swift 5.9.2.
 
 ### The apps (XcodeGen)
 
-Both app targets are described by a single `project.yml` in this folder and
-generated with [XcodeGen](https://github.com/yonsm/XcodeGen):
+Both app targets are described by `project.yml` in this folder:
 
 ```bash
 brew install xcodegen
-cd native
-xcodegen generate          # creates TopSpin.xcodeproj
-open TopSpin.xcodeproj
+cd apple
+xcodegen generate          # creates Autorotate.xcodeproj
+open Autorotate.xcodeproj
 ```
 
-Both app targets link the `TopSpinCore` SwiftPM package (local path
-`./TopSpinCore`) — no other dependencies.
+#### iOS app (`Autorotate-iOS`, bundle id `codes.autorotate`, iOS 17+)
 
-#### iOS app (`TopSpin-iOS/`, bundle id `com.topspin.ios`, iOS 17+)
+1. `xcodegen generate` as above, then open `Autorotate.xcodeproj`.
+2. Select the `Autorotate-iOS` target → **Signing & Capabilities**:
+   - Team: **Jay Wedgeworth, LLC (`CC8UTF7ATG`)**.
+   - Keychain Sharing capability with group `$(AppIdentifierPrefix)codes.autorotate.shared`.
+   - Background Modes: Background fetch (`codes.autorotate.refresh`).
 
-1. `xcodegen generate` as above, then open `TopSpin.xcodeproj`.
-2. Select the `TopSpin-iOS` target → **Signing & Capabilities**:
-   - Set your **Team** (Automatic signing is preconfigured).
-   - Add the **Keychain Sharing** capability with group
-     `$(AppIdentifierPrefix)com.topspin.shared` (already in
-     `TopSpin-iOS/TopSpin.entitlements`).
-   - Add **Background Modes** → check **Background fetch**
-     (matches `BGTaskSchedulerPermittedIdentifiers` = `com.topspin.refresh`
-     in `TopSpin-iOS/Info.plist`, merged with the `INFOPLIST_KEY_*` build
-     settings because `GENERATE_INFOPLIST_FILE = YES`).
-   - **Push is NOT needed** — notifications are local
-     (`UNUserNotificationCenter`, rotation-failure alerts only).
-3. Run on a device or simulator (iOS 17+). Background refresh tasks only
-   fire on real devices; from Xcode you can simulate one via
-   `e -l objc -- (void)[[BGTaskScheduler sharedScheduler] _simulateLaunchForTaskWithIdentifier:@"com.topspin.refresh"]`
-   in the debugger while paused.
+#### macOS app (`Autorotate-macOS`, bundle id `codes.autorotate.macos`, macOS 14+)
 
-If you haven't enabled Keychain Sharing yet, the app still works: Settings →
-Keychain options → turn off "Shared access group" to use app-private items
-during development (the iCloud-sync toggle degrades gracefully in the same
-way — `kSecAttrSynchronizable` failures fall back to local items).
-
-#### macOS app (`TopSpin-macOS/`)
-
-See `README-macOS.md`. Its XcodeGen target (`TopSpin-macOS`) is already
-merged into `project.yml` alongside the iOS target — one
-`xcodegen generate` produces both.
+See `README-macOS.md`.  One `xcodegen generate` produces both schemes.
 
 ## Entitlements & capabilities
 
 ### Keychain Sharing (both apps + extensions)
 
-TopSpin stores connector admin credentials, the Infisical Universal Auth
-clientSecret, and (optionally) managed secret values in the Apple Keychain,
-shared across the iOS app, macOS app, and extensions via one access group:
-
 ```xml
 <key>keychain-access-groups</key>
 <array>
-    <string>$(AppIdentifierPrefix)com.topspin.shared</string>
+    <string>$(AppIdentifierPrefix)codes.autorotate.shared</string>
 </array>
 ```
+
 
 Enable the **Keychain Sharing** capability in Xcode and add
 `$(AppIdentifierPrefix)com.topspin.shared` to every target that must share

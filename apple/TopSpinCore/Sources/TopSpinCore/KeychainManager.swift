@@ -77,18 +77,18 @@ public enum KeychainError: Error, Sendable, CustomStringConvertible {
 /// Generic-password Keychain manager.
 ///
 /// Default service naming (architecture.md §5):
-/// - managed secret values: `com.topspin.<secretId>`
-/// - connector admin credentials: `com.topspin.credential.<connectorId>.<secretId>`
+/// - managed secret values: `codes.autorotate.<secretId>`
+/// - connector admin credentials: `codes.autorotate.credential.<connectorId>.<secretId>`
 ///
 /// All items use `kSecAttrAccessibleAfterFirstUnlock` so background
 /// rotation (BGTaskScheduler / launch agents) works after first unlock but
 /// items are not exposed while the device is locked-and-never-unlocked.
 public struct KeychainManager: Sendable {
 
-    /// Shared access group used by all TopSpin apps/extensions.
+    /// Shared access group used by all Autorotate apps/extensions.
     /// Requires the Keychain Sharing entitlement
-    /// `$(AppIdentifierPrefix)com.topspin.shared` — see the file header.
-    public static let sharedAccessGroup = "com.topspin.shared"
+    /// `$(AppIdentifierPrefix)codes.autorotate.shared` — see the file header.
+    public static let sharedAccessGroup = "codes.autorotate.shared"
 
     /// Access group added to every query. `nil` = app-private keychain.
     public let accessGroup: String?
@@ -106,25 +106,26 @@ public struct KeychainManager: Sendable {
 
     // MARK: - Service naming
 
-    /// Service name for a managed secret value: `com.topspin.<secretId>`.
+    /// Service name for a managed secret value: `codes.autorotate.<secretId>`.
     public static func service(forSecretId secretId: UUID) -> String {
-        "com.topspin.\(secretId.uuidString.lowercased())"
+        "codes.autorotate.\(secretId.uuidString.lowercased())"
     }
 
     /// Service name for a connector admin credential:
-    /// `com.topspin.credential.<connectorId>.<secretId>`.
+    /// `codes.autorotate.credential.<connectorId>.<secretId>`.
     ///
     /// Admin credentials are scoped per secret record so that two secrets on
     /// the same platform can use different admin credentials.
     public static func credentialService(connectorId: String, secretId: UUID) -> String {
-        "com.topspin.credential.\(connectorId).\(secretId.uuidString.lowercased())"
+        "codes.autorotate.credential.\(connectorId).\(secretId.uuidString.lowercased())"
     }
 
     /// Service name for the Infisical Universal Auth clientSecret belonging
     /// to a given Infisical configuration.
     public static func infisicalClientSecretService(workspaceId: String) -> String {
-        "com.topspin.infisical.\(workspaceId)"
+        "codes.autorotate.infisical.\(workspaceId)"
     }
+
 
     // MARK: - Query building
 

@@ -1,28 +1,28 @@
 # =============================================================================
-# TopSpin — XcodeGen project spec (native/project.yml)
+# Autorotate — XcodeGen project spec (apple/project.yml)
 #
-# Generates TopSpin.xcodeproj containing the Apple-platform app targets, all
+# Generates Autorotate.xcodeproj containing the Apple-platform app targets, all
 # linking the local SwiftPM package TopSpinCore (no third-party deps).
 #
 #   brew install xcodegen
-#   cd native && xcodegen generate
-#   open TopSpin.xcodeproj
+#   cd apple && xcodegen generate
+#   open Autorotate.xcodeproj
 #
 # Capabilities to enable in Xcode after generating (Signing & Capabilities):
-#   - Keychain Sharing: $(AppIdentifierPrefix)com.topspin.shared
+#   - Keychain Sharing: $(AppIdentifierPrefix)codes.autorotate.shared
 #     (already declared in TopSpin-iOS/TopSpin.entitlements)
 #   - Background Modes: "Background fetch" (matches Info.plist)
 #   - Push Notifications: NOT needed (notifications are local-only)
 #
-# Both app targets (iOS + macOS) are defined below; the former
-# project-macos-snippet.yml has been merged in.
+# Both app targets (iOS + macOS) are defined below.
 # =============================================================================
 
-name: TopSpin
+name: Autorotate
 options:
-  bundleIdPrefix: com.topspin
+  bundleIdPrefix: codes.autorotate
   createIntermediateGroups: true
   generateEmptyDirectories: true
+  xcodeVersion: "16.0"
 
 packages:
   TopSpinCore:
@@ -30,39 +30,36 @@ packages:
 
 settings:
   base:
-    SWIFT_VERSION: "5.0"            # Swift 5.9 toolchain language mode
+    SWIFT_VERSION: "5.0"            # Swift toolchain language mode
     SWIFT_STRICT_CONCURRENCY: complete
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: CC8UTF7ATG
 
 targets:
 
   # ── iOS app ────────────────────────────────────────────────────────────────
-  TopSpin-iOS:
+  Autorotate-iOS:
     type: application
     platform: iOS
     deploymentTarget: "17.0"
     sources:
       - path: TopSpin-iOS
-        # The entitlements file is referenced via CODE_SIGN_ENTITLEMENTS and
-        # Info.plist via INFOPLIST_FILE — never bundle them as resources.
         excludes:
           - "TopSpin.entitlements"
           - "Info.plist"
     dependencies:
       - package: TopSpinCore
         product: TopSpinCore
-      # BackgroundTasks / UserNotifications / Security are system frameworks
-      # and autolink on import — no explicit link entries needed.
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.topspin.ios
+        PRODUCT_BUNDLE_IDENTIFIER: codes.autorotate
+        PRODUCT_NAME: Autorotate
         CODE_SIGN_ENTITLEMENTS: TopSpin-iOS/TopSpin.entitlements
         INFOPLIST_FILE: TopSpin-iOS/Info.plist
-        # Xcode merges the checked-in Info.plist (BGTaskSchedulerPermittedIdentifiers,
-        # UIBackgroundModes) with these INFOPLIST_KEY_* values at build time.
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: TopSpin
+        INFOPLIST_KEY_CFBundleDisplayName: Autorotate
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
@@ -70,17 +67,16 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         ENABLE_PREVIEWS: YES
         ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
-        # Development conveniences — replace with your team for device runs.
         CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: CC8UTF7ATG
 
   # ── macOS app ──────────────────────────────────────────────────────────────
-  TopSpin-macOS:
+  Autorotate-macOS:
     type: application
     platform: macOS
     deploymentTarget: "14.0"
     sources:
       - path: TopSpin-macOS
-        # Referenced via CODE_SIGN_ENTITLEMENTS — never bundle as a resource.
         excludes:
           - "TopSpinMac.entitlements"
     dependencies:
@@ -88,22 +84,22 @@ targets:
         product: TopSpinCore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.topspin.macos
-        PRODUCT_NAME: TopSpin
+        PRODUCT_BUNDLE_IDENTIFIER: codes.autorotate.macos
+        PRODUCT_NAME: Autorotate
         CODE_SIGN_ENTITLEMENTS: TopSpin-macOS/TopSpinMac.entitlements
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES
-        # Info.plist is generated — no checked-in plist needed.
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: TopSpin
+        INFOPLIST_KEY_CFBundleDisplayName: Autorotate
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
         ENABLE_PREVIEWS: YES
+        DEVELOPMENT_TEAM: CC8UTF7ATG
 
 schemes:
-  TopSpin-macOS:
+  Autorotate-macOS:
     build:
       targets:
-        TopSpin-macOS: all
+        Autorotate-macOS: all
     run:
       config: Debug
     test:
@@ -114,10 +110,10 @@ schemes:
       config: Debug
     archive:
       config: Release
-  TopSpin-iOS:
+  Autorotate-iOS:
     build:
       targets:
-        TopSpin-iOS: all
+        Autorotate-iOS: all
     run:
       config: Debug
     test:
@@ -128,3 +124,4 @@ schemes:
       config: Debug
     archive:
       config: Release
+

@@ -135,8 +135,9 @@ export default function AppShell() {
         <div className="flex h-16 items-center gap-3 border-b border-line-subtle px-4">
           <Link to="/" className="flex items-center gap-2.5">
             <LogoMark size={26} />
-            {!collapsed && <span className="font-display text-base font-semibold">TopSpin</span>}
+            {!collapsed && <span className="font-display text-base font-semibold">Autorotate</span>}
           </Link>
+
         </div>
 
         {!collapsed && (

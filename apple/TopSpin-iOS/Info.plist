@@ -25,17 +25,20 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
 
-    <!-- Background rotation: BGAppRefreshTask "com.topspin.refresh". -->
+    <!-- Background rotation: BGAppRefreshTask "codes.autorotate.refresh". -->
     <key>BGTaskSchedulerPermittedIdentifiers</key>
     <array>
-        <string>com.topspin.refresh</string>
+        <string>codes.autorotate.refresh</string>
     </array>
     <key>UIBackgroundModes</key>
     <array>
         <string>fetch</string>
     </array>
 
-    <!-- No location/photo/push usage strings needed. Notifications are
-         local-only (rotation failure alerts) and require no plist keys. -->
+    <key>NSFaceIDUsageDescription</key>
+    <string>Autorotate uses Face ID to securely authenticate and protect your API secrets.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Autorotate uses the camera to scan Web Control Center pairing QR codes.</string>
 </dict>
 </plist>
+

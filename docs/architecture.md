@@ -1,8 +1,9 @@
-# TopSpin — Architecture & Rotation Engine Spec
+# Autorotate — Architecture & Rotation Engine Spec
 
-TopSpin rotates secrets across as many platforms as possible and propagates the new
+Autorotate (`Autorotate.codes`) rotates secrets across as many platforms as possible and propagates the new
 values to every configured target: **Infisical**, **local secret files** (`.env`, JSON,
-YAML, TOML, INI like `~/.aws/credentials`), and **Apple Keychain** (native apps).
+YAML, TOML, INI like `~/.aws/credentials`), **Apple Keychain** (native iOS & macOS apps),
+**Android Keystore** (native Android app), and **HTTPS Webhooks**.
 
 ## 1. Core concepts
 
@@ -10,7 +11,7 @@ YAML, TOML, INI like `~/.aws/credentials`), and **Apple Keychain** (native apps)
 |---|---|
 | **Connector** | Adapter for one secret platform (AWS IAM, GitHub, Stripe, …). Knows how to `rotate()` a credential using a user-supplied admin credential, or reports itself `updateOnly` when the platform has no programmatic rotation API. |
 | **Secret record** | Metadata about ONE managed secret: name, platform/connector id, current reference, rotation policy, target bindings, status, timestamps. **Never stores the plaintext value.** |
-| **Target** | Destination that receives the new secret value after rotation: Infisical project/env/path, file target (path + format + key), Keychain item (service/account), webhook. |
+| **Target** | Destination that receives the new secret value after rotation: Infisical project/env/path, file target (path + format + key), Keychain item (service/account), Android Keystore, webhook. |
 | **Rotation run** | One execution of the rotation pipeline for one secret. Produces an audit entry with per-step results. |
 | **Policy** | Schedule (interval hours / cron-like), auto-rotate on/off, verify-after-write, retry rules. |
 
@@ -24,10 +25,11 @@ rotate(secretId):
   3. PUSH    — for each enabled target, write newSecretValue:
                  - Infisical: POST /api/v3/secrets/raw/... (upsert) with workspace token
                  - File: parse file by format, set key, atomic rewrite (tmp+rename)
-                 - Keychain (native): SecItemAdd/SecItemUpdate, kSecAttrAccessibleAfterFirstUnlock,
+                 - Keychain (Apple): SecItemAdd/SecItemUpdate, kSecAttrAccessibleAfterFirstUnlock,
                    optional kSecAttrSynchronizable (iCloud Keychain)
+                 - Keystore (Android): EncryptedSharedPreferences with AES256-GCM master key
                  - Webhook: POST JSON {name, valueRef} (value optional)
-  4. VERIFY  — optional read-back per target (Infisical GET, Keychain SecItemCopyMatching)
+  4. VERIFY  — optional read-back per target (Infisical GET, Keychain SecItemCopyMatching, Android Keystore)
   5. COMMIT  — if all required targets OK: update record (lastRotatedAt, version+1)
                else: mark PARTIAL/FAILED, keep old value where already written, flag rollback
   6. AUDIT   — append immutable audit entry (never log secret values — hash prefix only)
@@ -61,17 +63,7 @@ rotate(secretId):
 | Extra catalog (Grok) | ⚠️ update-only or local generate | HashiCorp Vault, Doppler, 1Password Connect, xAI, Groq, Google AI, GitLab, Bitbucket, GCP, Azure, Netlify, Railway, Render API token (credential target only — this fleet does not host on Render), Fly.io, DigitalOcean, Coolify, Heroku, Discord, Mailgun, Postmark, Supabase, PlanetScale, MongoDB Atlas, FMP, SSH import, App Store Connect, Linear, Notion |
 | Local generators | ✅ | JWT signing key, database password, webhook HMAC, generic secret (CSPRNG, then PUSH) |
 
-The Grok App Builder PWA snapshot (`backups/grok-web-2026-08-21/`) also catalogs 40+ platforms (xAI, Groq, Anthropic, Coolify, FMP, App Store Connect, …) with live / generate / console rotation kinds. Native iOS and macOS apps keep the TopSpinCore engine.
-
-## 3.1 Merge rule (2026-08-21)
-
-Two complete TopSpin implementations existed: the GitHub monorepo (zero-plaintext MySQL control center + native Apple apps) and the Grok App Builder PWA (encrypted IndexedDB vault, live vendor rotators, Mac agent). This repo keeps **both**:
-
-- **GitHub original** — tagged `backup/pre-grok-merge-2026-08-21` and copied under `backups/github-web-pre-merge-2026-08-21/`.
-- **Grok PWA** — copied under `backups/grok-web-2026-08-21/` (vault, rotators, parser, agent, UI).
-- **Live web engine** — LOCK → AUDIT + hash-chained audit from GitHub, plus Grok live rotators, `global-api-keys` parser, and the Mac agent.
-
-See [MERGE.md](../MERGE.md).
+The Grok App Builder snapshot catalogs 40+ platforms (xAI, Groq, Anthropic, Coolify, FMP, App Store Connect, …) with live / generate / console rotation kinds. Native iOS, macOS, and Android apps keep the shared zero-plaintext engine.
 
 ## 4. Infisical integration
 
@@ -80,18 +72,20 @@ See [MERGE.md](../MERGE.md).
 - Read-back verify: `GET /api/v3/secrets/raw/{secretName}`.
 - Config stored per-workspace: baseUrl (default https://app.infisical.com), clientId, clientSecret (stored ONLY in Keychain on native / server-side encrypted on web), workspaceId, environment, path.
 
-## 5. Apple Keychain integration (native)
+## 5. Apple Keychain & Android Keystore integration (native)
 
-- `KeychainManager`: generic-password items, service = `com.topspin.<secretId>`, account = secret name.
+- `KeychainManager` (Apple): generic-password items, service = `codes.autorotate.<secretId>`, account = secret name.
 - Accessibility: `kSecAttrAccessibleAfterFirstUnlock`; optional `kSecAttrSynchronizable = true` (iCloud Keychain) — user toggle, **"if allowed"** per entitlements.
-- Access group: `$(AppIdentifierPrefix)com.topspin.shared` so iOS + macOS + extensions share items (documented in entitlements files).
-- Keychain is ALSO the credential store for connector admin credentials and Infisical clientSecret on native — the web server uses its DB (AES-GCM encrypted at rest) instead.
+- Access group: `$(AppIdentifierPrefix)codes.autorotate.shared` so iOS + macOS share items.
+- `EncryptedStorage` (Android): `EncryptedSharedPreferences` backed by Android Keystore `AES256_GCM` master key.
+- Keychain & Keystore are ALSO the credential store for connector admin credentials and Infisical clientSecret on native — the web server uses its DB (AES-GCM encrypted at rest) instead.
 
 ## 6. Storage rule (hard requirement)
 
 Plaintext secret values exist only in memory during a rotation run. Persistent stores hold
 metadata + references. The ONLY places values land: the provider, Infisical, target files,
-Keychain. Audit logs contain `sha256(value)[0:8]` fingerprints only.
+Keychain, Keystore. Audit logs contain `sha256(value)[0:8]` fingerprints only.
+
 
 ## 7. Web data model (Drizzle / MySQL)
 

@@ -12,6 +12,8 @@ export const appRouter = createRouter({
   runs: topspinRouters.runs,
   audit: topspinRouters.audit,
   stats: topspinRouters.stats,
+  workspace: topspinRouters.workspace,
+  pairing: topspinRouters.pairing,
 });
 
 export type AppRouter = typeof appRouter;

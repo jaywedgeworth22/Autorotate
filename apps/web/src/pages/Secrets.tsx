@@ -1,12 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import {
+  Clock,
   Download,
   LayoutGrid,
+  Pause,
+  Play,
   Plus,
+  RotateCw,
   Rows3,
-  ScanSearch,
   Search,
+  Smartphone,
+  Sparkles,
+  Trash2,
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -14,6 +20,7 @@ import { trpc } from '@/providers/trpc'
 import {
   ConfirmRotationModal,
   EmptyState,
+  Modal,
   toastError,
   toastInfo,
   toastSuccess,
@@ -24,6 +31,9 @@ import { SECRET_STATUSES, type SecretStatus, type SecretWithRelations } from '@c
 import { SecretDetailDrawer, UntrackConfirm } from '@/components/secrets/SecretDetailDrawer'
 import { SecretsCards, SecretsTable } from '@/components/secrets/SecretsTable'
 import { TrackSecretWizard } from '@/components/secrets/TrackSecretWizard'
+import { EnvImportModal } from '@/components/secrets/EnvImportModal'
+import { DriftInspectModal } from '@/components/secrets/DriftInspectModal'
+import { QRCodePairingModal } from '@/components/pairing/QRCodePairingModal'
 import { policySummary, selectCls } from '@/components/secrets/shared'
 
 const PAGE_SIZE = 12
@@ -231,18 +241,45 @@ export default function Secrets() {
     return [...set].sort()
   }, [allQuery.data])
 
-  /* overlays */
+  /* overlays & selection */
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [wizardOpen, setWizardOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
+  const [pairingOpen, setPairingOpen] = useState(false)
+  const [driftSecretId, setDriftSecretId] = useState<number | null>(null)
   const [rotationTarget, setRotationTarget] = useState<SecretWithRelations | null>(null)
   const [untrackTarget, setUntrackTarget] = useState<SecretWithRelations | null>(null)
   const [rotatingId, setRotatingId] = useState<number | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [bulkIntervalModalOpen, setBulkIntervalModalOpen] = useState(false)
+  const [bulkIntervalHours, setBulkIntervalHours] = useState(720)
+
+  /* multi-select helpers */
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (shown.every((s) => selectedIds.has(s.id))) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(shown.map((s) => s.id)))
+    }
+  }
+
+  const clearSelection = () => setSelectedIds(new Set())
 
   /* mutations */
   const invalidateAll = () => {
     utils.secrets.list.invalidate()
     utils.secrets.get.invalidate()
     utils.runs.list.invalidate()
+    utils.stats.overview.invalidate()
   }
 
   const rotateMut = trpc.secrets.rotateNow.useMutation({
@@ -286,6 +323,44 @@ export default function Secrets() {
       invalidateAll()
     },
     onError: (err) => toastError('Delete failed', err.message),
+  })
+
+  /* batch mutations */
+  const batchRotateMut = trpc.secrets.batchRotate.useMutation({
+    onSuccess: (data) => {
+      toastSuccess('Batch rotation initiated', `${data.runsCount} secret(s) scheduled/rotated`)
+      clearSelection()
+      invalidateAll()
+    },
+    onError: (err) => toastError('Batch rotation failed', err.message),
+  })
+
+  const batchStatusMut = trpc.secrets.batchSetStatus.useMutation({
+    onSuccess: (_data, vars) => {
+      toastSuccess('Batch status updated', `Updated ${vars.secretIds.length} secret(s) to ${vars.status}`)
+      clearSelection()
+      invalidateAll()
+    },
+    onError: (err) => toastError('Batch update failed', err.message),
+  })
+
+  const batchPolicyMut = trpc.secrets.batchUpdatePolicy.useMutation({
+    onSuccess: (_data, vars) => {
+      toastSuccess('Batch policy updated', `Updated ${vars.secretIds.length} secret(s) interval`)
+      setBulkIntervalModalOpen(false)
+      clearSelection()
+      invalidateAll()
+    },
+    onError: (err) => toastError('Batch policy update failed', err.message),
+  })
+
+  const batchDeleteMut = trpc.secrets.batchDelete.useMutation({
+    onSuccess: (_data, vars) => {
+      toastSuccess('Batch untrack completed', `Untracked ${vars.secretIds.length} secret(s)`)
+      clearSelection()
+      invalidateAll()
+    },
+    onError: (err) => toastError('Batch delete failed', err.message),
   })
 
   /* helpers */
@@ -358,13 +433,20 @@ export default function Secrets() {
             fingerprints only
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
-            onClick={() => toastInfo('Connector scan import', 'Scanning connectors for unmanaged credentials is not available in this build.')}
-            className="flex items-center gap-2 rounded-control border border-line-subtle px-4 py-2 text-sm font-medium text-ink-secondary transition-colors hover:border-line-strong hover:text-ink-primary"
+            onClick={() => setPairingOpen(true)}
+            className="flex items-center gap-1.5 rounded-control border border-line-subtle px-3.5 py-2 text-xs font-medium text-ink-secondary transition-colors hover:border-line-strong hover:text-ink-primary"
           >
-            <ScanSearch className="size-4" />
-            Import…
+            <Smartphone className="size-3.5 text-spin" />
+            Pair iOS App
+          </button>
+          <button
+            onClick={() => setImportOpen(true)}
+            className="flex items-center gap-1.5 rounded-control border border-line-subtle px-3.5 py-2 text-xs font-medium text-ink-secondary transition-colors hover:border-line-strong hover:text-ink-primary"
+          >
+            <Sparkles className="size-3.5 text-spin" />
+            Import .env / keys
           </button>
           <button
             onClick={() => setWizardOpen(true)}
@@ -476,8 +558,12 @@ export default function Secrets() {
               <SecretsTable
                 rows={shown}
                 rotatingId={rotatingId}
+                selectedIds={selectedIds}
+                onToggleSelect={toggleSelect}
+                onToggleSelectAll={toggleSelectAll}
                 onOpen={(s) => setSelectedId(s.id)}
                 onRotate={openRotation}
+                onInspectDrift={(s) => setDriftSecretId(s.id)}
                 onTogglePause={(s) =>
                   pauseMut.mutate({ id: s.id, status: s.status === 'paused' ? 'healthy' : 'paused' })
                 }
@@ -524,11 +610,149 @@ export default function Secrets() {
         )}
       </div>
 
+      {/* Floating Multi-Select Action Bar */}
+      <AnimatePresence>
+        {selectedIds.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 24 }}
+            className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-spin/30 bg-raised/95 px-4 py-2.5 shadow-2xl backdrop-blur"
+          >
+            <span className="text-mono-s font-semibold text-spin">
+              {selectedIds.size} selected
+            </span>
+            <div className="h-4 w-px bg-line-subtle" />
+            <button
+              type="button"
+              onClick={() => batchRotateMut.mutate({ secretIds: Array.from(selectedIds) })}
+              disabled={batchRotateMut.isPending}
+              className="flex items-center gap-1.5 rounded-control bg-spin px-3 py-1.5 text-xs font-semibold text-[#06231A] hover:brightness-110 disabled:opacity-50"
+            >
+              <RotateCw className={cn('size-3.5', batchRotateMut.isPending && 'animate-spin')} />
+              Bulk Rotate
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                batchStatusMut.mutate({ secretIds: Array.from(selectedIds), status: 'paused' })
+              }
+              className="flex items-center gap-1.5 rounded-control border border-line-subtle px-3 py-1.5 text-xs font-medium text-ink-secondary hover:text-ink-primary"
+            >
+              <Pause className="size-3.5" />
+              Pause
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                batchStatusMut.mutate({ secretIds: Array.from(selectedIds), status: 'healthy' })
+              }
+              className="flex items-center gap-1.5 rounded-control border border-line-subtle px-3 py-1.5 text-xs font-medium text-ink-secondary hover:text-ink-primary"
+            >
+              <Play className="size-3.5" />
+              Resume
+            </button>
+            <button
+              type="button"
+              onClick={() => setBulkIntervalModalOpen(true)}
+              className="flex items-center gap-1.5 rounded-control border border-line-subtle px-3 py-1.5 text-xs font-medium text-ink-secondary hover:text-ink-primary"
+            >
+              <Clock className="size-3.5" />
+              Interval…
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm(`Untrack ${selectedIds.size} secret(s)?`)) {
+                  batchDeleteMut.mutate({ secretIds: Array.from(selectedIds) })
+                }
+              }}
+              className="flex items-center gap-1.5 rounded-control border border-danger/40 px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger/10"
+            >
+              <Trash2 className="size-3.5" />
+              Untrack
+            </button>
+            <button
+              type="button"
+              onClick={clearSelection}
+              aria-label="Clear selection"
+              className="rounded-control p-1 text-ink-muted hover:text-ink-primary"
+            >
+              <X className="size-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bulk Interval Modal */}
+      <Modal
+        open={bulkIntervalModalOpen}
+        onClose={() => setBulkIntervalModalOpen(false)}
+        title="Update Rotation Interval"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-ink-secondary">
+            Set the scheduled rotation interval for all {selectedIds.size} selected secret(s):
+          </p>
+          <select
+            value={bulkIntervalHours}
+            onChange={(e) => setBulkIntervalHours(Number(e.target.value))}
+            className="w-full rounded-control border border-line-subtle bg-inset p-2.5 font-mono text-xs text-ink-primary outline-none"
+          >
+            <option value={24}>Every 24 hours (1 day)</option>
+            <option value={168}>Every 7 days (1 week)</option>
+            <option value={720}>Every 30 days (1 month)</option>
+            <option value={2160}>Every 90 days (1 quarter)</option>
+            <option value={8760}>Every 365 days (1 year)</option>
+          </select>
+          <div className="flex justify-end gap-2 border-t border-line-subtle pt-3">
+            <button
+              type="button"
+              onClick={() => setBulkIntervalModalOpen(false)}
+              className="rounded-control border border-line-subtle px-3 py-1.5 text-xs text-ink-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                batchPolicyMut.mutate({
+                  secretIds: Array.from(selectedIds),
+                  policy: { intervalHours: bulkIntervalHours },
+                })
+              }
+              className="rounded-control bg-spin px-3.5 py-1.5 text-xs font-semibold text-[#06231A]"
+            >
+              Apply Interval
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       {/* overlays */}
       <SecretDetailDrawer
         secretId={selectedId}
         onClose={() => setSelectedId(null)}
         onRotate={(s) => setRotationTarget(s)}
+      />
+
+      <DriftInspectModal
+        secretId={driftSecretId}
+        open={driftSecretId != null}
+        onClose={() => setDriftSecretId(null)}
+        onRotated={invalidateAll}
+      />
+
+      <EnvImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={invalidateAll}
+      />
+
+      <QRCodePairingModal
+        open={pairingOpen}
+        onClose={() => setPairingOpen(false)}
       />
 
       {rotationSummary && rotationTarget && (

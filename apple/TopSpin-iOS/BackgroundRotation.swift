@@ -19,7 +19,8 @@ import Foundation
 enum BackgroundRotation {
 
     /// Registered BGAppRefreshTask identifier (must match Info.plist).
-    static let taskIdentifier = "com.topspin.refresh"
+    static let taskIdentifier = "codes.autorotate.refresh"
+
 
     /// Minimum spacing between background refresh passes. The system may
     /// deliver later (or not at all) based on usage patterns and battery.

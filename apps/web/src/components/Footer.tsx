@@ -57,13 +57,16 @@ export default function Footer() {
           <div className="col-span-2 md:col-span-1">
             <Link to="/" className="flex items-center gap-3">
               <LogoMark size={28} />
-              <span className="font-display text-lg font-semibold tracking-[-0.02em]">TopSpin</span>
+              <span className="font-display text-lg font-semibold tracking-[-0.02em]">Autorotate</span>
             </Link>
             <p className="text-mono-s mt-4 text-ink-muted">
               rotate everything.
               <br />
               store nothing.
+              <br />
+              <span className="text-spin font-medium">Autorotate.codes</span>
             </p>
+
           </div>
           {COLUMNS.map((col) => (
             <div key={col.title}>
