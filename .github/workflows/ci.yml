@@ -64,12 +64,29 @@ jobs:
 
       - name: Build iOS app
         run: >-
-          xcodebuild -project apple/TopSpin.xcodeproj -scheme TopSpin-iOS
+          xcodebuild -project apple/Autorotate.xcodeproj -scheme Autorotate-iOS
           -destination 'generic/platform=iOS Simulator'
           build CODE_SIGNING_ALLOWED=NO
 
       - name: Build macOS app
         run: >-
-          xcodebuild -project apple/TopSpin.xcodeproj -scheme TopSpin-macOS
+          xcodebuild -project apple/Autorotate.xcodeproj -scheme Autorotate-macOS
           -destination 'platform=macOS'
           build CODE_SIGNING_ALLOWED=NO
+
+  android:
+    name: Android Companion App (android/)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build Android App (Assemble Debug)
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+

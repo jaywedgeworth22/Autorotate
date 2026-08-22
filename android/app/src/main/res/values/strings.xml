@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Autorotate</string>
+    <string name="tagline">Zero-Plaintext Secret Lifecycle Engine</string>
+    <string name="domain">Autorotate.codes</string>
+    <string name="biometric_prompt_title">Unlock Autorotate</string>
+    <string name="biometric_prompt_subtitle">Authenticate to manage encrypted credentials</string>
+</resources>

@@ -66,8 +66,8 @@ git -C /Users/jay/Code/TopSpin worktree add -b <prefix>/<slug> ~/apps/topspin-<s
 
 ## Mission
 
-TopSpin rotates secrets across platforms without ever persisting plaintext.
-Agents working here extend the web control center, the Apple companion apps,
+Autorotate (`Autorotate.codes`) rotates secrets across platforms without ever persisting plaintext.
+Agents working here extend the web control center, the Apple companion apps, the Android companion app,
 and the shared TopSpinCore engine **without weakening the security
 invariants**. When a task and an invariant conflict, the invariant wins —
 stop and escalate in the PR description.
@@ -76,11 +76,13 @@ stop and escalate in the PR description.
 
 | Module | Path | Stack | Ownership boundary |
 |---|---|---|---|
-| Web control center | `apps/web/` | React + Vite frontend; Hono + tRPC + Drizzle backend; MySQL | Everything under `apps/web/`. Never edit `apple/` from a web task. |
-| TopSpinCore | `apple/TopSpinCore/` | SwiftPM library (no third-party deps) | Shared engine: rotation pipeline, connectors, crypto, Keychain, stores. Changes here affect BOTH apps — require cross-platform review. |
-| iOS app | `apple/TopSpin-iOS/` | SwiftUI, iOS 17+ | iOS-only UI/background/notifications. Must only consume TopSpinCore's **public** API. |
-| macOS app | `apple/TopSpin-macOS/` | SwiftUI, macOS 14+ | macOS-only UI/scheduler/file targets. Must only consume TopSpinCore's **public** API. |
+| Web control center | `apps/web/` | React + Vite frontend; Hono + tRPC + Drizzle backend; MySQL | Everything under `apps/web/`. Never edit `apple/` or `android/` from a web task. |
+| TopSpinCore | `apple/TopSpinCore/` | SwiftPM library (no third-party deps) | Shared engine: rotation pipeline, connectors, crypto, Keychain, stores. Changes here affect Apple apps — require cross-platform review. |
+| iOS app | `apple/TopSpin-iOS/` | SwiftUI, iOS 17+ | iOS-only UI/background/notifications (`codes.autorotate`). Must only consume TopSpinCore's **public** API. |
+| macOS app | `apple/TopSpin-macOS/` | SwiftUI, macOS 14+ | macOS-only UI/scheduler/file targets (`codes.autorotate.macos`). Must only consume TopSpinCore's **public** API. |
+| Android app | `android/` | Kotlin + Jetpack Compose, Android 8+ | Android-only UI/biometrics/QR scanner/workers (`codes.autorotate`). |
 | Docs | `docs/` | Markdown | `architecture.md` is the source of truth for the connector capability matrix; keep it in sync with code changes. |
+
 
 Claim exactly one module per task/branch unless the task explicitly spans an
 interface listed below. Never "drive-by" edit another module.

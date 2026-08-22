@@ -28,3 +28,12 @@ topspin-files/
 
 # XcodeGen output — regenerate with `xcodegen generate`
 apple/TopSpin.xcodeproj/
+apple/Autorotate.xcodeproj/
+
+# Android build output
+android/.gradle/
+android/build/
+android/app/build/
+.gradle/
+EOF
+

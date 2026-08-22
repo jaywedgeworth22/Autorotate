@@ -109,7 +109,8 @@ struct CameraPreviewView: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: ScannerViewController, context: Context) {}
 }
 
-final class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDelegate {
+@MainActor
+final class ScannerViewController: UIViewController, @preconcurrency AVCaptureMetadataOutputObjectsDelegate {
     var onCodeFound: ((String) -> Void)?
     private var captureSession: AVCaptureSession?
     private var previewLayer: AVCaptureVideoPreviewLayer?
@@ -149,14 +150,18 @@ final class ScannerViewController: UIViewController, AVCaptureMetadataOutputObje
         self.captureSession = session
         self.previewLayer = layer
 
+        nonisolated(unsafe) let capture = session
         DispatchQueue.global(qos: .userInitiated).async {
-            session.startRunning()
+            capture.startRunning()
         }
     }
 
-    func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
+    nonisolated func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
         guard let obj = metadataObjects.first as? AVMetadataMachineReadableCodeObject,
               let stringVal = obj.stringValue else { return }
-        onCodeFound?(stringVal)
+        Task { @MainActor [weak self] in
+            self?.onCodeFound?(stringVal)
+        }
     }
 }
+

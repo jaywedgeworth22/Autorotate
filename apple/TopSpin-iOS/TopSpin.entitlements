@@ -27,7 +27,7 @@
 <dict>
     <key>keychain-access-groups</key>
     <array>
-        <string>$(AppIdentifierPrefix)com.topspin.shared</string>
+        <string>$(AppIdentifierPrefix)codes.autorotate.shared</string>
     </array>
 </dict>
 </plist>

@@ -22,13 +22,13 @@ struct KeychainItemInfo: Identifiable, Sendable {
 
     /// Coarse classification for the Settings UI.
     var category: String {
-        if service.hasPrefix("com.topspin.credential.") { return "Admin credential" }
-        if service.hasPrefix("com.topspin.infisical.")  { return "Infisical clientSecret" }
+        if service.hasPrefix("codes.autorotate.credential.") || service.hasPrefix("com.topspin.credential.") { return "Admin credential" }
+        if service.hasPrefix("codes.autorotate.infisical.")  || service.hasPrefix("com.topspin.infisical.")  { return "Infisical clientSecret" }
         return "Managed secret value"
     }
 }
 
-/// Queries the Keychain for items under the `com.topspin` service prefix.
+/// Queries the Keychain for items under the `codes.autorotate` service prefix.
 struct KeychainInventory: Sendable {
 
     let accessGroup: String?
@@ -37,12 +37,12 @@ struct KeychainInventory: Sendable {
         self.accessGroup = accessGroup
     }
 
-    /// All TopSpin-managed items (metadata only). Returns an empty list
+    /// All Autorotate-managed items (metadata only). Returns an empty list
     /// when the Keychain Sharing entitlement is missing instead of throwing.
     ///
     /// Keychain queries cannot prefix-match on service, so we fetch all
     /// generic passwords visible to the app and filter by the
-    /// `com.topspin` prefix in memory.
+    /// `codes.autorotate` prefix in memory.
     func managedItems() -> [KeychainItemInfo] {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -60,7 +60,7 @@ struct KeychainInventory: Sendable {
         }
         return items.compactMap { item in
             guard let service = item[kSecAttrService as String] as? String,
-                  service.hasPrefix("com.topspin") else { return nil }
+                  (service.hasPrefix("codes.autorotate") || service.hasPrefix("com.topspin")) else { return nil }
             return KeychainItemInfo(
                 service: service,
                 account: item[kSecAttrAccount as String] as? String ?? "—",
@@ -68,4 +68,5 @@ struct KeychainInventory: Sendable {
         }
         .sorted { $0.service < $1.service }
     }
+
 }

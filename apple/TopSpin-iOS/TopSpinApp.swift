@@ -40,8 +40,11 @@ struct TopSpinApp: App {
 
         // BGTaskScheduler requires registration before launch completes.
         BackgroundRotation.register { task in
-            Task { await appModel.handleBackgroundRefresh(task) }
+            Task { @MainActor in
+                appModel.handleBackgroundRefresh(task)
+            }
         }
+
     }
 
     private var showsContainerError: Binding<Bool> {

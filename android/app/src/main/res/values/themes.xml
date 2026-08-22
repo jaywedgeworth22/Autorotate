@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.Autorotate" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@color/abyss</item>
+        <item name="android:navigationBarColor">@color/abyss</item>
+        <item name="android:windowBackground">@color/abyss</item>
+    </style>
+</resources>

@@ -386,11 +386,14 @@ final class AppModel {
         for item in items {
             var targets: [TargetBinding] = []
             if item.targetInfisical && settings.infisicalConfigured {
-                targets.append(.infisical(workspaceId: settings.infisicalWorkspaceId,
-                                          environment: settings.infisicalEnvironment,
-                                          secretPath: "/",
-                                          secretName: item.name))
+                targets.append(.infisical(InfisicalTargetConfig(
+                    workspaceId: settings.infisicalWorkspaceId,
+                    environment: settings.infisicalEnvironment,
+                    secretPath: "/",
+                    secretName: item.name
+                )))
             }
+
 
             let draft = NewSecretDraft(
                 name: item.name,

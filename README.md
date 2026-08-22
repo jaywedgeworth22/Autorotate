@@ -1,13 +1,10 @@
-# TopSpin
+# Autorotate
 
 [![CI](https://github.com/jaywedgeworth22/TopSpin/actions/workflows/ci.yml/badge.svg)](https://github.com/jaywedgeworth22/TopSpin/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](CHANGELOG.md)
 
-**TopSpin is a multi-platform secret-rotation system**: a web control center plus
-iOS and macOS companion apps that keep credentials fresh across Infisical,
-files, the macOS/iOS Keychain, and generic webhooks — without ever persisting
-plaintext secrets.
+**Autorotate is a multi-platform zero-plaintext secret-rotation lifecycle engine**: a web control center (`Autorotate.codes`) plus native iOS, macOS, and Android companion apps that keep credentials fresh across Infisical, files, Apple Keychain, Android Keystore, and generic webhooks — without ever persisting plaintext secrets.
 
 ## What it does
 
@@ -17,23 +14,17 @@ plaintext secrets.
 - **Zero-plaintext rule** — secret material exists only in memory during a
   rotation and is never written to disk, logs, or the database unencrypted.
 - **Targets** — Infisical projects, local/remote files, the Apple Keychain,
-  and arbitrary HTTPS webhooks. See the connector capability matrix in
+  Android Keystore, and arbitrary HTTPS webhooks. See the connector capability matrix in
   [docs/architecture.md](docs/architecture.md).
 - **Audit chain** — every run appends a hash-chained audit record, so the
   history is tamper-evident.
 - **Mac agent** — optional Python agent writes `~/.secrets/global-api-keys`
   and Keychain history on `mac.jays.services`.
 
-The 2026-08-21 merge with the Grok App Builder PWA is documented in
-[MERGE.md](MERGE.md).  Native iOS/macOS apps were not rewritten.  The Kimi
-Agent dump (`Kimi_Agent_TopSpin Secret Rotator`) is backed up under
-`backups/kimi-agent-topspin/` — that dump had no git history; this repo
-*is* that history starting at `fc50b10`.
-
 ## Monorepo layout
 
 ```
-TopSpin/
+Autorotate/
 ├── apps/
 │   ├── web/                # Web control center (React + Vite frontend,
 │   │                       #   Hono + tRPC + Drizzle backend, MySQL)
@@ -41,18 +32,15 @@ TopSpin/
 ├── apple/                  # Apple-platform workspace (XcodeGen)
 │   ├── TopSpinCore/        #   Shared SwiftPM package: rotation engine,
 │   │                       #   connectors, crypto, Keychain, stores
-│   ├── TopSpin-iOS/        #   iOS app (SwiftUI, iOS 17+)
-│   ├── TopSpin-macOS/      #   macOS app (SwiftUI, macOS 14+)
-│   └── project.yml         #   XcodeGen spec → TopSpin.xcodeproj
-├── backups/                # Frozen copies of prior implementations
-│   ├── github-web-pre-merge-2026-08-21/
-│   ├── grok-web-2026-08-21/
-│   ├── kimi-agent-topspin/  # Complete Kimi dump (TopSpin-repo, native, zips, app/)
-│   └── secret-rotator/      # Dump `app/` (same product family; not a standalone repo)
+│   ├── TopSpin-iOS/        #   iOS app (SwiftUI, iOS 17+, codes.autorotate)
+│   ├── TopSpin-macOS/      #   macOS app (SwiftUI, macOS 14+, codes.autorotate.macos)
+│   └── project.yml         #   XcodeGen spec → Autorotate.xcodeproj
+├── android/                # Android companion app (Kotlin + Compose, codes.autorotate)
+│   ├── app/                #   Material 3, Biometrics, QR Scanner, .env Importer
+│   └── build.gradle.kts    #   Gradle build spec
 ├── docs/
 │   ├── architecture.md     # System architecture + connector capability matrix
 │   └── build-plan.md       # Original build plan
-├── MERGE.md                # How the GitHub and Grok trees were combined
 ├── .github/                # CI, release, CodeQL, Dependabot, templates
 ├── scripts/                # Repo automation (e.g. push-to-github.sh)
 └── AGENTS.md               # Coordination manifest for AI agent fleets
@@ -60,7 +48,7 @@ TopSpin/
 
 ## Quickstart
 
-### Web control center
+### Web control center (`Autorotate.codes`)
 
 ```bash
 cd apps/web
@@ -77,7 +65,7 @@ npm run dev                 # start dev server
 brew install xcodegen
 cd apple
 xcodegen generate
-open TopSpin.xcodeproj
+open Autorotate.xcodeproj
 ```
 
 Or build/test just the shared core with SwiftPM:
@@ -86,6 +74,14 @@ Or build/test just the shared core with SwiftPM:
 cd apple/TopSpinCore
 swift build && swift test
 ```
+
+### Android companion app
+
+```bash
+cd android
+./gradlew assembleDebug
+```
+
 
 ## Documentation
 

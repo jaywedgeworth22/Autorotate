@@ -42,7 +42,7 @@ export function QRCodePairingModal({
         <div className="flex items-center gap-2">
           <Smartphone className="size-5 text-spin" />
           <span className="font-display text-lg font-semibold text-ink-primary">
-            Pair with TopSpin iOS App
+            Pair with Autorotate Mobile App
           </span>
         </div>
       }
@@ -50,8 +50,8 @@ export function QRCodePairingModal({
     >
       <div className="space-y-4 text-center">
         <p className="text-xs text-ink-secondary">
-          Scan this QR code with the TopSpin iOS Companion App to instantly pair your workspace,
-          enable Face ID biometric security, and trigger rotations via Siri Shortcuts.
+          Scan this QR code with the Autorotate iOS or Android Companion App to instantly pair your workspace,
+          enable biometric security, and trigger on-device rotations.
         </p>
 
         {/* QR container */}
@@ -59,9 +59,10 @@ export function QRCodePairingModal({
           {qrSvgUrl ? (
             <img
               src={qrSvgUrl}
-              alt="TopSpin iOS Pairing QR Code"
+              alt="Autorotate Mobile Pairing QR Code"
               className="size-52 rounded-lg border border-line-subtle"
             />
+
           ) : (
             <div className="flex size-52 items-center justify-center text-ink-muted">
               <QrCode className="size-12 animate-pulse text-spin" />

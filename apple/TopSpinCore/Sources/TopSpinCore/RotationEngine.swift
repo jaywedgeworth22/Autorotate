@@ -554,8 +554,9 @@ public struct WebhookPayload: Encodable, Sendable {
 /// Service-name helper kept separate so the engine compiles without the
 /// Security framework while matching ``KeychainManager``'s naming scheme.
 public enum KeychainServiceNaming {
-    /// Managed-secret service: `com.topspin.<secretId>` (architecture.md §5).
+    /// Managed-secret service: `codes.autorotate.<secretId>` (architecture.md §5).
     public static func service(forSecretId secretId: UUID) -> String {
-        "com.topspin.\(secretId.uuidString.lowercased())"
+        "codes.autorotate.\(secretId.uuidString.lowercased())"
     }
 }
+

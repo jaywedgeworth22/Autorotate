@@ -11,8 +11,8 @@ import SwiftData
 import TopSpinCore
 
 struct RotateDueSecretsIntent: AppIntent {
-    static var title: LocalizedStringResource = "Rotate Due Secrets"
-    static var description = IntentDescription("Rotates all secrets currently due for scheduled rotation in TopSpin.")
+    static let title: LocalizedStringResource = "Rotate Due Secrets"
+    static let description = IntentDescription("Rotates all secrets currently due for scheduled rotation in Autorotate.")
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
@@ -20,6 +20,7 @@ struct RotateDueSecretsIntent: AppIntent {
         let container = try ModelContainer(for: SDSecretRecord.self, SDRotationRun.self, SDAuditEntry.self, SDConnectorConfig.self)
         let model = AppModel(container: container)
         await model.rotateDueSecretsNow()
-        return .result(dialog: "TopSpin completed rotating all due secrets.")
+        return .result(dialog: "Autorotate completed rotating all due secrets.")
     }
 }
+

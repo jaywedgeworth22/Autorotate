@@ -35,7 +35,11 @@ struct SettingsView: View {
     // Biometrics
     @State private var biometricsEnabled = false
 
+    // Notifications
+    @State private var notificationsEnabled = false
+
     @State private var errorMessage: String?
+
 
     // Dismissable binding for the error alert.
     private var errorAlertBinding: Binding<Bool> {
