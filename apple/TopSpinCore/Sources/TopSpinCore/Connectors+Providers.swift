@@ -611,3 +611,160 @@ public struct CloudflareConnector: SecretConnector {
         }
     }
 }
+
+// MARK: - Resend
+
+/// Rotates Resend API keys:
+/// 1. `POST https://api.resend.com/api-keys` with name → returns `token` and `id`.
+/// 2. Deletes old key if `oldKeyId` is provided (`DELETE https://api.resend.com/api-keys/{id}`).
+public struct ResendConnector: SecretConnector {
+    public static let connectorId = "resend"
+    public var id: String { Self.connectorId }
+    public var displayName: String { "Resend" }
+    public var capability: ConnectorCapability { .programmatic }
+
+    public var newKeyName: String
+    public var oldKeyId: String
+    private let http: HTTPClient
+    private static let apiBase = "https://api.resend.com"
+
+    public init(newKeyName: String = "topspin-rotated",
+                oldKeyId: String = "",
+                http: HTTPClient = HTTPClient()) {
+        self.newKeyName = newKeyName
+        self.oldKeyId = oldKeyId
+        self.http = http
+    }
+
+    private struct CreateKeyRequest: Encodable {
+        let name: String
+    }
+    private struct CreateKeyResponse: Decodable {
+        let id: String?
+        let token: String?
+    }
+
+    public func rotate(adminCredential: String) async throws -> String {
+        guard let url = URL(string: "\(Self.apiBase)/api-keys") else {
+            throw ConnectorError.misconfigured("Bad Resend endpoint.")
+        }
+        let request = try HTTPClient.makeRequest(
+            method: "POST",
+            url: url,
+            headers: ["Authorization": "Bearer \(adminCredential)"],
+            jsonBody: CreateKeyRequest(name: newKeyName))
+        let created: CreateKeyResponse
+        do {
+            created = try await http.sendJSON(CreateKeyResponse.self, request: request)
+        } catch let error as HTTPError {
+            throw ConnectorError.remote(error.description)
+        }
+        guard let token = created.token, !token.isEmpty else {
+            throw ConnectorError.unexpectedResponse("Resend created key but token not returned.")
+        }
+        if !oldKeyId.isEmpty, let deleteURL = URL(string: "\(Self.apiBase)/api-keys/\(oldKeyId)") {
+            let deleteReq = try? HTTPClient.makeRequest(
+                method: "DELETE", url: deleteURL, headers: ["Authorization": "Bearer \(adminCredential)"])
+            if let deleteReq { _ = try? await http.send(deleteReq) }
+        }
+        return token
+    }
+}
+
+// MARK: - Hugging Face
+
+/// Rotates Hugging Face access tokens.
+public struct HuggingFaceConnector: SecretConnector {
+    public static let connectorId = "huggingface"
+    public var id: String { Self.connectorId }
+    public var displayName: String { "Hugging Face" }
+    public var capability: ConnectorCapability { .programmatic }
+
+    public var tokenName: String
+    public var role: String
+    private let http: HTTPClient
+    private static let apiBase = "https://huggingface.co"
+
+    public init(tokenName: String = "topspin-rotated",
+                role: String = "write",
+                http: HTTPClient = HTTPClient()) {
+        self.tokenName = tokenName
+        self.role = role
+        self.http = http
+    }
+
+    private struct CreateTokenRequest: Encodable {
+        let name: String
+        let role: String
+    }
+    private struct CreateTokenResponse: Decodable {
+        let token: String?
+    }
+
+    public func rotate(adminCredential: String) async throws -> String {
+        guard let url = URL(string: "\(Self.apiBase)/api/tokens") else {
+            throw ConnectorError.misconfigured("Bad Hugging Face endpoint.")
+        }
+        let request = try HTTPClient.makeRequest(
+            method: "POST",
+            url: url,
+            headers: ["Authorization": "Bearer \(adminCredential)"],
+            jsonBody: CreateTokenRequest(name: tokenName, role: role))
+        do {
+            let created = try await http.sendJSON(CreateTokenResponse.self, request: request)
+            guard let token = created.token, !token.isEmpty else {
+                throw ConnectorError.unexpectedResponse("Hugging Face did not return token.")
+            }
+            return token
+        } catch let error as HTTPError {
+            throw ConnectorError.remote(error.description)
+        }
+    }
+}
+
+// MARK: - Neon
+
+/// Rotates Neon Postgres API keys.
+public struct NeonConnector: SecretConnector {
+    public static let connectorId = "neon"
+    public var id: String { Self.connectorId }
+    public var displayName: String { "Neon" }
+    public var capability: ConnectorCapability { .programmatic }
+
+    public var keyName: String
+    private let http: HTTPClient
+    private static let apiBase = "https://console.neon.tech/api/v2"
+
+    public init(keyName: String = "topspin-rotated", http: HTTPClient = HTTPClient()) {
+        self.keyName = keyName
+        self.http = http
+    }
+
+    private struct CreateKeyRequest: Encodable {
+        let key_name: String
+    }
+    private struct CreateKeyResponse: Decodable {
+        let key: String?
+    }
+
+    public func rotate(adminCredential: String) async throws -> String {
+        guard let url = URL(string: "\(Self.apiBase)/api_keys") else {
+            throw ConnectorError.misconfigured("Bad Neon endpoint.")
+        }
+        let request = try HTTPClient.makeRequest(
+            method: "POST",
+            url: url,
+            headers: ["Authorization": "Bearer \(adminCredential)"],
+            jsonBody: CreateKeyRequest(key_name: keyName))
+        do {
+            let created = try await http.sendJSON(CreateKeyResponse.self, request: request)
+            guard let key = created.key, !key.isEmpty else {
+                throw ConnectorError.unexpectedResponse("Neon created key but value not returned.")
+            }
+            return key
+        } catch let error as HTTPError {
+            throw ConnectorError.remote(error.description)
+        }
+    }
+}
+
