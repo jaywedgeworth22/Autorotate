@@ -55,6 +55,21 @@ function parsePolicy(secret: Secret): RotationPolicy {
   return { ...DEFAULT_POLICY, ...(parsed.success ? parsed.data : {}) };
 }
 
+/**
+ * Infisical key used for both PUSH and VERIFY.
+ * The Track Secret wizard defaults `secretName` to "" and treats it as
+ * optional, so PUSH already falls back to the secret record name. VERIFY
+ * must use the same fallback — using the value fingerprint as a name
+ * always misses the just-written key.
+ */
+export function infisicalSecretName(
+  cfg: Pick<InfisicalTargetConfig, "secretName">,
+  fallbackName: string,
+): string {
+  const named = cfg.secretName?.trim();
+  return named ? named : fallbackName;
+}
+
 // ── Hash-chained audit log ──────────────────────────────────────
 // entryHash = sha256(prevHash + canonical(entry))[0:16], genesis prevHash = "0"*16
 
@@ -156,7 +171,7 @@ async function pushToTarget(
   switch (target.kind) {
     case "infisical": {
       const icfg = cfg as InfisicalTargetConfig;
-      const secretName = icfg.secretName || secret.name;
+      const secretName = infisicalSecretName(icfg, secret.name);
       if (!isDemoMode() && hasInfisicalConfig(icfg)) {
         await upsertSecret(icfg, secretName, value);
         return `upserted ${secretName} to Infisical (${icfg.environment || "prod"}:${icfg.secretPath || "/"})`;
@@ -205,14 +220,18 @@ async function pushToTarget(
   }
 }
 
-async function verifyTarget(target: Target, expectedValue: string): Promise<string> {
+async function verifyTarget(
+  target: Target,
+  expectedValue: string,
+  secret: Secret,
+): Promise<string> {
   const cfg = (target.configJson ?? {}) as Record<string, unknown>;
   const expectedFp = fingerprint(expectedValue);
   switch (target.kind) {
     case "infisical": {
       const icfg = cfg as InfisicalTargetConfig;
       if (!isDemoMode() && hasInfisicalConfig(icfg)) {
-        const read = await readSecret(icfg, icfg.secretName || expectedFp);
+        const read = await readSecret(icfg, infisicalSecretName(icfg, secret.name));
         if (read === null || fingerprint(read) !== expectedFp) {
           throw new Error("Infisical read-back fingerprint mismatch");
         }
@@ -367,7 +386,7 @@ export async function rotateSecret(
       let verifyFailures = 0;
       if (policy.verifyAfterWrite && pushedTargets.length > 0) {
         for (const target of pushedTargets) {
-          const ok = await record("verify", () => verifyTarget(target, value), {
+          const ok = await record("verify", () => verifyTarget(target, value, secret), {
             targetKind: target.kind,
             targetId: target.id,
           });
