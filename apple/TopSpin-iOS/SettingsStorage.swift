@@ -26,6 +26,7 @@ struct SettingsStorage: Sendable {
         static let notificationsEnabled = "settings.notifications.enabled"
         static let notificationPermissionAsked = "settings.notifications.asked"
         static let lastBackgroundRefreshAt = "settings.background.lastRefreshAt"
+        static let biometricsEnabled = "settings.security.biometricsEnabled"
     }
 
     private let defaults: UserDefaults
@@ -109,5 +110,12 @@ struct SettingsStorage: Sendable {
     var lastBackgroundRefreshAt: Date? {
         get { defaults.object(forKey: Key.lastBackgroundRefreshAt) as? Date }
         nonmutating set { defaults.set(newValue, forKey: Key.lastBackgroundRefreshAt) }
+    }
+
+    // MARK: Biometrics Security
+
+    var biometricsEnabled: Bool {
+        get { defaults.bool(forKey: Key.biometricsEnabled) }
+        nonmutating set { defaults.set(newValue, forKey: Key.biometricsEnabled) }
     }
 }
