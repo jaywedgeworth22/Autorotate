@@ -27,6 +27,11 @@ wait for the owner to ask. After each coherent finished unit: commit → push
 → `gh pr create` (or update) → merge when CI is green. Canonical:
 `/Users/jay/apps/AGENT-SYNC.md` "Always commit + land finished work".
 
+## App Icon & Logo Policy: Full-Bleed Square Only, Never Squircle (Owner ruling 2026-08-22 — ALL agents)
+
+**Never generate or deliver app icons / logos solely in a pre-baked squircle format.**
+All icon assets and design explorations must be generated as standard, uncropped, full-bleed 1:1 squares with 90° sharp corners extending edge-to-edge across the canvas.  Apple, Android, and web packaging systems apply their own dynamic squircle masks at runtime; pre-baked squircles cause double-rounding and edge clipping.  If generating a squircle mockup preview, **always generate and present the full-bleed uncropped square master first and alongside it**.  Canonical: `/Users/jay/apps/AGENT-SYNC.md`.
+
 ## Private Infrastructure Hub & Secrets (Binding for all agents)
 
 This repository is **public**. Do **not** commit host IPs, Tailscale IPs, Coolify container/server UUIDs, hardware serials, or secret values here.
