@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  TopSpin iOS Info.plist.
+  Autorotate iOS Info.plist.
 
   This file carries the keys that cannot be expressed as INFOPLIST_KEY_*
   build settings (arrays): the BGTaskScheduler permitted identifiers and
-  background modes for `com.topspin.refresh` (see BackgroundRotation.swift).
+  background modes for `com.autorotate.refresh` (see BackgroundRotation.swift).
   project.yml sets GENERATE_INFOPLIST_FILE = YES, so Xcode MERGES this file
   with the INFOPLIST_KEY_* build settings (display name, orientations,
   launch screen) at build time.
@@ -39,6 +39,8 @@
     <string>Autorotate uses Face ID to securely authenticate and protect your API secrets.</string>
     <key>NSCameraUsageDescription</key>
     <string>Autorotate uses the camera to scan Web Control Center pairing QR codes.</string>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
 </dict>
 </plist>
 

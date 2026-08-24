@@ -1,6 +1,6 @@
 //
-//  TopSpinMacApp.swift
-//  TopSpin-macOS
+//  AutorotateMacApp.swift
+//  Autorotate-macOS
 //
 //  App entry point:
 //    - a main `WindowGroup` with a sidebar `NavigationSplitView`
@@ -14,10 +14,10 @@
 import SwiftUI
 import SwiftData
 import AppKit
-import TopSpinCore
+import AutorotateCore
 
 @main
-struct TopSpinMacApp: App {
+struct AutorotateMacApp: App {
 
     @State private var appState: AppState
 
@@ -29,7 +29,7 @@ struct TopSpinMacApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("TopSpin", id: "main") {
+        WindowGroup("Autorotate", id: "main") {
             MainWindowView()
                 .environment(appState)
                 .frame(minWidth: 980, minHeight: 620)
@@ -46,7 +46,7 @@ struct TopSpinMacApp: App {
             }
         }
 
-        MenuBarExtra("TopSpin", systemImage: menuBarSymbol) {
+        MenuBarExtra("Autorotate", systemImage: menuBarSymbol) {
             MenuBarView()
                 .environment(appState)
                 .modelContainer(appState.container)
@@ -113,9 +113,9 @@ struct MainWindowView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(TopSpinTheme.background)
+            .background(AutorotateTheme.background)
         }
-        .navigationTitle("TopSpin")
+        .navigationTitle("Autorotate.Codes")
         .onAppear { consumeRequestedSection() }
         .onChange(of: appState.requestedSection) { _, _ in consumeRequestedSection() }
     }
@@ -147,7 +147,7 @@ struct MenuBarView: View {
                     .frame(width: 10, height: 10)
                     .shadow(color: health.color.opacity(0.6), radius: 4)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("TopSpin")
+                    Text("Autorotate")
                         .font(.headline)
                     Text(health.headline)
                         .font(.caption)
@@ -176,7 +176,7 @@ struct MenuBarView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .tint(TopSpinTheme.accent)
+            .tint(AutorotateTheme.accent)
             .disabled(dueCount == 0)
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
@@ -208,7 +208,7 @@ struct MenuBarView: View {
 
             // Quick links.
             HStack(spacing: 12) {
-                Button("Open TopSpin") { openMainWindow(to: .dashboard) }
+                Button("Open Autorotate") { openMainWindow(to: .dashboard) }
                 Button("Secrets") { openMainWindow(to: .secrets) }
                 Button("Settings") { openMainWindow(to: .settings) }
                 Spacer()
@@ -246,8 +246,8 @@ private struct MenuBarRunRow: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: TopSpinTheme.runStatusIcon(run.status))
-                .foregroundStyle(TopSpinTheme.runStatusColor(run.status))
+            Image(systemName: AutorotateTheme.runStatusIcon(run.status))
+                .foregroundStyle(AutorotateTheme.runStatusColor(run.status))
                 .font(.caption)
             VStack(alignment: .leading, spacing: 1) {
                 Text(secretName)
@@ -286,9 +286,9 @@ struct HealthSummary {
 
     /// Overall health color: red on failures, amber on due/partial, else green.
     var color: Color {
-        if failed > 0 { return TopSpinTheme.danger }
-        if due > 0 || partial > 0 { return TopSpinTheme.warning }
-        return TopSpinTheme.accent
+        if failed > 0 { return AutorotateTheme.danger }
+        if due > 0 || partial > 0 { return AutorotateTheme.warning }
+        return AutorotateTheme.accent
     }
 
     var headline: String {

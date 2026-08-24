@@ -1,13 +1,13 @@
 //
 //  DashboardView.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
 //  Rotation health summary: stat tiles, due-soon list, recent runs.
 //
 
 import SwiftUI
 import SwiftData
-import TopSpinCore
+import AutorotateCore
 
 struct DashboardView: View {
 
@@ -40,8 +40,8 @@ struct DashboardView: View {
                 }
                 .padding()
             }
-            .topSpinScreenBackground()
-            .navigationTitle("TopSpin")
+            .autoRotateScreenBackground()
+            .navigationTitle("Autorotate.Codes")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
