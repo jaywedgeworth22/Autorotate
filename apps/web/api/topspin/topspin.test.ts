@@ -5,6 +5,7 @@ import {
   canonicalEntry,
   infisicalSecretName,
   canaryDeliveryName,
+  shouldMintProviderCredential,
 } from "./engine";
 import { renderUpdated } from "./files";
 import { parseGlobalApiKeys, serializeGlobalApiKeys } from "./env-parse";
@@ -95,6 +96,16 @@ describe("canaryDeliveryName", () => {
   it("keeps the live name distinct from the canary even after #41 fallback", () => {
     const live = infisicalSecretName({ secretName: "" }, "CLOUDFLARE_API_TOKEN");
     expect(canaryDeliveryName(live)).not.toBe(live);
+  });
+});
+
+describe("shouldMintProviderCredential", () => {
+  it("allows live mints for actual rotations", () => {
+    expect(shouldMintProviderCredential(false)).toBe(true);
+  });
+
+  it("blocks live mints and revocations during dry-runs", () => {
+    expect(shouldMintProviderCredential(true)).toBe(false);
   });
 });
 
