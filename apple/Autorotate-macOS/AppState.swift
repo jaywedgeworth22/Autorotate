@@ -1,8 +1,8 @@
 //
 //  AppState.swift
-//  TopSpin-macOS
+//  Autorotate-macOS
 //
-//  Composition root: builds the SwiftData container, the TopSpinCore stores,
+//  Composition root: builds the SwiftData container, the AutorotateCore stores,
 //  the KeychainManager, the RotationEngine and the RotationService, and wires
 //  the engine's provider closures to the app's persistence.
 //
@@ -14,7 +14,7 @@
 
 import Foundation
 import SwiftData
-import TopSpinCore
+import AutorotateCore
 
 /// Lock-protected in-memory mirror of the per-secret connector settings
 /// dictionaries. The engine's `connectorProvider` closure is synchronous,
@@ -197,7 +197,7 @@ final class AppState {
         do {
             container = try ModelContainer(for: Self.schema, configurations: [configuration])
         } catch {
-            fatalError("TopSpin could not open its SwiftData store: \(error)")
+            fatalError("Autorotate could not open its SwiftData store: \(error)")
         }
 
         let secretStore = SwiftDataSecretStore(modelContainer: container)
@@ -332,7 +332,7 @@ final class AppState {
     }
 
     /// Deletes a record and its Keychain-held admin credential. Managed
-    /// Keychain target values (`com.topspin.<secretId>`) are removed too —
+    /// Keychain target values (`com.autorotate.<secretId>`) are removed too —
     /// the file/Infisical targets retain their last written values by design.
     func deleteSecret(_ record: SecretRecord) async throws {
         try await secretStore.deleteSecret(id: record.id)

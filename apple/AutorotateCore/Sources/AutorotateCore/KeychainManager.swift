@@ -1,6 +1,6 @@
 //
 //  KeychainManager.swift
-//  TopSpinCore
+//  AutorotateCore
 //
 //  Apple Keychain wrapper (Security framework), serving two roles
 //  (architecture.md §5):
@@ -14,12 +14,12 @@
 //  ---------------------
 //  Keychain Sharing (access groups):
 //    The app must enable the "Keychain Sharing" capability and list the
-//    access group `$(AppIdentifierPrefix)com.topspin.shared` in its
+//    access group `$(AppIdentifierPrefix)com.autorotate.shared` in its
 //    entitlements file, e.g.:
 //
 //      <key>keychain-access-groups</key>
 //      <array>
-//        <string>$(AppIdentifierPrefix)com.topspin.shared</string>
+//        <string>$(AppIdentifierPrefix)com.autorotate.shared</string>
 //      </array>
 //
 //    Every app/extension that must share items (iOS app, macOS app,

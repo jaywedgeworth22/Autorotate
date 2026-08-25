@@ -1,6 +1,6 @@
 //
 //  SecretsListView.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
 //  Tracked secrets: status dots, masked values (fingerprints only — values
 //  never appear in UI), per-secret "Rotate Now" with confirmation, and
@@ -9,7 +9,7 @@
 
 import SwiftUI
 import SwiftData
-import TopSpinCore
+import AutorotateCore
 
 struct SecretsListView: View {
 
@@ -34,7 +34,7 @@ struct SecretsListView: View {
                         systemImage: "key.slash",
                         title: "No secrets tracked",
                         message: "Add a secret to start rotating it across Infisical, files, webhooks and the Keychain.")
-                    .topSpinScreenBackground()
+                    .autoRotateScreenBackground()
                 } else {
                     List {
                         ForEach(secrets) { secret in
@@ -59,10 +59,11 @@ struct SecretsListView: View {
                     }
                     .listStyle(.plain)
                     .scrollContentBackground(.hidden)
-                    .topSpinScreenBackground()
+                    .autoRotateScreenBackground()
                 }
             }
             .navigationTitle("Secrets")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button {

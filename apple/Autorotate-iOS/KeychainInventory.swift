@@ -1,22 +1,22 @@
 //
 //  KeychainInventory.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
-//  Read-only inventory of TopSpin-managed Keychain items, powering the
+//  Read-only inventory of Autorotate-managed Keychain items, powering the
 //  Settings → Keychain section ("use Keychain to keep track of and update
 //  secrets"). Lists item ATTRIBUTES only — service, account, timestamps,
 //  sync status. Values are never read or displayed here.
 //
 //  Item namespaces (KeychainManager.swift):
-//    com.topspin.<secretId>                      managed secret values
-//    com.topspin.credential.<connector>.<id>     connector admin credentials
-//    com.topspin.infisical.<workspaceId>         Infisical clientSecret
+//    com.autorotate.<secretId>                      managed secret values
+//    com.autorotate.credential.<connector>.<id>     connector admin credentials
+//    com.autorotate.infisical.<workspaceId>         Infisical clientSecret
 //
 
 import Foundation
 import Security
 
-/// Attributes of one TopSpin-managed keychain item (never its value).
+/// Attributes of one Autorotate-managed keychain item (never its value).
 struct KeychainItemInfo: Identifiable, Sendable {
     enum Category: String, Sendable {
         case managedSecret = "Managed secret"
@@ -41,11 +41,11 @@ struct KeychainItemInfo: Identifiable, Sendable {
         self.createdAt = createdAt
         self.modifiedAt = modifiedAt
         self.synchronizable = synchronizable
-        if service.hasPrefix("com.topspin.credential.") {
+        if service.hasPrefix("com.autorotate.credential.") {
             self.category = .adminCredential
-        } else if service.hasPrefix("com.topspin.infisical.") {
+        } else if service.hasPrefix("com.autorotate.infisical.") {
             self.category = .infisicalClientSecret
-        } else if service.hasPrefix("com.topspin.") {
+        } else if service.hasPrefix("com.autorotate.") {
             self.category = .managedSecret
         } else {
             self.category = .other
@@ -53,10 +53,10 @@ struct KeychainItemInfo: Identifiable, Sendable {
     }
 }
 
-/// Queries the Keychain for items in the `com.topspin.*` service namespace.
+/// Queries the Keychain for items in the `com.autorotate.*` service namespace.
 enum KeychainInventory {
 
-    /// Returns all TopSpin-managed items visible to this app, sorted by
+    /// Returns all Autorotate-managed items visible to this app, sorted by
     /// service. When `accessGroup` is non-nil the query targets the shared
     /// group and requires the Keychain Sharing entitlement; if the
     /// entitlement is missing an empty list is returned (graceful fallback).
@@ -82,7 +82,7 @@ enum KeychainInventory {
 
         return items.compactMap { item -> KeychainItemInfo? in
             guard let service = item[kSecAttrService as String] as? String,
-                  service.hasPrefix("com.topspin"),
+                  service.hasPrefix("com.autorotate"),
                   let account = item[kSecAttrAccount as String] as? String else {
                 return nil
             }
@@ -96,10 +96,10 @@ enum KeychainInventory {
         .sorted { $0.service < $1.service }
     }
 
-    /// Short display form of a service name: strips the `com.topspin.`
+    /// Short display form of a service name: strips the `com.autorotate.`
     /// prefix and truncates UUID tails for readability.
     static func shortService(_ service: String) -> String {
-        var text = service.replacingOccurrences(of: "com.topspin.", with: "")
+        var text = service.replacingOccurrences(of: "com.autorotate.", with: "")
         // Collapse embedded UUIDs to their first 8 characters.
         while let range = text.range(
             of: #"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"#,

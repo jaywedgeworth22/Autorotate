@@ -1,6 +1,6 @@
 //
 //  SettingsStorage.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
 //  Sendable settings storage backed by `UserDefaults` (which is internally
 //  synchronized). Read by both the UI layer (via `AppModel`, @MainActor) and
@@ -76,7 +76,7 @@ struct SettingsStorage: Sendable {
         nonmutating set { defaults.set(newValue, forKey: Key.keychainSyncEnabled) }
     }
 
-    /// Whether to use the shared access group `com.topspin.shared`
+    /// Whether to use the shared access group `com.autorotate.shared`
     /// (requires the Keychain Sharing capability / entitlements). When off,
     /// items are private to this app — useful before capabilities are
     /// configured in Xcode.

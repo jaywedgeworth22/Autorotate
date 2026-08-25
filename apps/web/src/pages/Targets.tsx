@@ -4,7 +4,7 @@ import { Bell, Cloud, FileKey2, KeyRound, Plus, Webhook } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
 import { StatusDot } from '@/components/primitives'
 import { cn } from '@/lib/utils'
-import type { TargetKind } from '@contracts/topspin'
+import type { TargetKind } from '@contracts/autorotate'
 import { flattenTargets, groupTargets, KIND_LABEL, type BoundTarget, type TargetGroup } from '@/components/targets/data'
 import { GroupTable } from '@/components/targets/GroupTable'
 import { KeychainTab } from '@/components/targets/KeychainTab'
@@ -26,7 +26,7 @@ const EMPTY_COPY: Record<'infisical' | 'file' | 'webhook', { title: string; body
   },
   file: {
     title: 'No file targets bound',
-    body: 'Deliver rotated values into .env, JSON, YAML, TOML, or INI files via the TopSpin agent.',
+    body: 'Deliver rotated values into .env, JSON, YAML, TOML, or INI files via the Autorotate agent.',
   },
   webhook: {
     title: 'No webhooks bound',
@@ -268,7 +268,7 @@ export default function Targets() {
                 <div className="space-y-4">
                   {tab === 'file' && groups.file.length > 0 && (
                     <p className="rounded-card border border-info/40 bg-info/5 px-4 py-3 text-[13px] leading-5 text-ink-secondary" style={{ borderLeftWidth: 3, borderLeftColor: '#5EA8FF' }}>
-                      File targets are written by the TopSpin agent or companion on that machine —
+                      File targets are written by the Autorotate agent or companion on that machine —
                       values travel encrypted end-to-end; the web console never sees file contents.
                     </p>
                   )}

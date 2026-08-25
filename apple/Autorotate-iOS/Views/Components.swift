@@ -1,6 +1,6 @@
 //
 //  Components.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
 //  Reusable UI atoms: status dots, fingerprint chips, badges, step rows,
 //  section headers, empty states.
@@ -8,7 +8,7 @@
 
 import SwiftUI
 import UIKit
-import TopSpinCore
+import AutorotateCore
 
 // MARK: - Status dot
 

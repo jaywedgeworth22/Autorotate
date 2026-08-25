@@ -1,6 +1,6 @@
 //
 //  RotationScheduler.swift
-//  TopSpin-macOS
+//  Autorotate-macOS
 //
 //  Foreground scheduler: while the app runs, a repeating `Timer` drives
 //  `RotationEngine.rotateDueSecrets()`. The menu bar icon and Dashboard
@@ -15,7 +15,7 @@
 
 import Foundation
 import Observation
-import TopSpinCore
+import AutorotateCore
 
 /// Periodic driver for due-secret rotation.
 @MainActor

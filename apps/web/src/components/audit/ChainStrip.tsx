@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import type { AuditEntry } from "@contracts/topspin";
+import type { AuditEntry } from "@contracts/autorotate";
 import { truncateFingerprint } from "@/components/primitives";
 import { describeEntry } from "./audit-utils";
 import { cn } from "@/lib/utils";

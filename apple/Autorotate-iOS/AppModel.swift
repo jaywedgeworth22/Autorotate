@@ -1,9 +1,9 @@
 //
 //  AppModel.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
 //  Central @Observable application model (@MainActor). Owns:
-//  - the SwiftData stores backing TopSpinCore's store protocols,
+//  - the SwiftData stores backing AutorotateCore's store protocols,
 //  - the `RotationEngine` actor and its dependency wiring,
 //  - the KeychainManager (credential store + rotation target),
 //  - user-facing actions (rotate now, add/delete secret, policy updates).
@@ -16,7 +16,7 @@ import Foundation
 import SwiftData
 import BackgroundTasks
 import LocalAuthentication
-import TopSpinCore
+import AutorotateCore
 
 /// Input collected by the add-secret flow.
 struct NewSecretDraft: Sendable {
@@ -170,7 +170,7 @@ final class AppModel {
 
     /// Saves the Infisical workspace config. A non-empty `clientSecret` is
     /// written to the Keychain only (account = clientId, service =
-    /// com.topspin.infisical.<workspaceId>) and never touches UserDefaults.
+    /// com.autorotate.infisical.<workspaceId>) and never touches UserDefaults.
     func saveInfisicalSettings(baseUrl: String, clientId: String,
                                workspaceId: String, environment: String,
                                clientSecret: String) throws {
@@ -239,7 +239,7 @@ final class AppModel {
         try await configStore.delete(secretId: record.id)
         configCache.remove(secretId: record.id)
         try? keychain.deleteAdminCredential(connectorId: record.connectorId, secretId: record.id)
-        // Managed value item (only when TopSpin owns the default service).
+        // Managed value item (only when Autorotate owns the default service).
         try? keychain.delete(account: record.name,
                              service: KeychainManager.service(forSecretId: record.id))
         try? await auditStore.append(AuditEntry(
@@ -310,7 +310,7 @@ final class AppModel {
 
     // MARK: - Background refresh
 
-    /// Entry point for the BGAppRefreshTask (`com.topspin.refresh`).
+    /// Entry point for the BGAppRefreshTask (`com.autorotate.refresh`).
     func handleBackgroundRefresh(_ task: BGAppRefreshTask) {
         task.expirationHandler = { [weak task] in
             task?.setTaskCompleted(success: false)
@@ -332,7 +332,7 @@ final class AppModel {
 
     // MARK: - Keychain inventory
 
-    /// Snapshot of TopSpin-managed keychain items for Settings → Keychain.
+    /// Snapshot of Autorotate-managed keychain items for Settings → Keychain.
     func keychainInventory() -> [KeychainItemInfo] {
         KeychainInventory.managedItems(accessGroup: keychain.accessGroup)
     }
@@ -364,7 +364,7 @@ final class AppModel {
         do {
             let success = try await context.evaluatePolicy(
                 .deviceOwnerAuthenticationWithBiometrics,
-                localizedReason: "Unlock TopSpin to manage zero-plaintext secrets"
+                localizedReason: "Unlock Autorotate to manage zero-plaintext secrets"
             )
             isUnlocked = success
             return success

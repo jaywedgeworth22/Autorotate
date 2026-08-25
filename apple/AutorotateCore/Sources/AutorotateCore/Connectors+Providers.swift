@@ -1,6 +1,6 @@
 //
 //  Connectors+Providers.swift
-//  TopSpinCore
+//  AutorotateCore
 //
 //  Connector implementations, group A: AWS IAM (with a minimal Signature
 //  Version 4 signer), GitHub, Stripe, OpenAI, Anthropic, Cloudflare.
@@ -185,11 +185,11 @@ public struct AWSIAMConnector: SecretConnector {
     }
 
     private static func sha256Hex(_ data: Data) -> String {
-        TopSpinSHA256.hashHex(data)
+        AutorotateSHA256.hashHex(data)
     }
 
     private static func hmac(key: Data, message: String) -> Data {
-        TopSpinSHA256.hmac(key: key, message: Data(message.utf8))
+        AutorotateSHA256.hmac(key: key, message: Data(message.utf8))
     }
 
     private static func hmacHex(key: Data, message: String) -> String {
@@ -314,7 +314,7 @@ public struct StripeConnector: SecretConnector {
     private let http: HTTPClient
     private static let apiBase = "https://api.stripe.com"
 
-    public init(newKeyName: String = "topspin-rotated",
+    public init(newKeyName: String = "autorotate-rotated",
                 permissions: [String: String] = [:],
                 oldKeyId: String = "",
                 http: HTTPClient = HTTPClient()) {
@@ -335,7 +335,7 @@ public struct StripeConnector: SecretConnector {
         }
 
         // 1. Create the new restricted key. Stripe uses nested form fields:
-        //    permissions[charges]=write&name=topspin-rotated
+        //    permissions[charges]=write&name=autorotate-rotated
         var form: [String: String] = ["name": newKeyName]
         for (permission, access) in permissions {
             form["permissions[\(permission)]"] = access
@@ -398,7 +398,7 @@ public struct OpenAIConnector: SecretConnector {
 
     public init(projectId: String,
                 oldServiceAccountId: String = "",
-                newServiceAccountName: String = "topspin-rotated",
+                newServiceAccountName: String = "autorotate-rotated",
                 http: HTTPClient = HTTPClient()) {
         self.projectId = projectId
         self.oldServiceAccountId = oldServiceAccountId
@@ -488,7 +488,7 @@ public struct AnthropicConnector: SecretConnector {
 
     public init(workspaceId: String,
                 oldKeyId: String = "",
-                newKeyName: String = "topspin-rotated",
+                newKeyName: String = "autorotate-rotated",
                 http: HTTPClient = HTTPClient()) {
         self.workspaceId = workspaceId
         self.oldKeyId = oldKeyId
@@ -628,7 +628,7 @@ public struct ResendConnector: SecretConnector {
     private let http: HTTPClient
     private static let apiBase = "https://api.resend.com"
 
-    public init(newKeyName: String = "topspin-rotated",
+    public init(newKeyName: String = "autorotate-rotated",
                 oldKeyId: String = "",
                 http: HTTPClient = HTTPClient()) {
         self.newKeyName = newKeyName
@@ -685,7 +685,7 @@ public struct HuggingFaceConnector: SecretConnector {
     private let http: HTTPClient
     private static let apiBase = "https://huggingface.co"
 
-    public init(tokenName: String = "topspin-rotated",
+    public init(tokenName: String = "autorotate-rotated",
                 role: String = "write",
                 http: HTTPClient = HTTPClient()) {
         self.tokenName = tokenName
@@ -735,7 +735,7 @@ public struct NeonConnector: SecretConnector {
     private let http: HTTPClient
     private static let apiBase = "https://console.neon.tech/api/v2"
 
-    public init(keyName: String = "topspin-rotated", http: HTTPClient = HTTPClient()) {
+    public init(keyName: String = "autorotate-rotated", http: HTTPClient = HTTPClient()) {
         self.keyName = keyName
         self.http = http
     }

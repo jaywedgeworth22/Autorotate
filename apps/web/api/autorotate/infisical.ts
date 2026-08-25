@@ -1,4 +1,4 @@
-import type { InfisicalTargetConfig } from "@contracts/topspin";
+import type { InfisicalTargetConfig } from "@contracts/autorotate";
 
 // Minimal Infisical REST client (Node 20 global fetch).
 // Auth: Universal Auth (clientId/clientSecret -> access token).

@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    /* shadcn tokens mapped to the TopSpin dark palette (design.md §2) */
+    /* shadcn tokens mapped to the Autorotate dark palette (design.md §2) */
     --background: 222 32% 4%;        /* #07090D abyss */
     --foreground: 220 27% 93%;       /* #E8ECF4 ink-primary */
     --card: 223 29% 7%;              /* #0C0F16 panel */

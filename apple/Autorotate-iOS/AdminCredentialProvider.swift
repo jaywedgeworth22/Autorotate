@@ -1,18 +1,18 @@
 //
 //  AdminCredentialProvider.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
 //  Keychain-backed `AdminCredentialProvider` (architecture.md §5): connector
 //  admin credentials are stored ONLY in the Apple Keychain via
 //  `KeychainManager`, scoped per connector+secret, never synchronizable.
 //
-//  TopSpinCore ships an equivalent (`KeychainCredentialProvider`); the app
+//  AutorotateCore ships an equivalent (`KeychainCredentialProvider`); the app
 //  owns this wrapper so the audit log can record credential lookups without
 //  ever touching the credential material itself.
 //
 
 import Foundation
-import TopSpinCore
+import AutorotateCore
 
 /// Supplies connector admin credentials from the Apple Keychain to the
 /// rotation engine. The returned value exists in memory for the duration of

@@ -7,7 +7,7 @@ import type {
   auditLog,
 } from "@db/schema";
 
-// ── TopSpin shared contracts (frontend + backend) ──────────────
+// ── Autorotate shared contracts (frontend + backend) ──────────────
 // Entity types are inferred from the Drizzle schema — never hand-written.
 
 export type Connector = typeof connectors.$inferSelect;
@@ -102,7 +102,7 @@ export const fileFormatSchema = z.enum(FILE_FORMATS);
 export type FileFormat = z.infer<typeof fileFormatSchema>;
 
 export const fileTargetConfigSchema = z.object({
-  // Path relative to TOPSPIN_FILE_ROOT (sandbox)
+  // Path relative to AUTOROTATE_FILE_ROOT (sandbox)
   path: z.string().min(1),
   format: fileFormatSchema,
   // Key (dot-notation for JSON, section.key for INI)
@@ -254,7 +254,7 @@ export type WorkspaceAlertConfig = z.infer<typeof workspaceAlertConfigSchema>;
 // ── QR Code Pairing payload schema ────────────────────────────
 export const pairingPayloadSchema = z.object({
   version: z.number().default(1),
-  appName: z.string().default("TopSpin"),
+  appName: z.string().default("Autorotate"),
   baseUrl: z.string(),
   environment: z.string().default("production"),
   timestamp: z.string(),

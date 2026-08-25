@@ -1,6 +1,6 @@
 //
 //  Theme.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
 //  Design system — dark security-instrument aesthetic mirroring the web app:
 //  near-black backgrounds, a single green accent (#2EE6A8), monospaced
@@ -8,7 +8,7 @@
 //
 
 import SwiftUI
-import TopSpinCore
+import AutorotateCore
 
 enum Theme {
 
@@ -22,7 +22,7 @@ enum Theme {
     static let surfaceRaised = Color(hex: 0x141C25)
     /// Hairline borders.
     static let border = Color(hex: 0x1E2833)
-    /// Primary accent — TopSpin green.
+    /// Primary accent — Autorotate green.
     static let accent = Color(hex: 0x2EE6A8)
     /// Dimmed accent for fills.
     static let accentDim = Color(hex: 0x2EE6A8).opacity(0.14)
@@ -119,7 +119,7 @@ extension Color {
 // MARK: - View helpers
 
 extension View {
-    /// Standard TopSpin card: raised surface + hairline border.
+    /// Standard Autorotate card: raised surface + hairline border.
     func instrumentCard(cornerRadius: CGFloat = 12) -> some View {
         self
             .background(Theme.surface)
@@ -131,7 +131,7 @@ extension View {
     }
 
     /// Applies the app-wide dark background to a screen.
-    func topSpinScreenBackground() -> some View {
+    func autoRotateScreenBackground() -> some View {
         self.background(Theme.background.ignoresSafeArea())
     }
 }

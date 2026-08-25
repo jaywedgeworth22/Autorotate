@@ -36,12 +36,12 @@ import {
   type InfisicalTargetConfig,
   type WebhookTargetConfig,
   type KeychainTargetConfig,
-} from "@contracts/topspin";
-import { encryptJson, decryptJson, fingerprint, randomToken } from "../topspin/crypto";
-import { isDemoMode, demoLatency, demoMessage } from "../topspin/demo";
-import { connectorRegistry, getConnector, testConnection } from "../topspin/connectors";
-import { hasInfisicalConfig, upsertSecret } from "../topspin/infisical";
-import { writeFileTarget } from "../topspin/files";
+} from "@contracts/autorotate";
+import { encryptJson, decryptJson, fingerprint, randomToken } from "../autorotate/crypto";
+import { isDemoMode, demoLatency, demoMessage } from "../autorotate/demo";
+import { connectorRegistry, getConnector, testConnection } from "../autorotate/connectors";
+import { hasInfisicalConfig, upsertSecret } from "../autorotate/infisical";
+import { writeFileTarget } from "../autorotate/files";
 import {
   rotateSecret,
   checkSecretDrift,
@@ -51,7 +51,7 @@ import {
   canaryDeliveryName,
   RotationLockedError,
   SecretNotFoundError,
-} from "../topspin/engine";
+} from "../autorotate/engine";
 
 const ACTOR = "web-user";
 
@@ -590,7 +590,7 @@ export const targetsRouter = createRouter({
       const secret = await db.query.secrets.findFirst({
         where: eq(secrets.id, target.secretId),
       });
-      const canary = `topspin-canary-${randomToken(12)}`;
+      const canary = `autorotate-canary-${randomToken(12)}`;
       const cfg = (target.configJson ?? {}) as Record<string, unknown>;
       let ok = true;
       let message: string;
@@ -630,7 +630,7 @@ export const targetsRouter = createRouter({
                 headers: { "Content-Type": "application/json", ...(wcfg.headers ?? {}) },
                 body: JSON.stringify({
                   name: secret?.name,
-                  valueRef: `topspin://targets/${target.id}/canary`,
+                  valueRef: `autorotate://targets/${target.id}/canary`,
                   canary: fingerprint(canary),
                 }),
               });
@@ -884,10 +884,10 @@ export const workspaceRouter = createRouter({
         const payload =
           input.service === "slack"
             ? {
-                text: `[TopSpin Alert Test] Test notification delivered successfully at ${new Date().toISOString()}`,
+                text: `[Autorotate Alert Test] Test notification delivered successfully at ${new Date().toISOString()}`,
               }
             : {
-                content: `[TopSpin Alert Test] Test notification delivered successfully at ${new Date().toISOString()}`,
+                content: `[Autorotate Alert Test] Test notification delivered successfully at ${new Date().toISOString()}`,
               };
         const res = await fetch(url, {
           method: "POST",
@@ -908,7 +908,7 @@ export const pairingRouter = createRouter({
   getPayload: publicQuery.query(async () => {
     return {
       version: 1,
-      appName: "TopSpin",
+      appName: "Autorotate",
       baseUrl: "https://mac.jays.services",
       environment: "production",
       timestamp: new Date().toISOString(),
@@ -916,7 +916,7 @@ export const pairingRouter = createRouter({
   }),
 });
 
-export const topspinRouters = {
+export const autorotateRouters = {
   connectors: connectorsRouter,
   secrets: secretsRouter,
   targets: targetsRouter,

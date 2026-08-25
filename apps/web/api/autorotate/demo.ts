@@ -1,8 +1,8 @@
-// Demo-mode switch. TOPSPIN_DEMO=1 forces demo behavior for every connector;
+// Demo-mode switch. AUTOROTATE_DEMO=1 forces demo behavior for every connector;
 // when the variable is unset, demo mode defaults ON so the product is fully
-// explorable without credentials. Set TOPSPIN_DEMO=0 to require real config.
+// explorable without credentials. Set AUTOROTATE_DEMO=0 to require real config.
 export function isDemoMode(): boolean {
-  const flag = process.env.TOPSPIN_DEMO;
+  const flag = process.env.AUTOROTATE_DEMO;
   if (flag === undefined || flag === "") return true;
   return flag === "1" || flag.toLowerCase() === "true";
 }

@@ -10,13 +10,13 @@ leave username empty and send the token only.
 
 ```bash
 export AUTOROTATE_AGENT_TOKEN=…    # or put it at the end of ~/.secrets/global-api-keys
-python3 topspin-agent.py
+python3 autorotate-agent.py
 ```
 
 Endpoints:
 
-- `GET  /topspin/v1/health`
-- `POST /topspin/v1/apply` — atomic file writes + `security add-generic-password`
+- `GET  /autorotate/v1/health`
+- `POST /autorotate/v1/apply` — atomic file writes + `security add-generic-password`
 
 Native macOS/iOS apps in `apple/` and Android app in `android/` remain the first-class
 zero-plaintext clients.

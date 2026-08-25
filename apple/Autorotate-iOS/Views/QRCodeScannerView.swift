@@ -1,6 +1,6 @@
 //
 //  QRCodeScannerView.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
 //  AVFoundation-based QR code camera scanner for instant Web-to-iOS workspace pairing.
 //
@@ -26,7 +26,7 @@ struct QRCodeScannerView: View {
 
                 // Overlay targeting frame
                 VStack {
-                    Text("Point camera at the TopSpin Web Control Center Pairing QR code")
+                    Text("Point camera at the Autorotate Web Control Center Pairing QR code")
                         .font(.subheadline)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 24)

@@ -1,6 +1,6 @@
 //
 //  Connectors+More.swift
-//  TopSpinCore
+//  AutorotateCore
 //
 //  Connector implementations, group B: Vercel, Twilio, SendGrid, Slack,
 //  npm, Docker Hub, Kubernetes, Infisical-as-source, and the configurable
@@ -16,7 +16,7 @@ import FoundationNetworking
 
 /// Vercel access tokens are created in the account/team UI — there is no
 /// public token-creation API. This connector is `updateOnly`: the user
-/// rotates in the Vercel UI and imports the new token; TopSpin propagates
+/// rotates in the Vercel UI and imports the new token; Autorotate propagates
 /// it to all targets.
 public struct VercelConnector: SecretConnector {
 
@@ -76,7 +76,7 @@ public struct TwilioConnector: SecretConnector {
 
     public init(accountSid: String,
                 oldKeySid: String = "",
-                newKeyFriendlyName: String = "topspin-rotated",
+                newKeyFriendlyName: String = "autorotate-rotated",
                 http: HTTPClient = HTTPClient()) {
         self.accountSid = accountSid
         self.oldKeySid = oldKeySid
@@ -155,7 +155,7 @@ public struct SendGridConnector: SecretConnector {
     private let http: HTTPClient
     private static let apiBase = "https://api.sendgrid.com"
 
-    public init(newKeyName: String = "topspin-rotated",
+    public init(newKeyName: String = "autorotate-rotated",
                 scopes: [String] = ["mail.send"],
                 oldKeyId: String = "",
                 http: HTTPClient = HTTPClient()) {
@@ -265,7 +265,7 @@ public struct NpmConnector: SecretConnector {
     private let http: HTTPClient
 
     public init(registryUrl: String = "https://registry.npmjs.org",
-                newTokenName: String = "topspin-rotated",
+                newTokenName: String = "autorotate-rotated",
                 oldTokenKey: String = "",
                 expiresInDays: Int? = nil,
                 http: HTTPClient = HTTPClient()) {
@@ -372,7 +372,7 @@ public struct DockerHubConnector: SecretConnector {
     private let http: HTTPClient
     private static let apiBase = "https://hub.docker.com"
 
-    public init(newTokenLabel: String = "topspin-rotated",
+    public init(newTokenLabel: String = "autorotate-rotated",
                 scopes: [String] = ["repo:admin"],
                 oldTokenUUID: String = "",
                 http: HTTPClient = HTTPClient()) {

@@ -1,6 +1,6 @@
 //
 //  Connectors.swift
-//  TopSpinCore
+//  AutorotateCore
 //
 //  Connector protocol, error types, and the registry of all supported
 //  platforms (capability matrix: architecture.md §3).
@@ -122,7 +122,7 @@ public struct ConnectorDescriptor: Codable, Sendable, Identifiable {
     }
 }
 
-/// Registry of every connector shipped with TopSpin.
+/// Registry of every connector shipped with Autorotate.
 ///
 /// The registry stores **descriptors** (metadata). Connectors themselves are
 /// instantiated per-secret by the app from the persisted connector
@@ -130,7 +130,7 @@ public struct ConnectorDescriptor: Codable, Sendable, Identifiable {
 /// (account ids, project ids, …).
 public enum ConnectorRegistry {
 
-    /// Dedicated live connector types shipped with TopSpinCore.
+    /// Dedicated live connector types shipped with AutorotateCore.
     public static let shipped: [ConnectorDescriptor] = [
         ConnectorDescriptor(
             id: InfisicalSourceConnector.connectorId,
@@ -178,7 +178,7 @@ public enum ConnectorRegistry {
             id: VercelConnector.connectorId,
             displayName: "Vercel",
             capability: .updateOnly,
-            mechanism: "Tokens are created in the Vercel UI; TopSpin stores and propagates.",
+            mechanism: "Tokens are created in the Vercel UI; Autorotate stores and propagates.",
             adminCredentialHint: "Any Vercel token (used only to label the account)"),
         ConnectorDescriptor(
             id: TwilioConnector.connectorId,
@@ -196,7 +196,7 @@ public enum ConnectorRegistry {
             id: SlackConnector.connectorId,
             displayName: "Slack",
             capability: .updateOnly,
-            mechanism: "App-level tokens rotate in the Slack app console; TopSpin propagates.",
+            mechanism: "App-level tokens rotate in the Slack app console; Autorotate propagates.",
             adminCredentialHint: "App configuration token (for reference only)"),
         ConnectorDescriptor(
             id: NpmConnector.connectorId,

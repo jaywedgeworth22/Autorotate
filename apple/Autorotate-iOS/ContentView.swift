@@ -1,13 +1,13 @@
 //
 //  ContentView.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
 //  Root TabView: Dashboard, Secrets, Rotation Runs, Settings.
 //
 
 import SwiftUI
 import SwiftData
-import TopSpinCore
+import AutorotateCore
 
 struct ContentView: View {
 
@@ -33,12 +33,12 @@ struct ContentView: View {
                     Label("Settings", systemImage: "gearshape.fill")
                 }
         }
-        .topSpinScreenBackground()
+        .autoRotateScreenBackground()
         .appUpdatePrompt()
     }
 }
 
 #Preview {
     ContentView()
-        .environment(AppModel(container: try! TopSpinSchema.makeContainer(inMemory: true)))
+        .environment(AppModel(container: try! AutorotateSchema.makeContainer(inMemory: true)))
 }

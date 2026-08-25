@@ -1,6 +1,6 @@
 // swift-tools-version: 5.9
 //
-// TopSpinCore — shared rotation-engine core for the TopSpin iOS and macOS apps.
+// AutorotateCore — shared rotation-engine core for the Autorotate iOS and macOS apps.
 //
 // This package has **no third-party dependencies**. It relies only on:
 //   - Foundation (networking, JSON, files)
@@ -9,31 +9,31 @@
 //
 // The iOS / macOS app targets consume this package and back the storage
 // protocols (`SecretStore`, `AuditStore`, `RotationRunStore`) with SwiftData
-// or UserDefaults — TopSpinCore intentionally takes no persistence dependency.
+// or UserDefaults — AutorotateCore intentionally takes no persistence dependency.
 
 import PackageDescription
 
 let package = Package(
-    name: "TopSpinCore",
+    name: "AutorotateCore",
     platforms: [
         .iOS(.v17),
         .macOS(.v14)
     ],
     products: [
         .library(
-            name: "TopSpinCore",
-            targets: ["TopSpinCore"]
+            name: "AutorotateCore",
+            targets: ["AutorotateCore"]
         )
     ],
     targets: [
         .target(
-            name: "TopSpinCore",
-            path: "Sources/TopSpinCore"
+            name: "AutorotateCore",
+            path: "Sources/AutorotateCore"
         ),
         .testTarget(
-            name: "TopSpinCoreTests",
-            dependencies: ["TopSpinCore"],
-            path: "Tests/TopSpinCoreTests"
+            name: "AutorotateCoreTests",
+            dependencies: ["AutorotateCore"],
+            path: "Tests/AutorotateCoreTests"
         )
     ]
 )

@@ -12,7 +12,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import type { AuditEntry, SecretWithRelations } from '@contracts/topspin'
+import type { AuditEntry, SecretWithRelations } from '@contracts/autorotate'
 import { cn } from '@/lib/utils'
 import { relTime } from './lib'
 

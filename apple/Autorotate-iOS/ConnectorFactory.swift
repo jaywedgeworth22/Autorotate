@@ -1,10 +1,10 @@
 //
 //  ConnectorFactory.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
-//  Builds TopSpinCore connector instances from the per-secret configuration
+//  Builds AutorotateCore connector instances from the per-secret configuration
 //  map persisted in SwiftData (see `SDConnectorConfig`). The registry in
-//  TopSpinCore stores only descriptors; instantiation needs the app-side
+//  AutorotateCore stores only descriptors; instantiation needs the app-side
 //  config (account ids, project ids, templates — never secrets).
 //
 //  The admin credential is NOT part of this config: the engine fetches it
@@ -12,7 +12,7 @@
 //
 
 import Foundation
-import TopSpinCore
+import AutorotateCore
 
 enum ConnectorFactory {
 
@@ -58,7 +58,7 @@ enum ConnectorFactory {
             ]
         case StripeConnector.connectorId:
             return [
-                FieldSpec(key: "newKeyName", label: "New Key Name", placeholder: "topspin-rotated", isOptional: true),
+                FieldSpec(key: "newKeyName", label: "New Key Name", placeholder: "autorotate-rotated", isOptional: true),
                 FieldSpec(key: "permissions", label: "Permissions", placeholder: "charges:write, customers:read",
                           isOptional: true, help: "Comma-separated permission:access pairs for the restricted key."),
                 FieldSpec(key: "oldKeyId", label: "Old Key ID", placeholder: "rk_live_…", isOptional: true)
@@ -68,13 +68,13 @@ enum ConnectorFactory {
                 FieldSpec(key: "projectId", label: "Project ID", placeholder: "proj_…"),
                 FieldSpec(key: "oldServiceAccountId", label: "Old Service Account ID", isOptional: true),
                 FieldSpec(key: "newServiceAccountName", label: "New SA Name",
-                          placeholder: "topspin-rotated", isOptional: true)
+                          placeholder: "autorotate-rotated", isOptional: true)
             ]
         case AnthropicConnector.connectorId:
             return [
                 FieldSpec(key: "workspaceId", label: "Workspace ID"),
                 FieldSpec(key: "oldKeyId", label: "Old Key ID", isOptional: true),
-                FieldSpec(key: "newKeyName", label: "New Key Name", placeholder: "topspin-rotated", isOptional: true)
+                FieldSpec(key: "newKeyName", label: "New Key Name", placeholder: "autorotate-rotated", isOptional: true)
             ]
         case CloudflareConnector.connectorId:
             return [
@@ -91,11 +91,11 @@ enum ConnectorFactory {
                 FieldSpec(key: "accountSid", label: "Account SID", placeholder: "AC…"),
                 FieldSpec(key: "oldKeySid", label: "Old Key SID", placeholder: "SK…", isOptional: true),
                 FieldSpec(key: "newKeyFriendlyName", label: "New Key Name",
-                          placeholder: "topspin-rotated", isOptional: true)
+                          placeholder: "autorotate-rotated", isOptional: true)
             ]
         case SendGridConnector.connectorId:
             return [
-                FieldSpec(key: "newKeyName", label: "New Key Name", placeholder: "topspin-rotated", isOptional: true),
+                FieldSpec(key: "newKeyName", label: "New Key Name", placeholder: "autorotate-rotated", isOptional: true),
                 FieldSpec(key: "scopes", label: "Scopes", placeholder: "mail.send", isOptional: true,
                           help: "Comma-separated scopes for the new API key."),
                 FieldSpec(key: "oldKeyId", label: "Old Key ID", isOptional: true)
@@ -109,14 +109,14 @@ enum ConnectorFactory {
             return [
                 FieldSpec(key: "registryUrl", label: "Registry URL",
                           placeholder: "https://registry.npmjs.org", isOptional: true),
-                FieldSpec(key: "newTokenName", label: "New Token Name", placeholder: "topspin-rotated", isOptional: true),
+                FieldSpec(key: "newTokenName", label: "New Token Name", placeholder: "autorotate-rotated", isOptional: true),
                 FieldSpec(key: "oldTokenKey", label: "Old Token Key (uuid)", isOptional: true),
                 FieldSpec(key: "expiresInDays", label: "Expires In (days)", isOptional: true)
             ]
         case DockerHubConnector.connectorId:
             return [
                 FieldSpec(key: "newTokenLabel", label: "New Token Label",
-                          placeholder: "topspin-rotated", isOptional: true),
+                          placeholder: "autorotate-rotated", isOptional: true),
                 FieldSpec(key: "scopes", label: "Scopes", placeholder: "repo:admin", isOptional: true),
                 FieldSpec(key: "oldTokenUUID", label: "Old Token UUID", isOptional: true)
             ]
@@ -227,7 +227,7 @@ enum ConnectorFactory {
                 if halves.count == 2 { permissions[halves[0]] = halves[1] }
             }
             return StripeConnector(
-                newKeyName: optional("newKeyName").isEmpty ? "topspin-rotated" : optional("newKeyName"),
+                newKeyName: optional("newKeyName").isEmpty ? "autorotate-rotated" : optional("newKeyName"),
                 permissions: permissions,
                 oldKeyId: optional("oldKeyId"))
 
@@ -236,13 +236,13 @@ enum ConnectorFactory {
                 projectId: try require("projectId"),
                 oldServiceAccountId: optional("oldServiceAccountId"),
                 newServiceAccountName: optional("newServiceAccountName").isEmpty
-                    ? "topspin-rotated" : optional("newServiceAccountName"))
+                    ? "autorotate-rotated" : optional("newServiceAccountName"))
 
         case AnthropicConnector.connectorId:
             return AnthropicConnector(
                 workspaceId: try require("workspaceId"),
                 oldKeyId: optional("oldKeyId"),
-                newKeyName: optional("newKeyName").isEmpty ? "topspin-rotated" : optional("newKeyName"))
+                newKeyName: optional("newKeyName").isEmpty ? "autorotate-rotated" : optional("newKeyName"))
 
         case CloudflareConnector.connectorId:
             return CloudflareConnector(tokenId: try require("tokenId"))
@@ -255,12 +255,12 @@ enum ConnectorFactory {
                 accountSid: try require("accountSid"),
                 oldKeySid: optional("oldKeySid"),
                 newKeyFriendlyName: optional("newKeyFriendlyName").isEmpty
-                    ? "topspin-rotated" : optional("newKeyFriendlyName"))
+                    ? "autorotate-rotated" : optional("newKeyFriendlyName"))
 
         case SendGridConnector.connectorId:
             let scopes = list("scopes")
             return SendGridConnector(
-                newKeyName: optional("newKeyName").isEmpty ? "topspin-rotated" : optional("newKeyName"),
+                newKeyName: optional("newKeyName").isEmpty ? "autorotate-rotated" : optional("newKeyName"),
                 scopes: scopes.isEmpty ? ["mail.send"] : scopes,
                 oldKeyId: optional("oldKeyId"))
 
@@ -271,14 +271,14 @@ enum ConnectorFactory {
             return NpmConnector(
                 registryUrl: optional("registryUrl").isEmpty
                     ? "https://registry.npmjs.org" : optional("registryUrl"),
-                newTokenName: optional("newTokenName").isEmpty ? "topspin-rotated" : optional("newTokenName"),
+                newTokenName: optional("newTokenName").isEmpty ? "autorotate-rotated" : optional("newTokenName"),
                 oldTokenKey: optional("oldTokenKey"),
                 expiresInDays: optionalInt("expiresInDays"))
 
         case DockerHubConnector.connectorId:
             let scopes = list("scopes")
             return DockerHubConnector(
-                newTokenLabel: optional("newTokenLabel").isEmpty ? "topspin-rotated" : optional("newTokenLabel"),
+                newTokenLabel: optional("newTokenLabel").isEmpty ? "autorotate-rotated" : optional("newTokenLabel"),
                 scopes: scopes.isEmpty ? ["repo:admin"] : scopes,
                 oldTokenUUID: optional("oldTokenUUID"))
 

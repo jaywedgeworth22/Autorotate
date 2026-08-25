@@ -1,9 +1,9 @@
 //
 //  Fingerprint.swift
-//  TopSpinCore
+//  AutorotateCore
 //
 //  SHA-256 fingerprint helpers. Fingerprints are the ONLY trace of a secret
-//  value that TopSpin is allowed to persist (architecture.md §6):
+//  value that Autorotate is allowed to persist (architecture.md §6):
 //  `fingerprint = sha256(value) hex [0:8]`.
 //
 
@@ -18,7 +18,7 @@ public enum Fingerprint {
 
     /// Full lowercase hex SHA-256 digest of `value`.
     public static func sha256Hex(of value: String) -> String {
-        TopSpinSHA256.hashHex(Data(value.utf8))
+        AutorotateSHA256.hashHex(Data(value.utf8))
     }
 
     /// The persistable fingerprint of a secret value: the first

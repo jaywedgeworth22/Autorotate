@@ -1,16 +1,16 @@
 //
 //  SettingsView.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
 //  Settings: Infisical workspace config (clientSecret → Keychain only),
 //  Keychain options (iCloud sync with graceful "if allowed" fallback,
-//  shared access group), the TopSpin-managed Keychain inventory (services,
+//  shared access group), the Autorotate-managed Keychain inventory (services,
 //  accounts, last-updated timestamps, sync status), background rotation +
 //  notification preferences, and the web-companion pairing note.
 //
 
 import SwiftUI
-import TopSpinCore
+import AutorotateCore
 
 struct SettingsView: View {
 
@@ -58,8 +58,9 @@ struct SettingsView: View {
                 aboutSection
             }
             .scrollContentBackground(.hidden)
-            .topSpinScreenBackground()
+            .autoRotateScreenBackground()
             .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
             .onAppear { load() }
             .alert("Settings error", isPresented: errorAlertBinding) {
                 Button("OK", role: .cancel) { errorMessage = nil }
@@ -161,7 +162,7 @@ struct SettingsView: View {
 
             Toggle(isOn: $useSharedGroup) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Shared access group (com.topspin.shared)")
+                    Text("Shared access group (com.autorotate.shared)")
                     Text("Requires the Keychain Sharing capability. Turn off for app-private items during development.")
                         .font(.caption2)
                         .foregroundStyle(Theme.textSecondary)
@@ -184,7 +185,7 @@ struct SettingsView: View {
     private var keychainInventorySection: some View {
         Section {
             if keychainItems.isEmpty {
-                Text("No TopSpin-managed keychain items yet.")
+                Text("No Autorotate-managed keychain items yet.")
                     .font(.caption)
                     .foregroundStyle(Theme.textSecondary)
             }
@@ -262,7 +263,7 @@ struct SettingsView: View {
         } header: {
             InstrumentSectionHeader(title: "Background rotation", systemImage: "clock.arrow.2.circlepath")
         } footer: {
-            Text("A BGAppRefreshTask (com.topspin.refresh) runs rotateDueSecrets() when iOS schedules it; a new refresh is requested every time the app backgrounds. Keychain items use AfterFirstUnlock so background runs can read credentials.")
+            Text("A BGAppRefreshTask (com.autorotate.refresh) runs rotateDueSecrets() when iOS schedules it; a new refresh is requested every time the app backgrounds. Keychain items use AfterFirstUnlock so background runs can read credentials.")
                 .font(.caption2)
         }
         .listRowBackground(Theme.surface)
@@ -272,7 +273,7 @@ struct SettingsView: View {
 
     private var companionSection: some View {
         Section {
-            Label("Pair with the TopSpin web app", systemImage: "link")
+            Label("Pair with the Autorotate web app", systemImage: "link")
                 .foregroundStyle(Theme.accent)
             Text("The web dashboard manages the same rotation pipeline server-side. Point both at the same Infisical workspace (same workspaceId/environment above) and fingerprints will match across platforms. A signed pairing flow (QR code + shared access group) is planned; for now keep connector admin credentials on-device and let the web app hold its own encrypted copies.")
                 .font(.caption)
@@ -289,7 +290,7 @@ struct SettingsView: View {
         Section {
             LabeledContent("Storage rule", value: "metadata + sha256[0:8] only")
             LabeledContent("Pipeline", value: "LOCK·ROTATE·PUSH·VERIFY·COMMIT·AUDIT")
-            LabeledContent("Core", value: "TopSpinCore (SwiftPM, local)")
+            LabeledContent("Core", value: "AutorotateCore (SwiftPM, local)")
         } header: {
             InstrumentSectionHeader(title: "About", systemImage: "info.circle")
         }

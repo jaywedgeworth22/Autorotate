@@ -1,9 +1,9 @@
 //
-//  TopSpinApp.swift
-//  TopSpin-iOS
+//  AutorotateApp.swift
+//  Autorotate-iOS
 //
 //  App entry point: builds the SwiftData container + AppModel, registers the
-//  BGAppRefreshTask (com.topspin.refresh) before launch completes, schedules
+//  BGAppRefreshTask (com.autorotate.refresh) before launch completes, schedules
 //  background refreshes when the app moves to the background.
 //
 
@@ -12,7 +12,7 @@ import SwiftData
 import BackgroundTasks
 
 @main
-struct TopSpinApp: App {
+struct AutorotateApp: App {
 
     @Environment(\.scenePhase) private var scenePhase
 
@@ -24,12 +24,12 @@ struct TopSpinApp: App {
     init() {
         let builtContainer: ModelContainer
         do {
-            builtContainer = try TopSpinSchema.makeContainer()
+            builtContainer = try AutorotateSchema.makeContainer()
         } catch {
             // Fall back to an in-memory container so the app still boots and
             // can surface the error instead of crashing.
-            builtContainer = (try? TopSpinSchema.makeContainer(inMemory: true))
-                ?? { fatalError("TopSpin: cannot create SwiftData container: \(error)") }()
+            builtContainer = (try? AutorotateSchema.makeContainer(inMemory: true))
+                ?? { fatalError("Autorotate: cannot create SwiftData container: \(error)") }()
             _containerError = State(initialValue:
                 "Persistent store unavailable — running in memory. (\(error.localizedDescription))")
         }

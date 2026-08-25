@@ -1,11 +1,11 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import type { FileTargetConfig } from "@contracts/topspin";
+import type { FileTargetConfig } from "@contracts/autorotate";
 
 // Format-aware secret file writer. All paths are sandboxed under
-// TOPSPIN_FILE_ROOT (default: $HOME/app-engine/topspin-files/ — falls back to
-// <cwd>/topspin-files when that env-independent default isn't available).
+// AUTOROTATE_FILE_ROOT (default: $HOME/app-engine/autorotate-files/ — falls back to
+// <cwd>/autorotate-files when that env-independent default isn't available).
 // Writes are atomic: tmp file in the same directory + rename.
 
 export class FileTargetError extends Error {
@@ -16,9 +16,9 @@ export class FileTargetError extends Error {
 }
 
 export function fileRoot(): string {
-  if (process.env.TOPSPIN_FILE_ROOT) return process.env.TOPSPIN_FILE_ROOT;
+  if (process.env.AUTOROTATE_FILE_ROOT) return process.env.AUTOROTATE_FILE_ROOT;
   const home = os.homedir();
-  return path.join(home || process.cwd(), "app-engine", "topspin-files");
+  return path.join(home || process.cwd(), "app-engine", "autorotate-files");
 }
 
 /** Resolve a user path inside the sandbox; throws on escape attempts. */
@@ -186,7 +186,7 @@ export async function writeFileTarget(
   const content = await readIfExists(abs);
   const updated = renderUpdated(cfg, content, value);
   await fs.mkdir(path.dirname(abs), { recursive: true });
-  const tmp = `${abs}.topspin-${process.pid}-${Date.now()}.tmp`;
+  const tmp = `${abs}.autorotate-${process.pid}-${Date.now()}.tmp`;
   await fs.writeFile(tmp, updated, "utf8");
   await fs.rename(tmp, abs);
   return cfg.path;

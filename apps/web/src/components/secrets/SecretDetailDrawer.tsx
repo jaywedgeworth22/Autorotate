@@ -21,7 +21,7 @@ import {
   type RotationRun,
   type RotationStep,
   type SecretWithRelations,
-} from '@contracts/topspin'
+} from '@contracts/autorotate'
 import {
   ConnectorTile,
   Field,
@@ -96,7 +96,7 @@ export function UntrackConfirm({
             </h3>
             <p className="mt-2 text-[13px] leading-5 text-ink-secondary">
               This permanently removes the secret, its {secret.targets.length} target binding
-              {secret.targets.length === 1 ? '' : 's'}, and its rotation history from TopSpin. The
+              {secret.targets.length === 1 ? '' : 's'}, and its rotation history from Autorotate. The
               current credential at the provider is left untouched.
             </p>
             <div className="mt-5 flex justify-end gap-3">
@@ -303,7 +303,7 @@ export function SecretDetailDrawer({
                 <MaskedValue />
               </div>
               <p className="mt-1 text-[11px] leading-4 text-ink-faint">
-                Plaintext is never stored by TopSpin — fingerprints only.
+                Plaintext is never stored by Autorotate — fingerprints only.
               </p>
               <div className="mt-3 flex items-center justify-between gap-3">
                 <span className="text-mono-s text-ink-muted">fingerprint</span>

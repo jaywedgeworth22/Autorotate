@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Link2 } from "lucide-react";
-import type { AuditEntry } from "@contracts/topspin";
+import type { AuditEntry } from "@contracts/autorotate";
 import { FingerprintChip } from "@/components/primitives";
 import { runIdOf, runLabel } from "./audit-utils";
 

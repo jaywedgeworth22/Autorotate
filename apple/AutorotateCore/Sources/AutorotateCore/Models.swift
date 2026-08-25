@@ -1,8 +1,8 @@
 //
 //  Models.swift
-//  TopSpinCore
+//  AutorotateCore
 //
-//  Core data model for the TopSpin rotation engine.
+//  Core data model for the Autorotate rotation engine.
 //
 //  STORAGE RULE (hard requirement, see docs/architecture.md §6):
 //  Plaintext secret values exist only in memory during a rotation run.
@@ -25,7 +25,7 @@ public enum ConnectorCapability: String, Codable, Sendable, CaseIterable {
     /// API but fine-grained PATs must be rotated manually).
     case partial
     /// The platform has no programmatic rotation API. The user generates the
-    /// new value in the provider's UI and imports it; TopSpin then
+    /// new value in the provider's UI and imports it; Autorotate then
     /// propagates it to every configured target.
     case updateOnly
 }
@@ -491,7 +491,7 @@ public struct KeychainTargetConfig: Codable, Sendable, Equatable {
     /// engine helper).
     public var account: String
     /// Service override. When `nil`, the engine uses
-    /// `com.topspin.<secretId>` per architecture.md §5.
+    /// `com.autorotate.<secretId>` per architecture.md §5.
     public var serviceOverride: String?
     /// Store with `kSecAttrSynchronizable = true` so the item syncs via
     /// iCloud Keychain — "if allowed" by entitlements / user settings.

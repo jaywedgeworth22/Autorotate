@@ -1,6 +1,6 @@
 //
 //  AppSettings.swift
-//  TopSpin-macOS
+//  Autorotate-macOS
 //
 //  App-wide settings: Infisical workspace configuration, the scheduler
 //  interval, and the iCloud Keychain sync preference.
@@ -17,7 +17,7 @@
 
 import Foundation
 import Observation
-import TopSpinCore
+import AutorotateCore
 
 /// Observable app-settings store backed by UserDefaults.
 @Observable

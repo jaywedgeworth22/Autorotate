@@ -1,14 +1,14 @@
 //
 //  BackgroundRotation.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
 //  BGAppRefreshTask-based background rotation driver (architecture.md §2 —
 //  the scheduler that calls `RotationEngine.rotateDueSecrets()`).
 //
-//  - Task identifier `com.topspin.refresh` is declared in Info.plist
+//  - Task identifier `com.autorotate.refresh` is declared in Info.plist
 //    (BGTaskSchedulerPermittedIdentifiers) and requires the "fetch"
 //    background mode.
-//  - Registration happens in `TopSpinApp.init` (before the app finishes
+//  - Registration happens in `AutorotateApp.init` (before the app finishes
 //    launching, as BGTaskScheduler requires).
 //  - A refresh is scheduled every time the app moves to the background.
 //

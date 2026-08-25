@@ -7,18 +7,18 @@ import {
 } from "node:crypto";
 
 // AES-256-GCM encryption for connector admin credentials at rest.
-// Key comes from TOPSPIN_ENC_KEY: either a 64-char hex key or an arbitrary
+// Key comes from AUTOROTATE_ENC_KEY: either a 64-char hex key or an arbitrary
 // passphrase (derived with scrypt). A built-in default keeps demo mode
-// explorable — set TOPSPIN_ENC_KEY in any real deployment.
+// explorable — set AUTOROTATE_ENC_KEY in any real deployment.
 
-const DEFAULT_PASSPHRASE = "topspin-demo-passphrase";
-const SCRYPT_SALT = "topspin-connector-config-v1";
+const DEFAULT_PASSPHRASE = "autorotate-demo-passphrase";
+const SCRYPT_SALT = "autorotate-connector-config-v1";
 
 let cachedKey: Buffer | null = null;
 
 function getKey(): Buffer {
   if (cachedKey) return cachedKey;
-  const raw = process.env.TOPSPIN_ENC_KEY || DEFAULT_PASSPHRASE;
+  const raw = process.env.AUTOROTATE_ENC_KEY || DEFAULT_PASSPHRASE;
   if (/^[0-9a-fA-F]{64}$/.test(raw)) {
     cachedKey = Buffer.from(raw, "hex");
   } else {

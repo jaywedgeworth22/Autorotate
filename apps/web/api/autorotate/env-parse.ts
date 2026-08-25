@@ -1,6 +1,6 @@
 /**
  * Parser for ~/.secrets/global-api-keys and similar env-style secret files.
- * Borrowed from the Grok App Builder TopSpin vault (2026-08-21 merge).
+ * Borrowed from the Grok App Builder Autorotate vault (2026-08-21 merge).
  *
  * Understands KEY=value, KEY: value, export KEY=value, quoted values, and a
  * trailing un-keyed token (the Mac agent token at the end of the file).
@@ -14,7 +14,7 @@ export type ParsedEnvFile = {
 };
 
 const AGENT_KEY =
-  /^(TOPSPIN_AGENT_TOKEN|TOPSPIN_MAC_TOKEN|MAC_COLLAB_TOKEN|MAC_AGENT_TOKEN|HOST_TOKEN|AGENT_TOKEN|COLLAB_TOKEN)$/i;
+  /^(AUTOROTATE_AGENT_TOKEN|AUTOROTATE_MAC_TOKEN|MAC_COLLAB_TOKEN|MAC_AGENT_TOKEN|HOST_TOKEN|AGENT_TOKEN|COLLAB_TOKEN)$/i;
 
 function unquote(value: string): string {
   if (
@@ -82,7 +82,7 @@ export function parseGlobalApiKeys(text: string): ParsedEnvFile {
 export function serializeGlobalApiKeys(
   keys: { key: string; value: string }[],
   agentToken?: string,
-  header = "# TopSpin managed — ~/.secrets/global-api-keys",
+  header = "# Autorotate managed — ~/.secrets/global-api-keys",
 ): string {
   const lines: string[] = [header, `# Updated ${new Date().toISOString()}`, ""];
   for (const row of keys) {
@@ -90,8 +90,8 @@ export function serializeGlobalApiKeys(
   }
   if (agentToken) {
     lines.push("");
-    lines.push("# Mac agent token — last line is read by TopSpin and the Mac agent");
-    lines.push(`TOPSPIN_AGENT_TOKEN=${escapeValue(agentToken)}`);
+    lines.push("# Mac agent token — last line is read by Autorotate and the Mac agent");
+    lines.push(`AUTOROTATE_AGENT_TOKEN=${escapeValue(agentToken)}`);
   }
   return `${lines.join("\n").replace(/\n+$/, "")}\n`;
 }

@@ -1,6 +1,6 @@
 //
 //  RunsView.swift
-//  TopSpin-macOS
+//  Autorotate-macOS
 //
 //  Rotation run history: a list of runs and, for the selected run, the
 //  six-step pipeline LOCK → ROTATE → PUSH → VERIFY → COMMIT → AUDIT with
@@ -9,7 +9,7 @@
 
 import SwiftUI
 import SwiftData
-import TopSpinCore
+import AutorotateCore
 
 struct RunsView: View {
     @Query(sort: \RunEntity.startedAt, order: .reverse) private var runEntities: [RunEntity]
@@ -46,8 +46,8 @@ struct RunsView: View {
         List(runEntities, selection: $selection) { entity in
             let run = entity.toRun()
             HStack(spacing: 10) {
-                Image(systemName: TopSpinTheme.runStatusIcon(run.status))
-                    .foregroundStyle(TopSpinTheme.runStatusColor(run.status))
+                Image(systemName: AutorotateTheme.runStatusIcon(run.status))
+                    .foregroundStyle(AutorotateTheme.runStatusColor(run.status))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(secretName(for: run.secretId))
                         .font(.callout).fontWeight(.medium)
@@ -56,7 +56,7 @@ struct RunsView: View {
                         Text(run.startedAt, style: .relative)
                     }
                     .font(.caption2)
-                    .foregroundStyle(TopSpinTheme.textSecondary)
+                    .foregroundStyle(AutorotateTheme.textSecondary)
                 }
                 Spacer()
                 FingerprintChip(fingerprint: run.fingerprint)
@@ -92,24 +92,24 @@ private struct RunDetailView: View {
     }
 
     private var header: some View {
-        TopSpinCard {
+        AutorotateCard {
             HStack(spacing: 14) {
-                Image(systemName: TopSpinTheme.runStatusIcon(run.status))
+                Image(systemName: AutorotateTheme.runStatusIcon(run.status))
                     .font(.title2)
-                    .foregroundStyle(TopSpinTheme.runStatusColor(run.status))
+                    .foregroundStyle(AutorotateTheme.runStatusColor(run.status))
                 VStack(alignment: .leading, spacing: 3) {
                     Text(secretName).font(.headline)
                     HStack(spacing: 10) {
                         Text(run.status.rawValue.uppercased())
-                            .font(TopSpinTheme.mono(10, weight: .bold))
-                            .foregroundStyle(TopSpinTheme.runStatusColor(run.status))
+                            .font(AutorotateTheme.mono(10, weight: .bold))
+                            .foregroundStyle(AutorotateTheme.runStatusColor(run.status))
                         Text(run.startedAt, format: .dateTime)
                             .font(.caption)
-                            .foregroundStyle(TopSpinTheme.textSecondary)
+                            .foregroundStyle(AutorotateTheme.textSecondary)
                         if let finished = run.finishedAt {
                             Text("· \(duration(from: run.startedAt, to: finished))")
                                 .font(.caption)
-                                .foregroundStyle(TopSpinTheme.textSecondary)
+                                .foregroundStyle(AutorotateTheme.textSecondary)
                         }
                     }
                 }
@@ -127,7 +127,7 @@ private struct RunDetailView: View {
                                 results: pair.results)
                 if index < orderedSteps.count - 1 {
                     Rectangle()
-                        .fill(TopSpinTheme.border)
+                        .fill(AutorotateTheme.border)
                         .frame(width: 2, height: 14)
                         .padding(.leading, 25)
                 }
@@ -158,47 +158,47 @@ private struct PipelineStepRow: View {
         HStack(alignment: .top, spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(TopSpinTheme.card)
-                    .overlay(Circle().stroke(TopSpinTheme.stepStatusColor(aggregate), lineWidth: 1.5))
+                    .fill(AutorotateTheme.card)
+                    .overlay(Circle().stroke(AutorotateTheme.stepStatusColor(aggregate), lineWidth: 1.5))
                     .frame(width: 28, height: 28)
                 Text(step.rawValue.prefix(1).uppercased())
-                    .font(TopSpinTheme.mono(11, weight: .bold))
-                    .foregroundStyle(TopSpinTheme.stepStatusColor(aggregate))
+                    .font(AutorotateTheme.mono(11, weight: .bold))
+                    .foregroundStyle(AutorotateTheme.stepStatusColor(aggregate))
             }
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text("\(index). \(step.rawValue.uppercased())")
-                        .font(TopSpinTheme.mono(12, weight: .semibold))
-                        .foregroundStyle(TopSpinTheme.textPrimary)
+                        .font(AutorotateTheme.mono(12, weight: .semibold))
+                        .foregroundStyle(AutorotateTheme.textPrimary)
                     Spacer()
-                    StatusBadge(color: TopSpinTheme.stepStatusColor(aggregate),
+                    StatusBadge(color: AutorotateTheme.stepStatusColor(aggregate),
                                 label: aggregate.rawValue)
                 }
                 if results.isEmpty {
                     Text("not reached")
                         .font(.caption)
-                        .foregroundStyle(TopSpinTheme.textSecondary)
+                        .foregroundStyle(AutorotateTheme.textSecondary)
                 } else {
                     ForEach(results) { result in
                         HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            Image(systemName: TopSpinTheme.stepStatusIcon(result.status))
+                            Image(systemName: AutorotateTheme.stepStatusIcon(result.status))
                                 .font(.caption2)
-                                .foregroundStyle(TopSpinTheme.stepStatusColor(result.status))
+                                .foregroundStyle(AutorotateTheme.stepStatusColor(result.status))
                             Text(result.detail ?? result.status.rawValue)
                                 .font(.caption)
-                                .foregroundStyle(TopSpinTheme.textSecondary)
+                                .foregroundStyle(AutorotateTheme.textSecondary)
                                 .textSelection(.enabled)
                             Spacer()
                             Text(result.finishedAt, style: .time)
                                 .font(.caption2)
-                                .foregroundStyle(TopSpinTheme.textSecondary.opacity(0.7))
+                                .foregroundStyle(AutorotateTheme.textSecondary.opacity(0.7))
                         }
                     }
                 }
             }
         }
         .padding(10)
-        .background(TopSpinTheme.surface)
+        .background(AutorotateTheme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }

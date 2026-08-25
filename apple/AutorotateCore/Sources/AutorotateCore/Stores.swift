@@ -1,8 +1,8 @@
 //
 //  Stores.swift
-//  TopSpinCore
+//  AutorotateCore
 //
-//  Storage protocols. TopSpinCore deliberately takes NO persistence
+//  Storage protocols. AutorotateCore deliberately takes NO persistence
 //  dependency: the iOS/macOS app targets back these protocols with
 //  SwiftData, UserDefaults, or plain files (mirroring the web app's
 //  Drizzle/MySQL tables — architecture.md §7).

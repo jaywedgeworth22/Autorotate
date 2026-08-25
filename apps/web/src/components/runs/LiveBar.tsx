@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye } from "lucide-react";
-import type { RotationRun } from "@contracts/topspin";
-import { RUN_STEP_NAMES } from "@contracts/topspin";
+import type { RotationRun } from "@contracts/autorotate";
+import { RUN_STEP_NAMES } from "@contracts/autorotate";
 import { ElapsedTicker } from "./MiniStepper";
 import { parseSteps, runLabel } from "./run-utils";
 

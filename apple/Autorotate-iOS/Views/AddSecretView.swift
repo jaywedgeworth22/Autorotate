@@ -1,6 +1,6 @@
 //
 //  AddSecretView.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
 //  Add-secret flow:
 //    1. Pick a connector from the registry (grouped by capability:
@@ -11,7 +11,7 @@
 //
 
 import SwiftUI
-import TopSpinCore
+import AutorotateCore
 
 struct AddSecretView: View {
 
@@ -75,7 +75,7 @@ struct AddSecretView: View {
                 }
             }
             .scrollContentBackground(.hidden)
-            .topSpinScreenBackground()
+            .autoRotateScreenBackground()
             .navigationTitle("Add Secret")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

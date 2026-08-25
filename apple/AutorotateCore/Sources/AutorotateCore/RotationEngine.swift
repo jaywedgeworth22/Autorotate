@@ -1,6 +1,6 @@
 //
 //  RotationEngine.swift
-//  TopSpinCore
+//  AutorotateCore
 //
 //  The rotation pipeline actor (architecture.md §2):
 //
@@ -42,7 +42,7 @@ extension KeychainManager: KeychainTargetWriter {
 }
 #endif
 
-/// Runs the TopSpin rotation pipeline.
+/// Runs the Autorotate rotation pipeline.
 public actor RotationEngine {
 
     /// Everything the engine needs, injected by the app target.
@@ -392,7 +392,7 @@ public actor RotationEngine {
         case .file(let config):
             try dependencies.fileTargets.setValue(value, in: config)
         case .webhook(let config):
-            let valueRef = "topspin://secret/\(record.id.uuidString.lowercased())/versions/\(version)"
+            let valueRef = "autorotate://secret/\(record.id.uuidString.lowercased())/versions/\(version)"
             var headers = config.headers
             headers["Accept"] = "application/json"
             let request = try HTTPClient.makeRequest(
@@ -541,7 +541,7 @@ public actor RotationEngine {
 public struct WebhookPayload: Encodable, Sendable {
     /// Name of the rotated secret.
     public let name: String
-    /// Opaque reference: `topspin://secret/<id>/versions/<version>`.
+    /// Opaque reference: `autorotate://secret/<id>/versions/<version>`.
     public let valueRef: String
     /// `sha256(value)[0:8]` fingerprint.
     public let fingerprint: String

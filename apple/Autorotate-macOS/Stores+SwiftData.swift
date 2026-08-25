@@ -1,8 +1,8 @@
 //
 //  Stores+SwiftData.swift
-//  TopSpin-macOS
+//  Autorotate-macOS
 //
-//  SwiftData-backed implementations of TopSpinCore's persistence protocols:
+//  SwiftData-backed implementations of AutorotateCore's persistence protocols:
 //
 //    - `SwiftDataSecretStore`   → `SecretStore`
 //    - `SwiftDataRunStore`      → `RotationRunStore`
@@ -26,7 +26,7 @@
 
 import Foundation
 import SwiftData
-import TopSpinCore
+import AutorotateCore
 
 // MARK: - SwiftData entities
 

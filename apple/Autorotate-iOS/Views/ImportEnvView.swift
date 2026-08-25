@@ -1,6 +1,6 @@
 //
 //  ImportEnvView.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
 //  Interactive .env and global-api-keys importer for iOS.
 //  Parses secret keys, auto-matches to connector platforms, and batch-imports
@@ -8,7 +8,7 @@
 //
 
 import SwiftUI
-import TopSpinCore
+import AutorotateCore
 
 struct ParsedEnvRow: Identifiable {
     let id = UUID()
@@ -80,7 +80,7 @@ struct ImportEnvView: View {
     private var inputSection: some View {
         Form {
             Section {
-                Text("Paste .env, .env.local, or global-api-keys text to bulk-import secrets into TopSpin.")
+                Text("Paste .env, .env.local, or global-api-keys text to bulk-import secrets into Autorotate.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 

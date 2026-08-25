@@ -1,13 +1,13 @@
 //
 //  Stores+SwiftData.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
-//  SwiftData-backed implementations of TopSpinCore's storage protocols
+//  SwiftData-backed implementations of AutorotateCore's storage protocols
 //  (`SecretStore`, `AuditStore`, `RotationRunStore`) plus the app's
 //  connector-configuration store.
 //
 //  STORAGE RULE (architecture.md §6): only metadata + fingerprints are
-//  persisted. The `*Data` columns below carry JSON-encoded TopSpinCore value
+//  persisted. The `*Data` columns below carry JSON-encoded AutorotateCore value
 //  types, none of which can contain a plaintext secret value. Plaintext
 //  values flow provider → targets in memory only; admin credentials and the
 //  Infisical clientSecret live exclusively in the Keychain.
@@ -15,7 +15,7 @@
 
 import Foundation
 import SwiftData
-import TopSpinCore
+import AutorotateCore
 
 // MARK: - SwiftData models
 
@@ -138,7 +138,7 @@ final class SDConnectorConfig {
 
 // MARK: - Schema
 
-enum TopSpinSchema {
+enum AutorotateSchema {
     static let models: [any PersistentModel.Type] = [
         SDSecretRecord.self,
         SDRotationRun.self,
@@ -267,7 +267,7 @@ actor SwiftDataAuditStore: AuditStore {
 // MARK: - Connector configuration store
 
 /// Loads/saves the per-secret connector configuration map. This store is
-/// intentionally app-side: TopSpinCore's `RotationEngine` receives a
+/// intentionally app-side: AutorotateCore's `RotationEngine` receives a
 /// synchronous `connectorProvider` closure, so the app mirrors the SwiftData
 /// rows into an in-memory, lock-protected cache (``ConnectorConfigCache``).
 actor SwiftDataConnectorConfigStore {

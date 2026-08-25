@@ -117,11 +117,11 @@ describe("file target renderers", () => {
         key: canaryDeliveryName("API_KEY"),
       },
       live,
-      "topspin-canary-probe",
+      "autorotate-canary-probe",
     );
     expect(out).toContain("API_KEY=sk-live-keep");
-    expect(out).toContain("API_KEY_CANARY=topspin-canary-probe");
-    expect(out).not.toMatch(/^API_KEY=topspin-canary-probe$/m);
+    expect(out).toContain("API_KEY_CANARY=autorotate-canary-probe");
+    expect(out).not.toMatch(/^API_KEY=autorotate-canary-probe$/m);
   });
 
   it("appends missing .env keys", () => {
@@ -170,11 +170,11 @@ describe("global-api-keys parser (Grok merge)", () => {
   it("parses KEY=value, comments, and a trailing agent token", () => {
     const parsed = parseGlobalApiKeys(
       [
-        "# TopSpin managed",
+        "# Autorotate managed",
         "# username: mac-collab",
         "OPENAI_API_KEY=sk-test-1",
         'GITHUB_TOKEN="ghp_abc 123"',
-        "TOPSPIN_AGENT_TOKEN=agent-secret-token",
+        "AUTOROTATE_AGENT_TOKEN=agent-secret-token",
         "bare-trailing-token-value",
       ].join("\n"),
     );

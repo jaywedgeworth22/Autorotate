@@ -1,6 +1,6 @@
 //
 //  InfisicalClient.swift
-//  TopSpinCore
+//  AutorotateCore
 //
 //  Infisical REST client (architecture.md §4).
 //

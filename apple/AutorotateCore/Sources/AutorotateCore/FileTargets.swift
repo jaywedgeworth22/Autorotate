@@ -1,6 +1,6 @@
 //
 //  FileTargets.swift
-//  TopSpinCore
+//  AutorotateCore
 //
 //  File target engine (architecture.md §2 step 3): updates a single key
 //  inside a local secret file and rewrites the file atomically
@@ -132,7 +132,7 @@ public struct FileTargetEngine: Sendable {
     func atomicWrite(contents: String, to path: String) throws {
         let url = URL(fileURLWithPath: path)
         let directory = url.deletingLastPathComponent()
-        let tempURL = directory.appendingPathComponent(".\(url.lastPathComponent).topspin-\(UUID().uuidString).tmp")
+        let tempURL = directory.appendingPathComponent(".\(url.lastPathComponent).autorotate-\(UUID().uuidString).tmp")
         do {
             // Preserve existing permissions when the file already exists.
             var attributes: [FileAttributeKey: Any] = [:]

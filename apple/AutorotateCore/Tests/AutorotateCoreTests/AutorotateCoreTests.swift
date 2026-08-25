@@ -1,14 +1,14 @@
 //
-//  TopSpinCoreTests.swift
-//  TopSpinCoreTests
+//  AutorotateCoreTests.swift
+//  AutorotateCoreTests
 //
-//  Focused unit tests for the dependency-free parts of TopSpinCore:
+//  Focused unit tests for the dependency-free parts of AutorotateCore:
 //  fingerprints, file-target parsers, models, and the generic REST JSON
 //  path extraction. Run with `swift test` (macOS/Linux CI).
 //
 
 import XCTest
-@testable import TopSpinCore
+@testable import AutorotateCore
 
 final class FingerprintTests: XCTestCase {
     func testFingerprintIsSha256Prefix() {
@@ -87,7 +87,7 @@ final class FileTargetParserTests: XCTestCase {
 
     func testAtomicWriteRoundTrip() throws {
         let dir = NSTemporaryDirectory()
-        let path = (dir as NSString).appendingPathComponent("topspin-test-\(UUID().uuidString).env")
+        let path = (dir as NSString).appendingPathComponent("autorotate-test-\(UUID().uuidString).env")
         defer { try? FileManager.default.removeItem(atPath: path) }
         let config = FileTargetConfig(path: path, format: .dotenv, keyPath: "SECRET")
         let engine = FileTargetEngine()
@@ -206,7 +206,7 @@ final class RotationEngineTests: XCTestCase {
         let runs = InMemoryRotationRunStore()
 
         let envPath = (NSTemporaryDirectory() as NSString)
-            .appendingPathComponent("topspin-engine-\(UUID().uuidString).env")
+            .appendingPathComponent("autorotate-engine-\(UUID().uuidString).env")
         defer { try? FileManager.default.removeItem(atPath: envPath) }
 
         var record = SecretRecord(
@@ -249,7 +249,7 @@ final class RotationEngineTests: XCTestCase {
         let secrets = InMemorySecretStore()
         let audit = InMemoryAuditStore()
         let envPath = (NSTemporaryDirectory() as NSString)
-            .appendingPathComponent("topspin-lock-\(UUID().uuidString).env")
+            .appendingPathComponent("autorotate-lock-\(UUID().uuidString).env")
         defer { try? FileManager.default.removeItem(atPath: envPath) }
         let record = SecretRecord(
             name: "S",
@@ -323,7 +323,7 @@ final class RotationEngineTests: XCTestCase {
         let secrets = InMemorySecretStore()
         let audit = InMemoryAuditStore()
         var optional = FileTargetConfig(
-            path: "/tmp/topspin-does-not-exist-\(UUID().uuidString)/missing.env",
+            path: "/tmp/autorotate-does-not-exist-\(UUID().uuidString)/missing.env",
             format: .json,
             keyPath: "KEY")
         optional.required = false

@@ -21,14 +21,14 @@ export async function tick(): Promise<{ rotated: number; errors: number }> {
       } catch (err) {
         errors++;
         console.error(
-          `[topspin scheduler] rotation failed for secret ${secret.id}:`,
+          `[autorotate scheduler] rotation failed for secret ${secret.id}:`,
           (err as Error).message,
         );
       }
     }
   } catch (err) {
     // DB unreachable etc. — log and try again next tick.
-    console.error("[topspin scheduler] tick error:", (err as Error).message);
+    console.error("[autorotate scheduler] tick error:", (err as Error).message);
   } finally {
     ticking = false;
   }
@@ -38,7 +38,7 @@ export async function tick(): Promise<{ rotated: number; errors: number }> {
 /** Start the 60s interval. Non-blocking; safe to call once at server boot. */
 export function startScheduler(intervalMs = 60_000): void {
   if (interval) return;
-  console.log(`[topspin scheduler] started (interval ${intervalMs}ms)`);
+  console.log(`[autorotate scheduler] started (interval ${intervalMs}ms)`);
   interval = setInterval(() => {
     void tick();
   }, intervalMs);

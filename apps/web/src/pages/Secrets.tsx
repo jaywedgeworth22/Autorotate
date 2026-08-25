@@ -27,7 +27,7 @@ import {
   toastWarning,
 } from '@/components/primitives'
 import type { RotationSummary } from '@/components/primitives'
-import { SECRET_STATUSES, type SecretStatus, type SecretWithRelations } from '@contracts/topspin'
+import { SECRET_STATUSES, type SecretStatus, type SecretWithRelations } from '@contracts/autorotate'
 import { SecretDetailDrawer, UntrackConfirm } from '@/components/secrets/SecretDetailDrawer'
 import { SecretsCards, SecretsTable } from '@/components/secrets/SecretsTable'
 import { TrackSecretWizard } from '@/components/secrets/TrackSecretWizard'
@@ -404,7 +404,7 @@ export default function Secrets() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'topspin-secrets.csv'
+    a.download = 'autorotate-secrets.csv'
     a.click()
     URL.revokeObjectURL(url)
     toastInfo('CSV exported', `${rows.length} secrets`)
@@ -537,7 +537,7 @@ export default function Secrets() {
             ) : (
               <EmptyState
                 title="No secrets tracked yet"
-                body="Connect a platform and track your first secret — TopSpin rotates it on schedule and only stores its fingerprint."
+                body="Connect a platform and track your first secret — Autorotate rotates it on schedule and only stores its fingerprint."
                 action={
                   <button
                     onClick={() => setWizardOpen(true)}

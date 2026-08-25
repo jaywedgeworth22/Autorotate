@@ -1,3 +1,3 @@
 # Placeholder — the live script is generated from the Devices page.
-# Download it from TopSpin → Devices.
-print("Download topspin-agent.py from the TopSpin Devices screen.")
+# Download it from Autorotate → Devices.
+print("Download autorotate-agent.py from the Autorotate Devices screen.")

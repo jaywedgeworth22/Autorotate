@@ -1,6 +1,6 @@
 //
 //  Bookmarks.swift
-//  TopSpin-macOS
+//  Autorotate-macOS
 //
 //  Security-scoped bookmark management for sandboxed file-target access.
 //
@@ -21,7 +21,7 @@
 //
 //  NOTE: `.withSecurityScope` requires the
 //  `com.apple.security.files.bookmarks.app-scope` entitlement, which is
-//  included in `TopSpinMac.entitlements` alongside the user-selected
+//  included in `AutorotateMac.entitlements` alongside the user-selected
 //  read-write entitlement.
 //
 

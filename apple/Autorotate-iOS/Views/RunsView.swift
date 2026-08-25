@@ -1,6 +1,6 @@
 //
 //  RunsView.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
 //  Rotation run history with per-run status, and a detail view rendering
 //  the six-step pipeline (LOCK → ROTATE → PUSH → VERIFY → COMMIT → AUDIT)
@@ -9,7 +9,7 @@
 
 import SwiftUI
 import SwiftData
-import TopSpinCore
+import AutorotateCore
 
 struct RunsView: View {
 
@@ -31,7 +31,7 @@ struct RunsView: View {
                         systemImage: "arrow.triangle.2.circlepath.circle",
                         title: "No rotation runs",
                         message: "Runs appear here after the first manual or scheduled rotation.")
-                    .topSpinScreenBackground()
+                    .autoRotateScreenBackground()
                 } else {
                     List(runs) { run in
                         NavigationLink {
@@ -45,10 +45,11 @@ struct RunsView: View {
                     }
                     .listStyle(.plain)
                     .scrollContentBackground(.hidden)
-                    .topSpinScreenBackground()
+                    .autoRotateScreenBackground()
                 }
             }
             .navigationTitle("Rotation Runs")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
@@ -138,7 +139,7 @@ struct RunDetailView: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
-        .topSpinScreenBackground()
+        .autoRotateScreenBackground()
         .navigationTitle("Run")
         .navigationBarTitleDisplayMode(.inline)
     }

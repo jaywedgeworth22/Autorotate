@@ -1,6 +1,6 @@
 //
 //  AddTargetView.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
 //  Sheet for adding a target binding to a secret: Infisical, file, webhook
 //  or Apple Keychain. Target configs hold routing metadata only — no secret
@@ -8,7 +8,7 @@
 //
 
 import SwiftUI
-import TopSpinCore
+import AutorotateCore
 
 struct AddTargetView: View {
 
@@ -77,7 +77,7 @@ struct AddTargetView: View {
                 }
             }
             .scrollContentBackground(.hidden)
-            .topSpinScreenBackground()
+            .autoRotateScreenBackground()
             .navigationTitle("Add Target")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -163,7 +163,7 @@ struct AddTargetView: View {
         } header: {
             InstrumentSectionHeader(title: "Keychain", systemImage: "key")
         } footer: {
-            Text("Stored as a generic password under service com.topspin.<secretId>, accessible after first unlock. iCloud sync falls back to a local item when not allowed.")
+            Text("Stored as a generic password under service com.autorotate.<secretId>, accessible after first unlock. iCloud sync falls back to a local item when not allowed.")
                 .font(.caption2)
         }
     }

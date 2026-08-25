@@ -1,6 +1,6 @@
 //
 //  Crypto.swift
-//  TopSpinCore
+//  AutorotateCore
 //
 //  SHA-256 / HMAC-SHA256 façade.
 //
@@ -17,7 +17,7 @@ import CryptoKit
 #endif
 
 /// Internal SHA-256 / HMAC-SHA256 used for fingerprints and AWS SigV4.
-enum TopSpinSHA256 {
+enum AutorotateSHA256 {
 
     /// SHA-256 digest bytes of `data`.
     static func hash(_ data: Data) -> Data {

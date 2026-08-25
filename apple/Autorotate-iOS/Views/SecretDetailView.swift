@@ -1,6 +1,6 @@
 //
 //  SecretDetailView.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
 //  Secret detail: status + fingerprint, rotation actions (incl. manual value
 //  import for update-only/partial connectors), policy editor (interval,
@@ -10,7 +10,7 @@
 
 import SwiftUI
 import SwiftData
-import TopSpinCore
+import AutorotateCore
 
 struct SecretDetailView: View {
 
@@ -60,7 +60,7 @@ struct SecretDetailView: View {
                 EmptyStateView(systemImage: "questionmark.key", title: "Secret not found")
             }
         }
-        .topSpinScreenBackground()
+        .autoRotateScreenBackground()
         .navigationTitle(secret?.name ?? "Secret")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingAddTarget) {
@@ -79,7 +79,7 @@ struct SecretDetailView: View {
             }
             Button("Cancel", role: .cancel) { importedValue = "" }
         } message: {
-            Text("The value is validated, fingerprinted and pushed to targets. It is never stored by TopSpin.")
+            Text("The value is validated, fingerprinted and pushed to targets. It is never stored by Autorotate.")
         }
         .alert("Update admin credential", isPresented: $showingCredentialSheet) {
             SecureField("Admin credential", text: $newCredential)
@@ -198,7 +198,7 @@ struct SecretDetailView: View {
                     Label("Import rotated value…", systemImage: "square.and.arrow.down")
                         .foregroundStyle(Theme.accent)
                 }
-                Text("This platform is \(secret.connectorCapability == .updateOnly ? "update-only" : "partially programmatic"). Rotate in the provider UI, then import the new value — TopSpin propagates it to all targets.")
+                Text("This platform is \(secret.connectorCapability == .updateOnly ? "update-only" : "partially programmatic"). Rotate in the provider UI, then import the new value — Autorotate propagates it to all targets.")
                     .font(.caption)
                     .foregroundStyle(Theme.textSecondary)
             }

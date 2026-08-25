@@ -1,6 +1,6 @@
 //
 //  HTTPClient.swift
-//  TopSpinCore
+//  AutorotateCore
 //
 //  Minimal async/await URLSession wrapper shared by all connectors and the
 //  Infisical client. No third-party dependencies.

@@ -1,19 +1,19 @@
 //
 //  KeychainInventory.swift
-//  TopSpin-macOS
+//  Autorotate-macOS
 //
-//  Settings-screen inventory of the Keychain items TopSpin manages.
+//  Settings-screen inventory of the Keychain items Autorotate manages.
 //
-//  `KeychainManager` (TopSpinCore) is intentionally CRUD-only; listing is a
+//  `KeychainManager` (AutorotateCore) is intentionally CRUD-only; listing is a
 //  presentation concern, so it lives in the app target. Queries never return
 //  item DATA — only service/account/synchronizable metadata.
 //
 
 import Foundation
 import Security
-import TopSpinCore
+import AutorotateCore
 
-/// Metadata snapshot of one TopSpin-managed Keychain item (no value).
+/// Metadata snapshot of one Autorotate-managed Keychain item (no value).
 struct KeychainItemInfo: Identifiable, Sendable {
     var id: String { "\(service)|\(account)|\(synchronizable)" }
     let service: String

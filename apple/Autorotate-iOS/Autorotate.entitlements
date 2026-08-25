@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  TopSpin iOS entitlements.
+  Autorotate iOS entitlements.
 
-  Keychain Sharing: the shared access group `com.topspin.shared` lets the
+  Keychain Sharing: the shared access group `com.autorotate.shared` lets the
   iOS app, the macOS app and any extensions share managed secret items,
   connector admin credentials and the Infisical clientSecret
   (docs/architecture.md §5). Enable the "Keychain Sharing" capability in
@@ -13,12 +13,12 @@
   iCloud Keychain note: `kSecAttrSynchronizable` items (the "Sync via iCloud
   Keychain" toggle) require NO additional entitlement on iOS — sync happens
   "if allowed" by the user's iCloud settings, and KeychainManager falls back
-  to device-local items otherwise. If TopSpin later adds its OWN iCloud
+  to device-local items otherwise. If Autorotate later adds its OWN iCloud
   container (e.g. for companion pairing state), add:
 
       <key>com.apple.developer.icloud-container-identifiers</key>
       <array>
-          <string>iCloud.com.topspin.shared</string>
+          <string>iCloud.com.autorotate.shared</string>
       </array>
 
   and enable the iCloud capability. It is intentionally absent today.

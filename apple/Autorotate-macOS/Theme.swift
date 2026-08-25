@@ -1,6 +1,6 @@
 //
 //  Theme.swift
-//  TopSpin-macOS
+//  Autorotate-macOS
 //
 //  Shared visual language: dark "security instrument" aesthetic —
 //  near-black surfaces, a single green accent (#2EE6A8), and monospaced
@@ -8,14 +8,14 @@
 //
 
 import SwiftUI
-import TopSpinCore
+import AutorotateCore
 
-/// TopSpin macOS color + typography tokens.
-enum TopSpinTheme {
+/// Autorotate macOS color + typography tokens.
+enum AutorotateTheme {
 
     // MARK: - Colors
 
-    /// Primary accent — TopSpin green (#2EE6A8).
+    /// Primary accent — Autorotate green (#2EE6A8).
     static let accent = Color(red: 0x2E / 255, green: 0xE6 / 255, blue: 0xA8 / 255)
 
     /// Deepest background (window chrome).
@@ -117,11 +117,11 @@ struct FingerprintChip: View {
 
     var body: some View {
         Text(fingerprint ?? "––––––––")
-            .font(TopSpinTheme.mono(10))
-            .foregroundStyle(fingerprint == nil ? TopSpinTheme.textSecondary : TopSpinTheme.accent)
+            .font(AutorotateTheme.mono(10))
+            .foregroundStyle(fingerprint == nil ? AutorotateTheme.textSecondary : AutorotateTheme.accent)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
-            .background(TopSpinTheme.accent.opacity(fingerprint == nil ? 0.04 : 0.12))
+            .background(AutorotateTheme.accent.opacity(fingerprint == nil ? 0.04 : 0.12))
             .clipShape(RoundedRectangle(cornerRadius: 4))
     }
 }
@@ -138,7 +138,7 @@ struct StatusBadge: View {
                 .frame(width: 7, height: 7)
             Text(label)
                 .font(.caption)
-                .foregroundStyle(TopSpinTheme.textSecondary)
+                .foregroundStyle(AutorotateTheme.textSecondary)
         }
         .padding(.horizontal, 7)
         .padding(.vertical, 3)
@@ -148,17 +148,17 @@ struct StatusBadge: View {
 }
 
 /// Card container used across all views.
-struct TopSpinCard<Content: View>: View {
+struct AutorotateCard<Content: View>: View {
     @ViewBuilder var content: Content
 
     var body: some View {
         content
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(TopSpinTheme.card)
+            .background(AutorotateTheme.card)
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(TopSpinTheme.border, lineWidth: 1)
+                    .stroke(AutorotateTheme.border, lineWidth: 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: 10))
     }
@@ -172,7 +172,7 @@ struct SectionLabel: View {
         Text(title.uppercased())
             .font(.caption)
             .fontWeight(.semibold)
-            .foregroundStyle(TopSpinTheme.textSecondary)
+            .foregroundStyle(AutorotateTheme.textSecondary)
             .tracking(1.2)
     }
 }

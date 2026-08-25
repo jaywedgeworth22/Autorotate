@@ -1,6 +1,6 @@
 //
 //  SettingsView.swift
-//  TopSpin-macOS
+//  Autorotate-macOS
 //
 //  Settings: Infisical connection (clientSecret → Keychain, never disk),
 //  Keychain inventory with the iCloud Keychain sync toggle ("if allowed"),
@@ -8,7 +8,7 @@
 //
 
 import SwiftUI
-import TopSpinCore
+import AutorotateCore
 
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
@@ -26,7 +26,7 @@ struct SettingsView: View {
                 if let message {
                     Text(message)
                         .font(.caption)
-                        .foregroundStyle(TopSpinTheme.textSecondary)
+                        .foregroundStyle(AutorotateTheme.textSecondary)
                 }
             }
             .padding(24)
@@ -38,7 +38,7 @@ struct SettingsView: View {
     // MARK: - Infisical
 
     private var infisicalSection: some View {
-        TopSpinCard {
+        AutorotateCard {
             VStack(alignment: .leading, spacing: 12) {
                 Label("Infisical", systemImage: "cloud.fill")
                     .font(.headline)
@@ -68,13 +68,13 @@ struct SettingsView: View {
                         .multilineTextAlignment(.trailing)
                 }
 
-                Divider().overlay(TopSpinTheme.border)
+                Divider().overlay(AutorotateTheme.border)
 
                 HStack {
                     Text("Client secret")
                     Spacer()
                     StatusBadge(
-                        color: appState.hasInfisicalClientSecret() ? TopSpinTheme.accent : TopSpinTheme.danger,
+                        color: appState.hasInfisicalClientSecret() ? AutorotateTheme.accent : AutorotateTheme.danger,
                         label: appState.hasInfisicalClientSecret() ? "stored in Keychain" : "missing")
                 }
                 HStack {
@@ -96,7 +96,7 @@ struct SettingsView: View {
     // MARK: - Keychain
 
     private var keychainSection: some View {
-        TopSpinCard {
+        AutorotateCard {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Label("Keychain", systemImage: "lock.rectangle.fill")
@@ -106,7 +106,7 @@ struct SettingsView: View {
                         Image(systemName: "arrow.clockwise")
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(TopSpinTheme.textSecondary)
+                    .foregroundStyle(AutorotateTheme.textSecondary)
                 }
 
                 Toggle("Sync new Keychain targets via iCloud Keychain (if allowed)",
@@ -117,30 +117,30 @@ struct SettingsView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
 
-                Divider().overlay(TopSpinTheme.border)
+                Divider().overlay(AutorotateTheme.border)
 
                 Text("MANAGED ITEMS (\(keychainItems.count))")
                     .font(.caption2).fontWeight(.semibold)
                     .foregroundStyle(.secondary).tracking(1)
                 if keychainItems.isEmpty {
-                    Text("No TopSpin items in the Keychain yet (or the Keychain Sharing entitlement is missing).")
+                    Text("No Autorotate items in the Keychain yet (or the Keychain Sharing entitlement is missing).")
                         .font(.caption)
-                        .foregroundStyle(TopSpinTheme.textSecondary)
+                        .foregroundStyle(AutorotateTheme.textSecondary)
                 } else {
                     ForEach(keychainItems) { item in
                         HStack(spacing: 10) {
                             Image(systemName: item.synchronizable ? "icloud.fill" : "internaldrive.fill")
                                 .font(.caption)
-                                .foregroundStyle(item.synchronizable ? TopSpinTheme.accent : TopSpinTheme.textSecondary)
+                                .foregroundStyle(item.synchronizable ? AutorotateTheme.accent : AutorotateTheme.textSecondary)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(item.service)
-                                    .font(TopSpinTheme.mono(10))
-                                    .foregroundStyle(TopSpinTheme.textPrimary)
+                                    .font(AutorotateTheme.mono(10))
+                                    .foregroundStyle(AutorotateTheme.textPrimary)
                                     .lineLimit(1)
                                     .truncationMode(.middle)
                                 Text("\(item.category) · account \(item.account)")
                                     .font(.caption2)
-                                    .foregroundStyle(TopSpinTheme.textSecondary)
+                                    .foregroundStyle(AutorotateTheme.textSecondary)
                             }
                             Spacer()
                         }
@@ -154,7 +154,7 @@ struct SettingsView: View {
     // MARK: - Scheduler
 
     private var schedulerSection: some View {
-        TopSpinCard {
+        AutorotateCard {
             VStack(alignment: .leading, spacing: 12) {
                 Label("Scheduled rotation", systemImage: "clock.arrow.2.circlepath")
                     .font(.headline)

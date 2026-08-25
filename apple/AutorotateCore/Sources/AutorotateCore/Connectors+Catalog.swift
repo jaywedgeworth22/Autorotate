@@ -1,6 +1,6 @@
 //
 //  Connectors+Catalog.swift
-//  TopSpinCore
+//  AutorotateCore
 //
 //  SPDX-License-Identifier: Apache-2.0
 //
@@ -16,7 +16,7 @@ import Foundation
 // MARK: - Catalog connector
 
 /// Connector for catalog platforms that do not yet have a dedicated live
-/// API type in TopSpinCore.  Web already implements live rotate for some
+/// API type in AutorotateCore.  Web already implements live rotate for some
 /// of these (Resend, Hugging Face, Neon); native companions import the
 /// new value and propagate it through the same LOCK→AUDIT pipeline.
 public struct CatalogConnector: SecretConnector {
@@ -71,11 +71,11 @@ extension ConnectorRegistry {
             adminCredentialHint: "Neon API key"),
         ConnectorDescriptor(
             id: "vault", displayName: "HashiCorp Vault", capability: .updateOnly,
-            mechanism: "Tokens are issued in Vault; TopSpin fans the new value out to targets.",
+            mechanism: "Tokens are issued in Vault; Autorotate fans the new value out to targets.",
             adminCredentialHint: "Vault token (hvs./s.)"),
         ConnectorDescriptor(
             id: "doppler", displayName: "Doppler", capability: .updateOnly,
-            mechanism: "Service tokens are issued in Doppler; TopSpin propagates them.",
+            mechanism: "Service tokens are issued in Doppler; Autorotate propagates them.",
             adminCredentialHint: "Doppler service token"),
         ConnectorDescriptor(
             id: "onepassword", displayName: "1Password Connect", capability: .updateOnly,

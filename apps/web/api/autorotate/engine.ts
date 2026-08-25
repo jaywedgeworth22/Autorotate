@@ -19,7 +19,7 @@ import {
   type FileTargetConfig,
   type InfisicalTargetConfig,
   type WebhookTargetConfig,
-} from "@contracts/topspin";
+} from "@contracts/autorotate";
 import { decryptJson, fingerprint, sha256Hex } from "./crypto";
 import { getConnector } from "./connectors";
 import { isDemoMode, demoMessage, demoLatency } from "./demo";
@@ -72,7 +72,7 @@ export function infisicalSecretName(
 
 /**
  * Probe name used by targets.test.  A canary must never land on the live
- * Infisical secret or file key — TopSpin does not keep the old plaintext,
+ * Infisical secret or file key — Autorotate does not keep the old plaintext,
  * so overwriting the production slot is unrecoverable.
  */
 export function canaryDeliveryName(liveName: string): string {
@@ -208,7 +208,7 @@ async function pushToTarget(
           },
           body: JSON.stringify({
             name: secret.name,
-            valueRef: `topspin://secrets/${secret.id}/v${secret.version + 1}`,
+            valueRef: `autorotate://secrets/${secret.id}/v${secret.version + 1}`,
             ...(wcfg.includeValue ? { value } : {}),
           }),
         });

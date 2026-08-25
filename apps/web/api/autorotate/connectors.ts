@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import type { ConnectorCapability } from "@contracts/topspin";
+import type { ConnectorCapability } from "@contracts/autorotate";
 import { isDemoMode, demoLatency } from "./demo";
 import { randomToken } from "./crypto";
 
@@ -7,7 +7,7 @@ import { randomToken } from "./crypto";
 // docs/architecture.md §3. Each connector knows how to rotate() a credential
 // using an admin credential/config (already decrypted by the caller).
 //
-// DEMO MODE: when the connector has no real config, or TOPSPIN_DEMO=1,
+// DEMO MODE: when the connector has no real config, or AUTOROTATE_DEMO=1,
 // rotate() returns a realistic random secret in the platform's format
 // instead of calling the real API. Partial/update-only connectors throw
 // MANUAL_ROTATION_REQUIRED outside demo mode.
@@ -133,7 +133,7 @@ async function rotateOpenAI(cfg: ConnectorConfig): Promise<string> {
     {
       method: "POST",
       headers: bearer(adminKey),
-      body: JSON.stringify({ name: `topspin-${Date.now()}` }),
+      body: JSON.stringify({ name: `autorotate-${Date.now()}` }),
     },
     "OpenAI create service account",
   );
@@ -175,7 +175,7 @@ async function rotateTwilio(cfg: ConnectorConfig): Promise<string> {
         Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({ FriendlyName: `topspin-${Date.now()}` }).toString(),
+      body: new URLSearchParams({ FriendlyName: `autorotate-${Date.now()}` }).toString(),
     },
     "Twilio create API key",
   );
@@ -194,7 +194,7 @@ async function rotateSendGrid(cfg: ConnectorConfig): Promise<string> {
       method: "POST",
       headers: bearer(adminKey),
       body: JSON.stringify({
-        name: `topspin-${Date.now()}`,
+        name: `autorotate-${Date.now()}`,
         scopes: ["mail.send"],
       }),
     },
@@ -229,7 +229,7 @@ async function rotateDockerHub(cfg: ConnectorConfig): Promise<string> {
       method: "POST",
       headers: bearer(token),
       body: JSON.stringify({
-        token_label: `topspin-${Date.now()}`,
+        token_label: `autorotate-${Date.now()}`,
         scopes: ["repo:admin"],
       }),
     },
@@ -250,7 +250,7 @@ async function rotateNpm(cfg: ConnectorConfig): Promise<string> {
       method: "POST",
       headers: bearer(token),
       body: JSON.stringify({
-        name: `topspin-${Date.now()}`,
+        name: `autorotate-${Date.now()}`,
         token_type: "read_write",
       }),
     },
@@ -275,7 +275,7 @@ async function rotateKubernetes(cfg: ConnectorConfig): Promise<string> {
       method: "POST",
       headers: bearer(token),
       body: JSON.stringify({
-        metadata: { generateName: "topspin-" },
+        metadata: { generateName: "autorotate-" },
       }),
     },
     "Kubernetes create service account",
@@ -289,7 +289,7 @@ async function rotateInfisicalSource(cfg: ConnectorConfig): Promise<string> {
   const clientId = str(cfg?.clientId);
   const clientSecret = str(cfg?.clientSecret);
   const workspaceId = str(cfg?.workspaceId);
-  const secretName = str(cfg?.secretName) ?? "TOPSPIN_MANAGED";
+  const secretName = str(cfg?.secretName) ?? "AUTOROTATE_MANAGED";
   if (!clientId || !clientSecret || !workspaceId) {
     throw new ConnectorError("Infisical: clientId/clientSecret/workspaceId required");
   }
@@ -342,7 +342,7 @@ async function rotateResend(cfg: ConnectorConfig): Promise<string> {
     {
       method: "POST",
       headers: bearer(adminKey),
-      body: JSON.stringify({ name: `topspin-${new Date().toISOString().slice(0, 10)}` }),
+      body: JSON.stringify({ name: `autorotate-${new Date().toISOString().slice(0, 10)}` }),
     },
     "Resend create key",
   );
@@ -378,7 +378,7 @@ async function rotateHuggingFace(cfg: ConnectorConfig): Promise<string> {
     {
       method: "POST",
       headers: bearer(token),
-      body: JSON.stringify({ name: `topspin-${Date.now()}`, role: "read" }),
+      body: JSON.stringify({ name: `autorotate-${Date.now()}`, role: "read" }),
     },
     "Hugging Face create token",
   );
@@ -396,7 +396,7 @@ async function rotateNeon(cfg: ConnectorConfig): Promise<string> {
     {
       method: "POST",
       headers: bearer(token),
-      body: JSON.stringify({ key_name: `topspin-${new Date().toISOString().slice(0, 10)}` }),
+      body: JSON.stringify({ key_name: `autorotate-${new Date().toISOString().slice(0, 10)}` }),
     },
     "Neon create API key",
   );
@@ -413,7 +413,7 @@ async function rotateVercel(cfg: ConnectorConfig): Promise<string> {
     {
       method: "POST",
       headers: bearer(token),
-      body: JSON.stringify({ name: `topspin-${new Date().toISOString().slice(0, 10)}` }),
+      body: JSON.stringify({ name: `autorotate-${new Date().toISOString().slice(0, 10)}` }),
     },
     "Vercel create token",
   );
@@ -469,7 +469,7 @@ const demoValues: Record<string, () => string> = {
   planetscale: () => `pscale_tkn_${randomToken(32, BASE62)}`,
   mongodb: () => randomToken(32, BASE62),
   fmp: () => randomToken(32, BASE62),
-  ssh: () => `ssh-ed25519 ${randomBytes(32).toString("base64")} topspin-demo`,
+  ssh: () => `ssh-ed25519 ${randomBytes(32).toString("base64")} autorotate-demo`,
   database: () => randomToken(32, BASE62),
   webhook_hmac: () => `whsec_${randomBytes(24).toString("base64url")}`,
   jwt: () => randomBytes(32).toString("hex"),

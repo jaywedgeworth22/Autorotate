@@ -1,6 +1,6 @@
 //
 //  SecretsView.swift
-//  TopSpin-macOS
+//  Autorotate-macOS
 //
 //  Secrets manager: a table of managed secrets (masked value column —
 //  values are never persisted, so the table shows `••••••` plus the
@@ -14,7 +14,7 @@
 
 import SwiftUI
 import SwiftData
-import TopSpinCore
+import AutorotateCore
 
 struct SecretsView: View {
     @Environment(AppState.self) private var appState
@@ -86,7 +86,7 @@ struct SecretsView: View {
                     Text(ConnectorRegistry.descriptor(for: record.connectorId)?.displayName
                          ?? record.connectorId)
                         .font(.caption2)
-                        .foregroundStyle(TopSpinTheme.textSecondary)
+                        .foregroundStyle(AutorotateTheme.textSecondary)
                 }
             }
             .width(min: 140, ideal: 180)
@@ -94,8 +94,8 @@ struct SecretsView: View {
             TableColumn("Value") { _ in
                 // Values are never persisted — masked placeholder only.
                 Text("••••••••")
-                    .font(TopSpinTheme.mono(11))
-                    .foregroundStyle(TopSpinTheme.textSecondary)
+                    .font(AutorotateTheme.mono(11))
+                    .foregroundStyle(AutorotateTheme.textSecondary)
             }
             .width(80)
 
@@ -105,7 +105,7 @@ struct SecretsView: View {
             .width(90)
 
             TableColumn("Status") { record in
-                StatusBadge(color: TopSpinTheme.statusColor(record.status),
+                StatusBadge(color: AutorotateTheme.statusColor(record.status),
                             label: record.status.rawValue)
             }
             .width(90)
@@ -114,11 +114,11 @@ struct SecretsView: View {
                 if let last = record.lastRotatedAt {
                     Text(last, style: .relative)
                         .font(.caption)
-                        .foregroundStyle(TopSpinTheme.textSecondary)
+                        .foregroundStyle(AutorotateTheme.textSecondary)
                 } else {
                     Text("never")
                         .font(.caption)
-                        .foregroundStyle(TopSpinTheme.textSecondary)
+                        .foregroundStyle(AutorotateTheme.textSecondary)
                 }
             }
             .width(100)
@@ -126,7 +126,7 @@ struct SecretsView: View {
             TableColumn("Next due") { record in
                 Text(nextDueText(record))
                     .font(.caption)
-                    .foregroundStyle(record.isDue() ? TopSpinTheme.warning : TopSpinTheme.textSecondary)
+                    .foregroundStyle(record.isDue() ? AutorotateTheme.warning : AutorotateTheme.textSecondary)
             }
             .width(100)
         }
@@ -222,14 +222,14 @@ private struct AddSecretSheet: View {
             SecureField(descriptor?.adminCredentialHint ?? "Admin credential",
                         text: $adminCredential)
                 .textFieldStyle(.roundedBorder)
-            Text("Stored in the Keychain only — never on disk. Access group: $(AppIdentifierPrefix)com.topspin.shared.")
+            Text("Stored in the Keychain only — never on disk. Access group: $(AppIdentifierPrefix)com.autorotate.shared.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 
             if let errorMessage {
                 Text(errorMessage)
                     .font(.caption)
-                    .foregroundStyle(TopSpinTheme.danger)
+                    .foregroundStyle(AutorotateTheme.danger)
             }
 
             HStack {
@@ -237,7 +237,7 @@ private struct AddSecretSheet: View {
                 Button("Cancel") { dismiss() }
                 Button(isSaving ? "Saving…" : "Add Secret") { save() }
                     .buttonStyle(.borderedProminent)
-                    .tint(TopSpinTheme.accent)
+                    .tint(AutorotateTheme.accent)
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || isSaving)
             }
         }
@@ -324,7 +324,7 @@ private struct SecretDetailView: View {
                 if let message {
                     Text(message)
                         .font(.caption)
-                        .foregroundStyle(TopSpinTheme.textSecondary)
+                        .foregroundStyle(AutorotateTheme.textSecondary)
                 }
             }
             .padding(20)
@@ -359,8 +359,8 @@ private struct SecretDetailView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Image(systemName: TopSpinTheme.statusIcon(record.status))
-                    .foregroundStyle(TopSpinTheme.statusColor(record.status))
+                Image(systemName: AutorotateTheme.statusIcon(record.status))
+                    .foregroundStyle(AutorotateTheme.statusColor(record.status))
                 Text(record.name)
                     .font(.title3).fontWeight(.semibold)
                 Spacer()
@@ -376,9 +376,9 @@ private struct SecretDetailView: View {
                 }
             }
             .font(.caption)
-            .foregroundStyle(TopSpinTheme.textSecondary)
+            .foregroundStyle(AutorotateTheme.textSecondary)
             if let note = record.note {
-                Text(note).font(.caption).foregroundStyle(TopSpinTheme.textSecondary)
+                Text(note).font(.caption).foregroundStyle(AutorotateTheme.textSecondary)
             }
         }
     }
@@ -386,7 +386,7 @@ private struct SecretDetailView: View {
     // MARK: Rotate
 
     private var rotateSection: some View {
-        TopSpinCard {
+        AutorotateCard {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Rotation")
@@ -394,22 +394,22 @@ private struct SecretDetailView: View {
                     if descriptor?.capability == .updateOnly {
                         Text("Update-only platform: rotate in the provider UI, then import the new value here.")
                             .font(.caption)
-                            .foregroundStyle(TopSpinTheme.warning)
+                            .foregroundStyle(AutorotateTheme.warning)
                     } else if descriptor?.capability == .partial {
                         Text("Partially programmatic: API rotation where supported, otherwise import a manually rotated value.")
                             .font(.caption)
-                            .foregroundStyle(TopSpinTheme.textSecondary)
+                            .foregroundStyle(AutorotateTheme.textSecondary)
                     }
                 }
                 Spacer()
                 if descriptor?.capability == .updateOnly {
                     Button("Import new value…") { showImportSheet = true }
                         .buttonStyle(.borderedProminent)
-                        .tint(TopSpinTheme.accent)
+                        .tint(AutorotateTheme.accent)
                 } else {
                     Button(isRotating ? "Rotating…" : "Rotate Now") { showRotateConfirm = true }
                         .buttonStyle(.borderedProminent)
-                        .tint(TopSpinTheme.accent)
+                        .tint(AutorotateTheme.accent)
                         .disabled(isRotating)
                 }
                 if descriptor?.capability != .updateOnly {
@@ -425,7 +425,7 @@ private struct SecretDetailView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Import manually rotated value")
                 .font(.headline)
-            Text("Paste the value you just rotated in the provider UI. It is held in memory, fingerprinted (sha256[0:8]) and pushed to every enabled target — never persisted by TopSpin.")
+            Text("Paste the value you just rotated in the provider UI. It is held in memory, fingerprinted (sha256[0:8]) and pushed to every enabled target — never persisted by Autorotate.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             SecureField("New value", text: $importedValue)
@@ -443,7 +443,7 @@ private struct SecretDetailView: View {
                     performRotate(imported: value)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(TopSpinTheme.accent)
+                .tint(AutorotateTheme.accent)
                 .disabled(importedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
@@ -469,7 +469,7 @@ private struct SecretDetailView: View {
     // MARK: Policy editor
 
     private var policySection: some View {
-        TopSpinCard {
+        AutorotateCard {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Rotation policy").font(.headline)
                 Stepper("Interval: \(record.policy.intervalHours) h",
@@ -481,7 +481,7 @@ private struct SecretDetailView: View {
                 if isDirty {
                     Button("Save changes") { save() }
                         .buttonStyle(.borderedProminent)
-                        .tint(TopSpinTheme.accent)
+                        .tint(AutorotateTheme.accent)
                 }
             }
         }
@@ -500,17 +500,17 @@ private struct SecretDetailView: View {
                 .controlSize(.small)
             }
             if record.targets.isEmpty {
-                TopSpinCard {
+                AutorotateCard {
                     Text("No targets — rotations produce a value but write it nowhere.")
                         .font(.caption)
-                        .foregroundStyle(TopSpinTheme.warning)
+                        .foregroundStyle(AutorotateTheme.warning)
                 }
             } else {
                 ForEach(Array(record.targets.enumerated()), id: \.element.id) { index, binding in
-                    TopSpinCard {
+                    AutorotateCard {
                         HStack(spacing: 10) {
                             Image(systemName: bindingIcon(binding.kind))
-                                .foregroundStyle(TopSpinTheme.accent)
+                                .foregroundStyle(AutorotateTheme.accent)
                                 .frame(width: 18)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(bindingSummary(binding))
@@ -519,7 +519,7 @@ private struct SecretDetailView: View {
                                     .truncationMode(.middle)
                                 Text("\(binding.kind.rawValue)\(binding.required ? " · required" : " · optional")")
                                     .font(.caption2)
-                                    .foregroundStyle(TopSpinTheme.textSecondary)
+                                    .foregroundStyle(AutorotateTheme.textSecondary)
                             }
                             Spacer()
                             Toggle("", isOn: enabledBinding(for: index))
@@ -533,7 +533,7 @@ private struct SecretDetailView: View {
                                 Image(systemName: "trash")
                             }
                             .buttonStyle(.plain)
-                            .foregroundStyle(TopSpinTheme.danger)
+                            .foregroundStyle(AutorotateTheme.danger)
                         }
                     }
                 }
@@ -574,7 +574,7 @@ private struct SecretDetailView: View {
         let fields = ConnectorFieldCatalog.fields(for: record.connectorId)
         return Group {
             if !fields.isEmpty {
-                TopSpinCard {
+                AutorotateCard {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Connector settings").font(.headline)
                         ForEach(fields) { field in
@@ -603,17 +603,17 @@ private struct SecretDetailView: View {
     // MARK: Admin credential
 
     private var credentialSection: some View {
-        TopSpinCard {
+        AutorotateCard {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Text("Admin credential").font(.headline)
                     Spacer()
                     StatusBadge(
-                        color: appState.hasAdminCredential(for: record) ? TopSpinTheme.accent : TopSpinTheme.danger,
+                        color: appState.hasAdminCredential(for: record) ? AutorotateTheme.accent : AutorotateTheme.danger,
                         label: appState.hasAdminCredential(for: record) ? "stored in Keychain" : "missing")
                 }
                 if let hint = descriptor?.adminCredentialHint {
-                    Text(hint).font(.caption).foregroundStyle(TopSpinTheme.textSecondary)
+                    Text(hint).font(.caption).foregroundStyle(AutorotateTheme.textSecondary)
                 }
                 HStack {
                     SecureField("Replace credential…", text: $credentialInput)
@@ -739,7 +739,7 @@ private struct AddBindingSheet: View {
                 Button("Cancel") { dismiss() }
                 Button("Add Binding") { add() }
                     .buttonStyle(.borderedProminent)
-                    .tint(TopSpinTheme.accent)
+                    .tint(AutorotateTheme.accent)
                     .disabled(!canAdd)
             }
         }

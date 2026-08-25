@@ -1,6 +1,6 @@
 //
 //  FileTargetsView.swift
-//  TopSpin-macOS
+//  Autorotate-macOS
 //
 //  File target management — the macOS app's home turf:
 //    - register files by dragging them in or via NSOpenPanel,
@@ -14,7 +14,7 @@
 
 import SwiftUI
 import SwiftData
-import TopSpinCore
+import AutorotateCore
 import UniformTypeIdentifiers
 
 struct FileTargetsView: View {
@@ -40,7 +40,7 @@ struct FileTargetsView: View {
                 if let errorMessage {
                     Text(errorMessage)
                         .font(.caption)
-                        .foregroundStyle(TopSpinTheme.danger)
+                        .foregroundStyle(AutorotateTheme.danger)
                 }
                 targetList
             }
@@ -65,14 +65,14 @@ struct FileTargetsView: View {
                     .font(.title2).fontWeight(.semibold)
                 Text("Bookmarks retain sandbox access across launches · entitlement: com.apple.security.files.user-selected.read-write")
                     .font(.caption)
-                    .foregroundStyle(TopSpinTheme.textSecondary)
+                    .foregroundStyle(AutorotateTheme.textSecondary)
             }
             Spacer()
             Button { showPicker = true } label: {
                 Label("Add files…", systemImage: "plus")
             }
             .buttonStyle(.borderedProminent)
-            .tint(TopSpinTheme.accent)
+            .tint(AutorotateTheme.accent)
         }
     }
 
@@ -82,21 +82,21 @@ struct FileTargetsView: View {
         ZStack {
             RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [6]))
-                .foregroundStyle(isDropTargeted ? TopSpinTheme.accent : TopSpinTheme.border)
+                .foregroundStyle(isDropTargeted ? AutorotateTheme.accent : AutorotateTheme.border)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(isDropTargeted ? TopSpinTheme.accent.opacity(0.06) : TopSpinTheme.surface)
+                        .fill(isDropTargeted ? AutorotateTheme.accent.opacity(0.06) : AutorotateTheme.surface)
                 )
             VStack(spacing: 8) {
                 Image(systemName: "arrow.down.doc")
                     .font(.title2)
-                    .foregroundStyle(isDropTargeted ? TopSpinTheme.accent : TopSpinTheme.textSecondary)
+                    .foregroundStyle(isDropTargeted ? AutorotateTheme.accent : AutorotateTheme.textSecondary)
                 Text("Drop .env, JSON, YAML, TOML or INI files here")
                     .font(.callout)
-                    .foregroundStyle(TopSpinTheme.textSecondary)
+                    .foregroundStyle(AutorotateTheme.textSecondary)
                 Text("Format is detected automatically; contents are never copied into the app.")
                     .font(.caption2)
-                    .foregroundStyle(TopSpinTheme.textSecondary.opacity(0.7))
+                    .foregroundStyle(AutorotateTheme.textSecondary.opacity(0.7))
             }
             .padding(.vertical, 28)
         }
@@ -113,10 +113,10 @@ struct FileTargetsView: View {
         VStack(alignment: .leading, spacing: 10) {
             SectionLabel(title: "Registered files")
             if fileEntities.isEmpty {
-                TopSpinCard {
+                AutorotateCard {
                     Text("No file targets yet. Add your .env, config.json, ~/.aws/credentials, …")
                         .font(.callout)
-                        .foregroundStyle(TopSpinTheme.textSecondary)
+                        .foregroundStyle(AutorotateTheme.textSecondary)
                 }
             } else {
                 ForEach(fileEntities) { entity in
@@ -190,15 +190,15 @@ private struct FileTargetRow: View {
     @State private var isExpanded = false
 
     var body: some View {
-        TopSpinCard {
+        AutorotateCard {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 10) {
                     Image(systemName: "doc.text.fill")
-                        .foregroundStyle(TopSpinTheme.accent)
+                        .foregroundStyle(AutorotateTheme.accent)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(entity.displayPath)
-                            .font(TopSpinTheme.mono(11))
-                            .foregroundStyle(TopSpinTheme.textPrimary)
+                            .font(AutorotateTheme.mono(11))
+                            .foregroundStyle(AutorotateTheme.textPrimary)
                             .lineLimit(1)
                             .truncationMode(.middle)
                             .textSelection(.enabled)
@@ -206,7 +206,7 @@ private struct FileTargetRow: View {
                             formatBadge
                             Text("\(keys.count) managed key\(keys.count == 1 ? "" : "s")")
                                 .font(.caption2)
-                                .foregroundStyle(TopSpinTheme.textSecondary)
+                                .foregroundStyle(AutorotateTheme.textSecondary)
                             lastWriteBadge
                         }
                     }
@@ -217,12 +217,12 @@ private struct FileTargetRow: View {
                         Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(TopSpinTheme.textSecondary)
+                    .foregroundStyle(AutorotateTheme.textSecondary)
                     Button(role: .destructive, action: onDelete) {
                         Image(systemName: "trash")
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(TopSpinTheme.danger)
+                    .foregroundStyle(AutorotateTheme.danger)
                     .help("Remove the bookmark (the file itself is untouched)")
                 }
 
@@ -230,26 +230,26 @@ private struct FileTargetRow: View {
                     if keys.isEmpty {
                         Text("No secret binds a key in this file yet — add a file binding in the Secrets section.")
                             .font(.caption)
-                            .foregroundStyle(TopSpinTheme.textSecondary)
+                            .foregroundStyle(AutorotateTheme.textSecondary)
                     } else {
                         ForEach(keys) { key in
                             HStack(spacing: 8) {
                                 Image(systemName: key.enabled ? "key.fill" : "key.slash")
                                     .font(.caption2)
-                                    .foregroundStyle(key.enabled ? TopSpinTheme.accent : TopSpinTheme.textSecondary)
+                                    .foregroundStyle(key.enabled ? AutorotateTheme.accent : AutorotateTheme.textSecondary)
                                 Text(key.secretName)
                                     .font(.caption).fontWeight(.medium)
                                 Image(systemName: "arrow.right")
                                     .font(.caption2)
-                                    .foregroundStyle(TopSpinTheme.textSecondary)
+                                    .foregroundStyle(AutorotateTheme.textSecondary)
                                 Text(key.section.map { "[\($0)] \(key.keyPath)" } ?? key.keyPath)
-                                    .font(TopSpinTheme.mono(11))
-                                    .foregroundStyle(TopSpinTheme.textSecondary)
+                                    .font(AutorotateTheme.mono(11))
+                                    .foregroundStyle(AutorotateTheme.textSecondary)
                                 Spacer()
                                 if !key.required {
                                     Text("optional")
                                         .font(.caption2)
-                                        .foregroundStyle(TopSpinTheme.textSecondary)
+                                        .foregroundStyle(AutorotateTheme.textSecondary)
                                 }
                             }
                             .padding(.vertical, 2)
@@ -262,11 +262,11 @@ private struct FileTargetRow: View {
 
     private var formatBadge: some View {
         Text(FileFormatDetector.label(entity.format))
-            .font(TopSpinTheme.mono(9, weight: .bold))
-            .foregroundStyle(TopSpinTheme.accent)
+            .font(AutorotateTheme.mono(9, weight: .bold))
+            .foregroundStyle(AutorotateTheme.accent)
             .padding(.horizontal, 5)
             .padding(.vertical, 1)
-            .overlay(RoundedRectangle(cornerRadius: 3).stroke(TopSpinTheme.accent.opacity(0.5)))
+            .overlay(RoundedRectangle(cornerRadius: 3).stroke(AutorotateTheme.accent.opacity(0.5)))
     }
 
     @ViewBuilder
@@ -274,16 +274,16 @@ private struct FileTargetRow: View {
         if let lastWrite {
             HStack(spacing: 4) {
                 Circle()
-                    .fill(lastWrite.status == .succeeded ? TopSpinTheme.accent : TopSpinTheme.danger)
+                    .fill(lastWrite.status == .succeeded ? AutorotateTheme.accent : AutorotateTheme.danger)
                     .frame(width: 6, height: 6)
                 Text("last write \(lastWrite.date, style: .relative) ago")
                     .font(.caption2)
-                    .foregroundStyle(TopSpinTheme.textSecondary)
+                    .foregroundStyle(AutorotateTheme.textSecondary)
             }
         } else {
             Text("never written")
                 .font(.caption2)
-                .foregroundStyle(TopSpinTheme.textSecondary.opacity(0.7))
+                .foregroundStyle(AutorotateTheme.textSecondary.opacity(0.7))
         }
     }
 }

@@ -1,8 +1,8 @@
 //
 //  NotificationManager.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
-//  Local notifications via UNUserNotificationCenter. TopSpin notifies on
+//  Local notifications via UNUserNotificationCenter. Autorotate notifies on
 //  rotation FAILURE (and partial runs) so operators notice a stuck pipeline
 //  even when rotations happened in a background refresh.
 //
@@ -13,7 +13,7 @@
 
 import Foundation
 import UserNotifications
-import TopSpinCore
+import AutorotateCore
 
 enum NotificationManager {
 
@@ -56,12 +56,12 @@ enum NotificationManager {
             ? "Rotation failed: \(secretName)"
             : "Rotation partially applied: \(secretName)"
         content.body = detail.map { String($0.prefix(180)) }
-            ?? "Open TopSpin to inspect the run and retry."
+            ?? "Open Autorotate to inspect the run and retry."
         content.sound = .default
-        content.threadIdentifier = "topspin.rotations"
+        content.threadIdentifier = "autorotate.rotations"
 
         let request = UNNotificationRequest(
-            identifier: "topspin.rotation.\(UUID().uuidString)",
+            identifier: "autorotate.rotation.\(UUID().uuidString)",
             content: content,
             trigger: nil) // deliver immediately
         try? await UNUserNotificationCenter.current().add(request)

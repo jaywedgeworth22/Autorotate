@@ -1,6 +1,6 @@
 //
 //  RotateSecretIntent.swift
-//  TopSpin-iOS
+//  Autorotate-iOS
 //
 //  App Intents for Siri Shortcuts, Action Button, and Control Center rotation automation.
 //
@@ -8,7 +8,7 @@
 import AppIntents
 import Foundation
 import SwiftData
-import TopSpinCore
+import AutorotateCore
 
 struct RotateDueSecretsIntent: AppIntent {
     static let title: LocalizedStringResource = "Rotate Due Secrets"

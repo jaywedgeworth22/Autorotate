@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { motion } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
-import type { SecretWithRelations, StatsOverview } from '@contracts/topspin'
+import type { SecretWithRelations, StatsOverview } from '@contracts/autorotate'
 import { cn } from '@/lib/utils'
 import { ConnectorTile } from './DueQueue'
 

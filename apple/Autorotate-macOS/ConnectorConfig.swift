@@ -1,11 +1,11 @@
 //
 //  ConnectorConfig.swift
-//  TopSpin-macOS
+//  Autorotate-macOS
 //
 //  Per-secret, non-secret connector settings and the factory that turns
 //  them into a `SecretConnector` instance for `RotationEngine`.
 //
-//  TopSpinCore connectors are structs whose configuration (IAM user names,
+//  AutorotateCore connectors are structs whose configuration (IAM user names,
 //  project ids, old key ids, …) is supplied at init time. The app persists
 //  that configuration as a `[String: String]` dictionary inside the
 //  `SecretEntity.connectorConfigData` column (metadata only). Anything that
@@ -15,7 +15,7 @@
 //
 
 import Foundation
-import TopSpinCore
+import AutorotateCore
 
 /// Well-known keys of the connector settings dictionary.
 enum ConnectorSettingsKey {
@@ -78,7 +78,7 @@ enum ConnectorFactory {
         case StripeConnector.connectorId:
             return StripeConnector(
                 newKeyName: value(ConnectorSettingsKey.newKeyName,
-                                  default: "topspin-rotated"),
+                                  default: "autorotate-rotated"),
                 oldKeyId: value(ConnectorSettingsKey.oldKeyId))
         case OpenAIConnector.connectorId:
             return OpenAIConnector(
@@ -89,7 +89,7 @@ enum ConnectorFactory {
                 workspaceId: value(ConnectorSettingsKey.workspaceId),
                 oldKeyId: value(ConnectorSettingsKey.oldKeyId),
                 newKeyName: value(ConnectorSettingsKey.newKeyName,
-                                  default: "topspin-rotated"))
+                                  default: "autorotate-rotated"))
         case CloudflareConnector.connectorId:
             return CloudflareConnector(tokenId: value(ConnectorSettingsKey.tokenId))
         case VercelConnector.connectorId:
@@ -102,7 +102,7 @@ enum ConnectorFactory {
         case SendGridConnector.connectorId:
             return SendGridConnector(
                 newKeyName: value(ConnectorSettingsKey.newKeyName,
-                                  default: "topspin-rotated"),
+                                  default: "autorotate-rotated"),
                 oldKeyId: value(ConnectorSettingsKey.oldKeyId))
         case SlackConnector.connectorId:
             let appId = value(ConnectorSettingsKey.appId)
@@ -168,7 +168,7 @@ enum ConnectorFieldCatalog {
                     f(ConnectorSettingsKey.oauthClientId, "OAuth client id (oauthApp mode)"),
                     f(ConnectorSettingsKey.tokenToReset, "Token to reset (oauthApp mode)")]
         case StripeConnector.connectorId:
-            return [f(ConnectorSettingsKey.newKeyName, "New key name", "topspin-rotated"),
+            return [f(ConnectorSettingsKey.newKeyName, "New key name", "autorotate-rotated"),
                     f(ConnectorSettingsKey.oldKeyId, "Old key id (optional)", "rk_live_…")]
         case OpenAIConnector.connectorId:
             return [f(ConnectorSettingsKey.projectId, "Project id", "proj_…"),
