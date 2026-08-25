@@ -21,6 +21,7 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - **Apache-2.0 + Kimi dump backup + catalog fold-in** — CURSOR · PR [#42](https://github.com/jaywedgeworth22/TopSpin/pull/42) · branch `cursor/kimi-apache-merge`. Relicensed to Apache 2.0 (© Jay). Kimi dump at `backups/kimi-agent-topspin/`. Secret Rotator nickname (`app/`) at `backups/secret-rotator/` (not a standalone app). Grok extra catalog folded into live web + TopSpinCore.
 
 ## In Progress
+- **2026-08-25 — CURSOR — Pin AppUpdatePrompt.swift from ST fleet, drop knownAppleIds.**  Branch `cursor/app-update-prompt-pin-1b43`.  Copy Socratic.Trade `scripts/ios-fleet/AppUpdatePrompt.swift` into `apple/TopSpin-iOS/` (no Swift package).  Removed hardcoded `knownAppleIds` (stale `online.dealdex`).  Apple IDs come from Info.plist / versions.json / lookup.  Live DealDex is `net.dealdex` appleId `6802474288` (not in this Swift file).  No testers.json, no TestFlight ship, no `--force-ship`, no spend.
 - **Owner: Developer portal App IDs for Autorotate** — leftover after Grok #50 closed as duplicate of AG #48.  https://autorotate.codes.  Do not reopen or merge #50.  `com.jay.shellular` stays disabled.
 - **Dependabot leftover radix/react PRs** — CURSOR · after #16. Remaining npm PRs blocked on serial lockfile rebase. Auto-merge not enabled on the repo. PR #17 (`fix/no-target-commit`) is another seat — do not touch.
 
@@ -29,6 +30,7 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - Owner dashboard items: branch protection on `main` (require PR + checks `web`, `apple`, `gitleaks`); Infisical project for prod secrets; App Store Connect records before TestFlight; `SENTRY_FLEET_DSN` then sentry-ci-report.
 
 ## Changelog of this log
+- 2026-08-25 — CURSOR reserved pin of fleet AppUpdatePrompt.swift into the iOS target and moved knownAppleIds off the Swift file (`cursor/app-update-prompt-pin-1b43`).
 - 2026-08-22 — CURSOR: Grok leftover = owner App IDs + ASC capabilities cheat sheet.  Branding autorotate.codes.  DealDex mention uses dealdex.net.  PR #50 not to merge.
 - 2026-08-22 — CURSOR closed Grok PR #50 as duplicate of AG #48 (same `codes.autorotate` IDs).  Product/domain: Autorotate / autorotate.codes.  DealDex public host dealdex.net.  Contact+logo product is contactlogo.com when that app is in scope.
 - 2026-08-21 — AG implemented full power enhancements across Web, iOS, and TopSpinCore, opening PR [#48](https://github.com/jaywedgeworth22/TopSpin/pull/48).
