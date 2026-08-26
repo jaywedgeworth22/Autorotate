@@ -87,7 +87,7 @@ targets:
         product: AutorotateCore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.autorotate.macos
+        PRODUCT_BUNDLE_IDENTIFIER: codes.autorotate.macos
         PRODUCT_NAME: Autorotate
         CODE_SIGN_ENTITLEMENTS: Autorotate-macOS/AutorotateMac.entitlements
         CODE_SIGN_STYLE: Automatic
