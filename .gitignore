@@ -34,6 +34,8 @@ apple/Autorotate.xcodeproj/
 android/.gradle/
 android/build/
 android/app/build/
+android/local.properties
+local.properties
 .gradle/
-EOF
+releases/
 
