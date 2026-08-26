@@ -20,7 +20,7 @@ const Gyroscope = lazy(() => import('@/components/landing/Gyroscope'))
 
 const STEP_COPY: { title: string; body: string; icon: LucideIcon }[] = [
   { title: 'LOCK', body: 'The old credential is frozen and flagged so nothing else touches it mid-rotation.', icon: Lock },
-  { title: 'ROTATE', body: "TopSpin calls the provider's API to mint a fresh credential — programmatically, not by hand.", icon: RefreshCw },
+  { title: 'ROTATE', body: "Autorotate calls the provider's API to mint a fresh credential — programmatically, not by hand.", icon: RefreshCw },
   { title: 'PUSH', body: 'The new value travels encrypted straight to your targets: Infisical, env files, webhooks, Keychain.', icon: Send },
   { title: 'VERIFY', body: 'Each target confirms receipt. Fingerprints are compared — never values.', icon: ShieldCheck },
   { title: 'COMMIT', body: 'The rotation is finalized, the old credential is revoked at the provider.', icon: CheckCircle2 },
@@ -367,7 +367,7 @@ export default function Home() {
           </h1>
 
           <p className="hero-sub hero-fade mt-6 max-w-[560px] text-[15px] leading-6 text-ink-secondary">
-            TopSpin rotates API keys and secrets across every platform you use — AWS, GitHub,
+            Autorotate rotates API keys and secrets across every platform you use — AWS, GitHub,
             Stripe, OpenAI, and 10 more — then delivers them to Infisical, your env files,
             webhooks, and Apple Keychain. Plaintext never touches our servers. Ever.
           </p>
@@ -433,7 +433,7 @@ export default function Home() {
             <div className="stat-card panel-light rounded-card border border-line-subtle bg-panel p-6">
               <div className="tnum font-mono text-xl font-medium leading-7 tracking-[-0.01em] text-spin">0</div>
               <p className="mt-2 text-[13px] leading-5 text-ink-secondary">
-                plaintext secrets TopSpin will ever store
+                plaintext secrets Autorotate will ever store
               </p>
             </div>
           </div>
@@ -533,7 +533,7 @@ export default function Home() {
               <CapabilityBadge capability="update-only" />
             </span>
             <p className="mt-4 text-[15px] leading-6 text-ink-secondary">
-              Provider can&apos;t mint keys via API — TopSpin drives the update, delivery, and
+              Provider can&apos;t mint keys via API — Autorotate drives the update, delivery, and
               verification of a value you supply.
             </p>
             <p className="text-mono-s mt-4 text-ink-muted">e.g. Generic REST, some Slack scopes</p>
@@ -550,7 +550,7 @@ export default function Home() {
               New secrets, delivered where they live.
             </h2>
             <p className="mt-5 max-w-[520px] text-[15px] leading-6 text-ink-secondary">
-              A rotation isn&apos;t done until every consumer has the new value. TopSpin pushes to:
+              A rotation isn&apos;t done until every consumer has the new value. Autorotate pushes to:
             </p>
             <ul className="mt-8 space-y-5">
               {[
@@ -598,7 +598,7 @@ export default function Home() {
               ))}
               {/* center node */}
               <rect x="24" y="136" width="96" height="48" rx="10" fill="#11151F" stroke="#2EE6A8" strokeWidth="1.5" />
-              <text x="72" y="156" textAnchor="middle" fill="#E8ECF4" fontSize="11" fontFamily="JetBrains Mono, monospace">TopSpin</text>
+              <text x="72" y="156" textAnchor="middle" fill="#E8ECF4" fontSize="11" fontFamily="JetBrains Mono, monospace">Autorotate</text>
               <text x="72" y="172" textAnchor="middle" fill="#2EE6A8" fontSize="11" fontFamily="JetBrains Mono, monospace">Engine</text>
               {/* target chips */}
               {[
@@ -634,7 +634,7 @@ export default function Home() {
             We couldn&apos;t leak your secrets if we tried.
           </h2>
           <p className="sec6-fade mx-auto mt-5 max-w-[640px] text-[15px] leading-6 text-ink-secondary">
-            TopSpin stores metadata, rotation records, and sha256 fingerprints — nothing else.
+            Autorotate stores metadata, rotation records, and sha256 fingerprints — nothing else.
             Values move point-to-point, encrypted, and are never persisted by us. Verification
             compares hashes, not secrets.
           </p>
@@ -673,7 +673,7 @@ export default function Home() {
             Your Mac and iPhone are targets too.
           </h2>
           <p className="mt-4 max-w-[620px] text-[13px] leading-5 text-ink-secondary">
-            The TopSpin companions receive rotated secrets end-to-end encrypted and write them
+            The Autorotate companions receive rotated secrets end-to-end encrypted and write them
             straight into Apple Keychain — approve each delivery with Face ID, or let policy
             auto-approve.
           </p>
@@ -683,7 +683,7 @@ export default function Home() {
               <div className="flex justify-center p-6">
                 <img
                   src="/companion-ios.png"
-                  alt="TopSpin iOS companion — Keychain Sync screen"
+                  alt="Autorotate iOS companion — Keychain Sync screen"
                   className="max-h-[560px] w-auto rounded-[24px] shadow-[0_24px_48px_rgba(46,230,168,0.10)] transition-all duration-300 group-hover:-translate-y-1.5 group-hover:shadow-[0_32px_64px_rgba(46,230,168,0.16)]"
                 />
               </div>
@@ -704,7 +704,7 @@ export default function Home() {
               <div className="flex items-center justify-center p-6 lg:min-h-[608px]">
                 <img
                   src="/companion-macos.png"
-                  alt="TopSpin macOS companion — Apple Keychain targets window"
+                  alt="Autorotate macOS companion — Apple Keychain targets window"
                   className="w-full rounded-card shadow-[0_24px_48px_rgba(46,230,168,0.10)] transition-all duration-300 group-hover:-translate-y-1.5 group-hover:shadow-[0_32px_64px_rgba(46,230,168,0.16)]"
                 />
               </div>

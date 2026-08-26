@@ -1,5 +1,5 @@
-import type { RotationRun, SecretWithRelations } from '@contracts/topspin'
-import type { RotationPolicy, RotationStep } from '@contracts/topspin'
+import type { RotationRun, SecretWithRelations } from '@contracts/autorotate'
+import type { RotationPolicy, RotationStep } from '@contracts/autorotate'
 import type { StepState } from '@/components/primitives'
 
 /* ------------------------------------------------------------------ */

@@ -1,4 +1,4 @@
-# TopSpin — Handoff Note for a Local (Non-Kimi) Agent
+# Autorotate — Handoff Note for a Local (Non-Kimi) Agent
 
 **Date:** 2026-08-21 · **From:** Kimi orchestration swarm · **To:** a local agent (or human) running on the Mac
 
@@ -14,22 +14,22 @@ context. Follow the tasks in order.
 
 ## 0. What exists right now
 
-TopSpin is a multi-platform secret-rotation product. Everything below is **already
+Autorotate is a multi-platform secret-rotation product. Everything below is **already
 built and committed** in this repository (`main` branch, clean tree):
 
 | Component | Path | State |
 |---|---|---|
 | Web control center (React 19 + Vite + Hono/tRPC/Drizzle/MySQL) | `apps/web/` | `npm run check` + `npm run build` passed at build time; seeded demo data; demo-mode rotation engine |
-| Shared Swift package (rotation engine, shipped connectors + Grok extra catalog, Infisical client, KeychainManager, file-target engine) | `apple/TopSpinCore/` | **Compiler-verified**: `swift build` + `swift test` |
-| iOS app (SwiftUI, iOS 17+) | `apple/TopSpin-iOS/` | Manually audited against TopSpinCore APIs; **never compiled** (no Mac available at build time) |
-| macOS app (SwiftUI + MenuBarExtra, macOS 14+) | `apple/TopSpin-macOS/` | Same — manually audited, **never compiled** |
+| Shared Swift package (rotation engine, shipped connectors + Grok extra catalog, Infisical client, KeychainManager, file-target engine) | `apple/AutorotateCore/` | **Compiler-verified**: `swift build` + `swift test` |
+| iOS app (SwiftUI, iOS 17+) | `apple/Autorotate-iOS/` | Manually audited against AutorotateCore APIs; **never compiled** (no Mac available at build time) |
+| macOS app (SwiftUI + MenuBarExtra, macOS 14+) | `apple/Autorotate-macOS/` | Same — manually audited, **never compiled** |
 | XcodeGen spec (both app targets, already merged) | `apple/project.yml` | YAML-validated; paths verified to resolve |
 | Architecture spec | `docs/architecture.md` | Source of truth for the rotation pipeline + connector capability matrix |
 | Standards pack | root + `.github/` | LICENSE (Apache-2.0), CONTRIBUTING, SECURITY, CHANGELOG, CODEOWNERS, CoC, PR/issue templates, Dependabot, CodeQL |
 | Agent coordination manifest | `AGENTS.md` | Module ownership, invariants, workflow protocol for AI agent fleets |
 | CI | `.github/workflows/ci.yml` | `web` job (ubuntu) + `apple` job (`macos-26`, Xcode 26, builds both schemes) |
 | Secret scan gate | `.github/workflows/secret-scan.yml` | Gitleaks full-history scan on every push/PR |
-| Push script | `scripts/push-to-github.sh` | Creates `jaywedgeworth22/TopSpin` (public) via REST API and pushes `main` |
+| Push script | `scripts/push-to-github.sh` | Creates `jaywedgeworth22/Autorotate` (public) via REST API and pushes `main` |
 
 ### Product invariants (never violate these)
 1. **Zero plaintext persistence.** Secret values exist only in memory during a
@@ -41,7 +41,7 @@ built and committed** in this repository (`main` branch, clean tree):
 
 ---
 
-## Task 1 — Push to GitHub as `jaywedgeworth22/TopSpin` (PUBLIC)
+## Task 1 — Push to GitHub as `jaywedgeworth22/Autorotate` (PUBLIC)
 
 The repo is prepared but **not yet pushed** — the build environment had no GitHub
 credentials. The token reportedly lives in the owner's "global api keys" store on
@@ -50,16 +50,16 @@ credentials. The token reportedly lives in the owner's "global api keys" store o
 
 ### Option A — gh CLI (preferred)
 ```bash
-cd /Code/TopSpin            # or wherever this repo was placed
+cd /Code/Autorotate            # or wherever this repo was placed
 gh auth status              # must be logged in as jaywedgeworth22
-gh repo create jaywedgeworth22/TopSpin --public \
+gh repo create jaywedgeworth22/Autorotate --public \
   --description "Multi-platform secret rotation: web control center + iOS/macOS companions (zero-plaintext, LOCK-ROTATE-PUSH-VERIFY-COMMIT-AUDIT)" \
   --source . --remote origin --push
 ```
 
 ### Option B — token + script
 ```bash
-cd /Code/TopSpin
+cd /Code/Autorotate
 GITHUB_TOKEN=<token-with-repo-scope> bash scripts/push-to-github.sh
 # owner defaults to jaywedgeworth22; repo is created PUBLIC; script is idempotent
 ```
@@ -76,7 +76,7 @@ grep -rn "BEGIN.*PRIVATE KEY\|ghp_\|sk-\|AKIA" --include="*" . | grep -v ".git/"
 Note: `apps/web/.env.example` contains placeholders only — that is intentional and safe.
 
 ### After pushing
-1. Confirm `https://github.com/jaywedgeworth22/TopSpin` is **Public**.
+1. Confirm `https://github.com/jaywedgeworth22/Autorotate` is **Public**.
 2. Actions tab: `CI` and `Secret Scan` workflows should trigger on the push — watch the first run.
 3. Settings → Branches → add protection for `main`: require PR + status checks `web`, `apple`, `gitleaks`.
 4. If `macos-26` runner label is unavailable in your plan, edit `.github/workflows/ci.yml`:
@@ -90,50 +90,50 @@ Note: `apps/web/.env.example` contains placeholders only — that is intentional
 Prereqs: macOS with Xcode 26 installed, `brew install xcodegen`.
 
 ```bash
-cd /Code/TopSpin/apple
+cd /Code/Autorotate/apple
 
 # 1. Package first — must stay green:
-cd TopSpinCore && swift build && swift test     # expect 22/22 pass
+cd AutorotateCore && swift build && swift test     # expect 22/22 pass
 cd ..
 
-# 2. Generate the Xcode project (both targets: TopSpin-iOS, TopSpin-macOS):
+# 2. Generate the Xcode project (both targets: Autorotate-iOS, Autorotate-macOS):
 xcodegen generate
-open TopSpin.xcodeproj
+open Autorotate.xcodeproj
 
 # 3. CLI builds (unsigned):
-xcodebuild -project TopSpin.xcodeproj -scheme TopSpin-macOS \
+xcodebuild -project Autorotate.xcodeproj -scheme Autorotate-macOS \
   -destination 'platform=macOS' build CODE_SIGNING_ALLOWED=NO
-xcodebuild -project TopSpin.xcodeproj -scheme TopSpin-iOS \
+xcodebuild -project Autorotate.xcodeproj -scheme Autorotate-iOS \
   -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO
 ```
 
 ### Expected first-build fixups (the app targets were never compiled)
-TopSpinCore is proven; the SwiftUI/SwiftData app code is not. Most likely issues:
+AutorotateCore is proven; the SwiftUI/SwiftData app code is not. Most likely issues:
 - SwiftData `@ModelActor` / `@Query` macro nuances in `Stores+SwiftData.swift` and `MenuBarExtra` scenes.
 - `@Observable` didSet/computed-accessor details in `AppSettings.swift` / `AppState.swift`.
 - Info.plist merge: both apps set `GENERATE_INFOPLIST_FILE=YES`; the iOS app also has a checked-in
-  `TopSpin-iOS/Info.plist` (BGTaskScheduler identifiers) that Xcode merges — if you get duplicate-key
+  `Autorotate-iOS/Info.plist` (BGTaskScheduler identifiers) that Xcode merges — if you get duplicate-key
   errors, move those keys entirely into the plist or entirely into `INFOPLIST_KEY_*`, not both.
 - `SWIFT_VERSION` is `5.0` (language mode for the 5.9 toolchain) — with Xcode 26's Swift 6 toolchain
   you may raise it, but expect strict-concurrency errors if you jump to `6.0`; keep `5.0` until clean.
 
 ### Capabilities to enable for real device runs (Signing & Capabilities)
-- **Keychain Sharing** on both targets: `$(AppIdentifierPrefix)com.topspin.shared`
+- **Keychain Sharing** on both targets: `$(AppIdentifierPrefix)com.autorotate.shared`
   (already declared in the entitlements files — Xcode needs your team to sign).
-- iOS: Background Modes → "Background fetch" (matches Info.plist BGTask identifier `com.topspin.refresh`).
+- iOS: Background Modes → "Background fetch" (matches Info.plist BGTask identifier `com.autorotate.refresh`).
 - macOS: App Sandbox + User Selected File Read/Write + bookmarks + outgoing network (all pre-declared
-  in `TopSpin-macOS/TopSpinMac.entitlements`).
+  in `Autorotate-macOS/AutorotateMac.entitlements`).
 - Apps degrade gracefully without these (app-private keychain fallback) — fine for simulator/dev.
 
 ---
 
 ## Task 3 — Web app local run (optional verification)
 ```bash
-cd /Code/TopSpin/apps/web
+cd /Code/Autorotate/apps/web
 cp .env.example .env       # fill DATABASE_URL (MySQL/TiDB) or ask owner for the dev instance
 npm install
 npm run db:push && npm run db:seed
-npm run dev                # http://localhost:3000 — demo mode is ON by default (TOPSPIN_DEMO unset)
+npm run dev                # http://localhost:3000 — demo mode is ON by default (AUTOROTATE_DEMO unset)
 ```
 The demo workspace (seeded connectors from the live registry, 40 secrets, file/webhook/keychain targets, hash-chained audit) makes every
 screen explorable without any real credentials.

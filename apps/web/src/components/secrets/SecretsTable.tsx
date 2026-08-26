@@ -10,7 +10,7 @@ import {
   StatusDot,
 } from '@/components/primitives'
 import type { Column } from '@/components/primitives'
-import type { SecretWithRelations } from '@contracts/topspin'
+import type { SecretWithRelations } from '@contracts/autorotate'
 import {
   ConnectorTile,
   TargetKindChip,

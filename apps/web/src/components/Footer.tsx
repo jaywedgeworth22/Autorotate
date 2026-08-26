@@ -35,7 +35,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
     links: [
       { label: 'Privacy', href: '/#privacy' },
       { label: 'Terms', href: '/#terms' },
-      { label: 'License', href: 'https://github.com/jaywedgeworth22/TopSpin/blob/main/LICENSE' },
+      { label: 'License', href: 'https://github.com/jaywedgeworth22/Autorotate/blob/main/LICENSE' },
       { label: 'Security', href: '/#security' },
     ],
   },
@@ -57,7 +57,9 @@ export default function Footer() {
           <div className="col-span-2 md:col-span-1">
             <Link to="/" className="flex items-center gap-3">
               <LogoMark size={28} />
-              <span className="font-display text-lg font-semibold tracking-[-0.02em]">Autorotate</span>
+              <span className="font-display text-lg font-semibold tracking-[-0.02em]">
+                Autorotate<span className="text-spin">.Codes</span>
+              </span>
             </Link>
             <p className="text-mono-s mt-4 text-ink-muted">
               rotate everything.
@@ -95,7 +97,7 @@ export default function Footer() {
           </div>
           <div className="flex items-center gap-4">
             <a
-              href="https://github.com/jaywedgeworth22/TopSpin"
+              href="https://github.com/jaywedgeworth22/Autorotate"
               aria-label="GitHub"
               className="text-ink-muted transition-colors hover:text-ink-primary"
             >

@@ -1,0 +1,172 @@
+{
+  "owner": "jaywedgeworth22",
+  "codeRoot": "/Users/jay/Code",
+  "appsRoot": "/Users/jay/apps",
+  "slackChannelId": "C0BEZDJDNKV",
+  "notes": "Canonical fleet app + coding-seat inventory. onboard-new-app.sh adds a row here, then patches the registries listed in docs/ONBOARDING-NEW-APP.md. check-fleet-registry.py verifies those files still mention every app. GROK-BOT is a fleet-wide identity that drives Cursor cloud agents; it is not an app-specific seat and is not listed in seats[].",
+  "apps": [
+    {
+      "repo": "Socratic.Trade",
+      "acronym": "ST",
+      "displayName": "Socratic.Trade",
+      "slackRepo": "Socratic.Trade",
+      "codeDir": "Socratic.Trade",
+      "liveBoard": "TRADING-EFFORT-LOG.md",
+      "worktreePrefix": "trading",
+      "badgeClass": "repo-st",
+      "digestColor": "#2563eb",
+      "hasAppIcon": true,
+      "iconFile": "agent-logos/app-st.png",
+      "kind": "product"
+    },
+    {
+      "repo": "Congress.Trade",
+      "acronym": "CT",
+      "displayName": "Congress.Trade",
+      "slackRepo": "Congress.Trade",
+      "codeDir": "Congress.Trade",
+      "liveBoard": "CONGRESS-TRADE-EFFORT-LOG.md",
+      "worktreePrefix": "congress",
+      "badgeClass": "repo-ct",
+      "digestColor": "#7c3aed",
+      "hasAppIcon": true,
+      "iconFile": "agent-logos/app-ct.png",
+      "kind": "product"
+    },
+    {
+      "repo": "Usage-Monitor",
+      "acronym": "UM",
+      "displayName": "Usage Monitor",
+      "slackRepo": "API-usage-monitor",
+      "codeDir": "Usage-Monitor",
+      "liveBoard": "API-USAGE-MONITOR-EFFORT-LOG.md",
+      "worktreePrefix": "usage",
+      "badgeClass": "repo-um",
+      "digestColor": "#ea580c",
+      "hasAppIcon": true,
+      "iconFile": "agent-logos/app-um.png",
+      "kind": "product"
+    },
+    {
+      "repo": "congress-trading-shared",
+      "acronym": "CTS",
+      "displayName": "congress-trading-shared",
+      "slackRepo": "congress-trading-shared",
+      "codeDir": "congress-trading-shared",
+      "liveBoard": "CONGRESS-SHARED-EFFORT-LOG.md",
+      "worktreePrefix": "cts",
+      "badgeClass": "repo-shared",
+      "digestColor": "#0d9488",
+      "hasAppIcon": false,
+      "kind": "library"
+    },
+    {
+      "repo": "DealDex",
+      "acronym": "DD",
+      "displayName": "DealDex",
+      "slackRepo": "DealDex",
+      "codeDir": "DealDex",
+      "liveBoard": "DEALDEX-EFFORT-LOG.md",
+      "worktreePrefix": "dealdex",
+      "badgeClass": "repo-dd",
+      "digestColor": "#b45309",
+      "hasAppIcon": true,
+      "iconFile": "agent-logos/app-dd.png",
+      "kind": "product"
+    },
+    {
+      "repo": "ai-fleet-coordinator",
+      "acronym": "FLEET",
+      "displayName": "ai-fleet-coordinator",
+      "slackRepo": "ai-fleet-coordinator",
+      "codeDir": "ai-fleet-coordinator",
+      "liveBoard": "FLEET-INFRA-EFFORT-LOG.md",
+      "worktreePrefix": "fleet",
+      "badgeClass": "repo-fleet",
+      "digestColor": "#475569",
+      "hasAppIcon": false,
+      "kind": "infra"
+    },
+    {
+      "repo": "Personal-Site",
+      "acronym": "PS",
+      "displayName": "Personal-Site",
+      "slackRepo": "Personal-Site",
+      "codeDir": "Personal-Site",
+      "liveBoard": "PERSONAL-SITE-EFFORT-LOG.md",
+      "worktreePrefix": "personal",
+      "badgeClass": "repo-ps",
+      "digestColor": "#be123c",
+      "hasAppIcon": false,
+      "kind": "product"
+    }
+  ],
+  "seats": [
+    {
+      "tag": "CLAUDE",
+      "notesName": "Claude",
+      "worktreeSuffix": "claude",
+      "branchPrefixes": [
+        "claude/",
+        "agent/claude"
+      ]
+    },
+    {
+      "tag": "MONET",
+      "notesName": "Monet",
+      "worktreeSuffix": "monet",
+      "branchPrefixes": [
+        "monet/"
+      ]
+    },
+    {
+      "tag": "CODEX",
+      "notesName": "Codex",
+      "worktreeSuffix": "codex",
+      "branchPrefixes": [
+        "codex/"
+      ]
+    },
+    {
+      "tag": "AG",
+      "notesName": "AG",
+      "worktreeSuffix": "antigravity",
+      "branchPrefixes": [
+        "ag/",
+        "agent/antigravity"
+      ]
+    },
+    {
+      "tag": "CURSOR",
+      "notesName": "Cursor",
+      "worktreeSuffix": "cursor",
+      "branchPrefixes": [
+        "cursor/"
+      ]
+    },
+    {
+      "tag": "GROK",
+      "notesName": "Grok",
+      "worktreeSuffix": "grok",
+      "branchPrefixes": [
+        "grok/"
+      ]
+    },
+    {
+      "tag": "GROK-BUILD",
+      "notesName": "Grok Build",
+      "worktreeSuffix": "grok-build",
+      "branchPrefixes": [
+        "grok-build/"
+      ]
+    },
+    {
+      "tag": "DEEPSEEK",
+      "notesName": "DeepSeek",
+      "worktreeSuffix": "deepseek",
+      "branchPrefixes": [
+        "deepseek/"
+      ]
+    }
+  ]
+}

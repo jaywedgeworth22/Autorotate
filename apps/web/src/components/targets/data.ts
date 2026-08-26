@@ -7,7 +7,7 @@ import type {
   Target,
   TargetKind,
   WebhookTargetConfig,
-} from '@contracts/topspin'
+} from '@contracts/autorotate'
 
 export type { TargetKind }
 

@@ -1,5 +1,5 @@
 import { formatDistanceToNow } from 'date-fns'
-import type { ConnectorCapability } from '@contracts/topspin'
+import type { ConnectorCapability } from '@contracts/autorotate'
 
 /* ------------------------------------------------------------------ */
 /* Relative time helper                                                 */
@@ -285,7 +285,7 @@ export function capabilityMatrix(capability: PrimitiveCapability, platform: stri
       label: 'Create credential',
       state: updateOnly ? 'off' : 'ok',
       caption: updateOnly
-        ? 'you supply the new value; TopSpin handles the rest'
+        ? 'you supply the new value; Autorotate handles the rest'
         : (hints.create ?? 'provider API mints credentials'),
     },
     {
@@ -302,7 +302,7 @@ export function capabilityMatrix(capability: PrimitiveCapability, platform: stri
         ? (hints.revoke ?? 'provider API revoke')
         : partial
           ? 'revocation via queued follow-up task'
-          : 'manual revocation — TopSpin schedules the follow-up',
+          : 'manual revocation — Autorotate schedules the follow-up',
     },
     {
       key: 'scope',
@@ -312,13 +312,13 @@ export function capabilityMatrix(capability: PrimitiveCapability, platform: stri
         ? (hints.scope ?? 'scoped token templates')
         : partial
           ? 'partial scoping — review after rotation'
-          : 'scopes managed outside TopSpin',
+          : 'scopes managed outside Autorotate',
     },
     {
       key: 'expiry',
       label: 'Native expiry metadata',
       state: platform === 'kubernetes' ? 'ok' : 'muted',
-      caption: platform === 'kubernetes' ? 'token TTL metadata' : 'TopSpin tracks age instead',
+      caption: platform === 'kubernetes' ? 'token TTL metadata' : 'Autorotate tracks age instead',
     },
   ]
 }

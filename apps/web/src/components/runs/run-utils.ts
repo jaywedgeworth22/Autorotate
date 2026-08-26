@@ -1,5 +1,5 @@
-import type { RotationRun, RotationStep } from "@contracts/topspin";
-import { RUN_STEP_NAMES } from "@contracts/topspin";
+import type { RotationRun, RotationStep } from "@contracts/autorotate";
+import { RUN_STEP_NAMES } from "@contracts/autorotate";
 import type { StepState } from "@/components/primitives";
 
 /* ------------------------------------------------------------------ */

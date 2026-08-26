@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# push-to-github.sh — create the public "TopSpin" repo on GitHub and push main.
+# push-to-github.sh — create the public "Autorotate" repo on GitHub and push main.
 #
 # Usage:
 #   GITHUB_TOKEN=ghp_xxx GITHUB_USER=yourname ./scripts/push-to-github.sh
@@ -14,7 +14,7 @@ set -euo pipefail
 
 GITHUB_TOKEN="${1:-${GITHUB_TOKEN:-}}"
 GITHUB_USER="${2:-${GITHUB_USER:-jaywedgeworth22}}"   # default owner: jaywedgeworth22
-REPO_NAME="TopSpin"   # public repo
+REPO_NAME="Autorotate"   # public repo
 
 if [ -z "$GITHUB_TOKEN" ] || [ -z "$GITHUB_USER" ]; then
   echo "error: provide GITHUB_TOKEN and GITHUB_USER (env vars or args)." >&2
@@ -25,7 +25,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 echo "==> Creating repository '${GITHUB_USER}/${REPO_NAME}' (public)..."
-HTTP_CODE=$(curl -sS -o /tmp/topspin_repo_resp.json -w '%{http_code}' \
+HTTP_CODE=$(curl -sS -o /tmp/autorotate_repo_resp.json -w '%{http_code}' \
   -H "Authorization: token ${GITHUB_TOKEN}" \
   -H "Accept: application/vnd.github+json" \
   https://api.github.com/user/repos \
@@ -37,7 +37,7 @@ elif [ "$HTTP_CODE" = "422" ]; then
   echo "==> Repository already exists (HTTP 422) — continuing with push."
 else
   echo "error: repo creation failed (HTTP ${HTTP_CODE}):" >&2
-  cat /tmp/topspin_repo_resp.json >&2
+  cat /tmp/autorotate_repo_resp.json >&2
   exit 1
 fi
 

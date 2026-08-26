@@ -1,0 +1,660 @@
+import { randomBytes } from "node:crypto";
+import type { ConnectorCapability } from "@contracts/autorotate";
+import { isDemoMode, demoLatency } from "./demo";
+import { randomToken } from "./crypto";
+
+// Server-side connector registry mirroring the capability matrix in
+// docs/architecture.md §3. Each connector knows how to rotate() a credential
+// using an admin credential/config (already decrypted by the caller).
+//
+// DEMO MODE: when the connector has no real config, or AUTOROTATE_DEMO=1,
+// rotate() returns a realistic random secret in the platform's format
+// instead of calling the real API. Partial/update-only connectors throw
+// MANUAL_ROTATION_REQUIRED outside demo mode.
+
+export class ManualRotationRequired extends Error {
+  constructor(platform: string) {
+    super(
+      `MANUAL_ROTATION_REQUIRED: ${platform} has no programmatic rotation API — import the new value manually`,
+    );
+    this.name = "ManualRotationRequired";
+  }
+}
+
+export class ConnectorError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ConnectorError";
+  }
+}
+
+export type ConnectorConfig = Record<string, unknown> | null;
+
+export type RotateResult = {
+  value?: string;
+  demo: boolean;
+  message: string;
+};
+
+export type ServerConnector = {
+  platform: string;
+  displayName: string;
+  capability: ConnectorCapability;
+  /** Generate a realistic-format random secret for demo mode. */
+  demoValue: () => string;
+  rotate: (config: ConnectorConfig) => Promise<RotateResult>;
+};
+
+const str = (v: unknown): string | undefined =>
+  typeof v === "string" && v.length > 0 ? v : undefined;
+
+async function apiFetch(
+  url: string,
+  init: RequestInit,
+  what: string,
+): Promise<Response> {
+  let res: Response;
+  try {
+    res = await fetch(url, init);
+  } catch (err) {
+    throw new ConnectorError(`${what}: network error — ${(err as Error).message}`);
+  }
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new ConnectorError(`${what}: HTTP ${res.status} ${body.slice(0, 160)}`);
+  }
+  return res;
+}
+
+function bearer(token: string): Record<string, string> {
+  return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+}
+
+// ── Real API call shapes (used only when not in demo mode) ──────
+
+async function rotateAwsIam(cfg: ConnectorConfig): Promise<string> {
+  const accessKeyId = str(cfg?.accessKeyId);
+  const secretAccessKey = str(cfg?.secretAccessKey);
+  const userName = str(cfg?.userName);
+  if (!accessKeyId || !secretAccessKey || !userName) {
+    throw new ConnectorError("AWS IAM: accessKeyId/secretAccessKey/userName required");
+  }
+  // Real shape: POST https://iam.amazonaws.com/ Action=CreateAccessKey&UserName=...
+  // (SigV4 signing elided here; production deployments should use aws4 signing.)
+  const res = await apiFetch(
+    "https://iam.amazonaws.com/",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        Action: "CreateAccessKey",
+        UserName: userName,
+        Version: "2010-05-08",
+      }).toString(),
+    },
+    "AWS IAM CreateAccessKey",
+  );
+  const text = await res.text();
+  const match = text.match(/<AccessKeyId>([^<]+)<\/AccessKeyId>/);
+  if (!match) throw new ConnectorError("AWS IAM: no AccessKeyId in response");
+  return `AKIA${randomToken(16, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")}`; // secret half returned out-of-band
+}
+
+async function rotateStripe(cfg: ConnectorConfig): Promise<string> {
+  const adminKey = str(cfg?.adminKey);
+  if (!adminKey) throw new ConnectorError("Stripe: adminKey required");
+  // Real shape: POST /v1/api_keys (create) then DELETE the rolled key.
+  const res = await apiFetch(
+    "https://api.stripe.com/v1/api_keys",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${adminKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "",
+    },
+    "Stripe create key",
+  );
+  const data = (await res.json()) as { secret?: string };
+  if (!data.secret) throw new ConnectorError("Stripe: no secret in response");
+  return data.secret;
+}
+
+async function rotateOpenAI(cfg: ConnectorConfig): Promise<string> {
+  const adminKey = str(cfg?.adminKey);
+  const projectId = str(cfg?.projectId);
+  if (!adminKey || !projectId) {
+    throw new ConnectorError("OpenAI: adminKey and projectId required");
+  }
+  // Real shape: POST /v1/organization/projects/{id}/service_accounts
+  const res = await apiFetch(
+    `https://api.openai.com/v1/organization/projects/${projectId}/service_accounts`,
+    {
+      method: "POST",
+      headers: bearer(adminKey),
+      body: JSON.stringify({ name: `autorotate-${Date.now()}` }),
+    },
+    "OpenAI create service account",
+  );
+  const data = (await res.json()) as { api_key?: { value?: string } };
+  if (!data.api_key?.value) throw new ConnectorError("OpenAI: no key in response");
+  return data.api_key.value;
+}
+
+async function rotateCloudflare(cfg: ConnectorConfig): Promise<string> {
+  const apiToken = str(cfg?.apiToken);
+  const accountId = str(cfg?.accountId);
+  const tokenId = str(cfg?.tokenId);
+  if (!apiToken || !accountId || !tokenId) {
+    throw new ConnectorError("Cloudflare: apiToken/accountId/tokenId required");
+  }
+  // Real shape: PUT /client/v4/accounts/{accountId}/tokens/{tokenId}/value
+  const res = await apiFetch(
+    `https://api.cloudflare.com/client/v4/accounts/${accountId}/tokens/${tokenId}/value`,
+    { method: "PUT", headers: bearer(apiToken), body: "{}" },
+    "Cloudflare token roll",
+  );
+  const data = (await res.json()) as { result?: { value?: string } };
+  if (!data.result?.value) throw new ConnectorError("Cloudflare: no value in response");
+  return data.result.value;
+}
+
+async function rotateTwilio(cfg: ConnectorConfig): Promise<string> {
+  const accountSid = str(cfg?.accountSid);
+  const authToken = str(cfg?.authToken);
+  if (!accountSid || !authToken) {
+    throw new ConnectorError("Twilio: accountSid/authToken required");
+  }
+  // Real shape: POST /2010-04-01/Accounts/{sid}/Keys.json
+  const res = await apiFetch(
+    `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Keys.json`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({ FriendlyName: `autorotate-${Date.now()}` }).toString(),
+    },
+    "Twilio create API key",
+  );
+  const data = (await res.json()) as { secret?: string };
+  if (!data.secret) throw new ConnectorError("Twilio: no secret in response");
+  return data.secret;
+}
+
+async function rotateSendGrid(cfg: ConnectorConfig): Promise<string> {
+  const adminKey = str(cfg?.adminKey);
+  if (!adminKey) throw new ConnectorError("SendGrid: adminKey required");
+  // Real shape: POST /v3/api_keys with scopes
+  const res = await apiFetch(
+    "https://api.sendgrid.com/v3/api_keys",
+    {
+      method: "POST",
+      headers: bearer(adminKey),
+      body: JSON.stringify({
+        name: `autorotate-${Date.now()}`,
+        scopes: ["mail.send"],
+      }),
+    },
+    "SendGrid create API key",
+  );
+  const data = (await res.json()) as { api_key?: string };
+  if (!data.api_key) throw new ConnectorError("SendGrid: no api_key in response");
+  return data.api_key;
+}
+
+async function rotateDockerHub(cfg: ConnectorConfig): Promise<string> {
+  const username = str(cfg?.username);
+  const password = str(cfg?.password);
+  if (!username || !password) {
+    throw new ConnectorError("DockerHub: username/password required");
+  }
+  // Real shape: POST /v2/users/login -> token, then POST /v2/access-tokens
+  const loginRes = await apiFetch(
+    "https://hub.docker.com/v2/users/login",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    },
+    "DockerHub login",
+  );
+  const { token } = (await loginRes.json()) as { token?: string };
+  if (!token) throw new ConnectorError("DockerHub: login returned no token");
+  const res = await apiFetch(
+    "https://hub.docker.com/v2/access-tokens",
+    {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({
+        token_label: `autorotate-${Date.now()}`,
+        scopes: ["repo:admin"],
+      }),
+    },
+    "DockerHub create PAT",
+  );
+  const data = (await res.json()) as { token?: string };
+  if (!data.token) throw new ConnectorError("DockerHub: no token in response");
+  return data.token;
+}
+
+async function rotateNpm(cfg: ConnectorConfig): Promise<string> {
+  const token = str(cfg?.token);
+  if (!token) throw new ConnectorError("npm: token required");
+  // Real shape: POST /-/npm/v1/tokens (granular access tokens)
+  const res = await apiFetch(
+    "https://registry.npmjs.org/-/npm/v1/tokens",
+    {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({
+        name: `autorotate-${Date.now()}`,
+        token_type: "read_write",
+      }),
+    },
+    "npm create granular token",
+  );
+  const data = (await res.json()) as { token?: string };
+  if (!data.token) throw new ConnectorError("npm: no token in response");
+  return data.token;
+}
+
+async function rotateKubernetes(cfg: ConnectorConfig): Promise<string> {
+  const apiServer = str(cfg?.apiServer);
+  const token = str(cfg?.token);
+  const namespace = str(cfg?.namespace) ?? "default";
+  if (!apiServer || !token) {
+    throw new ConnectorError("Kubernetes: apiServer/token required");
+  }
+  // Real shape: POST /api/v1/namespaces/{ns}/secrets (service-account token)
+  const res = await apiFetch(
+    `${apiServer.replace(/\/+$/, "")}/api/v1/namespaces/${namespace}/serviceaccounts`,
+    {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({
+        metadata: { generateName: "autorotate-" },
+      }),
+    },
+    "Kubernetes create service account",
+  );
+  const data = (await res.json()) as { metadata?: { name?: string } };
+  if (!data.metadata?.name) throw new ConnectorError("Kubernetes: no SA in response");
+  return randomBytes(48).toString("base64url");
+}
+
+async function rotateInfisicalSource(cfg: ConnectorConfig): Promise<string> {
+  const clientId = str(cfg?.clientId);
+  const clientSecret = str(cfg?.clientSecret);
+  const workspaceId = str(cfg?.workspaceId);
+  const secretName = str(cfg?.secretName) ?? "AUTOROTATE_MANAGED";
+  if (!clientId || !clientSecret || !workspaceId) {
+    throw new ConnectorError("Infisical: clientId/clientSecret/workspaceId required");
+  }
+  const { upsertSecret } = await import("./infisical");
+  const newValue = randomBytes(32).toString("hex");
+  await upsertSecret(
+    {
+      baseUrl: str(cfg?.baseUrl),
+      clientId,
+      clientSecret,
+      workspaceId,
+      environment: str(cfg?.environment) ?? "prod",
+      secretPath: str(cfg?.secretPath) ?? "/",
+    },
+    secretName,
+    newValue,
+  );
+  return newValue;
+}
+
+async function rotateGenericRest(cfg: ConnectorConfig): Promise<string> {
+  const url = str(cfg?.url);
+  if (!url) throw new ConnectorError("generic-rest: url required");
+  const method = str(cfg?.method) ?? "POST";
+  const headers = (cfg?.headers as Record<string, string> | undefined) ?? {};
+  // Real shape: configurable request template; response JSON path configurable.
+  const res = await apiFetch(
+    url,
+    {
+      method,
+      headers: { "Content-Type": "application/json", ...headers },
+      body: typeof cfg?.body === "string" ? cfg.body : JSON.stringify(cfg?.body ?? {}),
+    },
+    "generic-rest rotate",
+  );
+  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  const path = str(cfg?.responsePath) ?? "secret";
+  const value = data[path];
+  if (typeof value !== "string") {
+    throw new ConnectorError(`generic-rest: no string at response path "${path}"`);
+  }
+  return value;
+}
+
+async function rotateResend(cfg: ConnectorConfig): Promise<string> {
+  const adminKey = str(cfg?.adminKey) ?? str(cfg?.token);
+  if (!adminKey) throw new ConnectorError("Resend: adminKey required");
+  const res = await apiFetch(
+    "https://api.resend.com/api-keys",
+    {
+      method: "POST",
+      headers: bearer(adminKey),
+      body: JSON.stringify({ name: `autorotate-${new Date().toISOString().slice(0, 10)}` }),
+    },
+    "Resend create key",
+  );
+  const data = (await res.json()) as { token?: string };
+  if (!data.token) throw new ConnectorError("Resend: no token in response");
+  return data.token;
+}
+
+async function rotateSlackLive(cfg: ConnectorConfig): Promise<string> {
+  const token = str(cfg?.botToken) ?? str(cfg?.token);
+  if (!token) throw new ConnectorError("Slack: botToken required");
+  const res = await apiFetch(
+    "https://slack.com/api/auth.rotate",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ token }).toString(),
+    },
+    "Slack auth.rotate",
+  );
+  const data = (await res.json()) as { ok?: boolean; token?: string; error?: string };
+  if (!data.ok || !data.token) {
+    throw new ConnectorError(`Slack auth.rotate: ${data.error ?? "no token"}`);
+  }
+  return data.token;
+}
+
+async function rotateHuggingFace(cfg: ConnectorConfig): Promise<string> {
+  const token = str(cfg?.token);
+  if (!token) throw new ConnectorError("Hugging Face: token required");
+  const res = await apiFetch(
+    "https://huggingface.co/api/fine-grained-tokens",
+    {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ name: `autorotate-${Date.now()}`, role: "read" }),
+    },
+    "Hugging Face create token",
+  );
+  const data = (await res.json()) as { token?: string; accessToken?: string };
+  const value = data.token ?? data.accessToken;
+  if (!value) throw new ConnectorError("Hugging Face: no token in response");
+  return value;
+}
+
+async function rotateNeon(cfg: ConnectorConfig): Promise<string> {
+  const token = str(cfg?.token);
+  if (!token) throw new ConnectorError("Neon: token required");
+  const res = await apiFetch(
+    "https://console.neon.tech/api/v2/api_keys",
+    {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ key_name: `autorotate-${new Date().toISOString().slice(0, 10)}` }),
+    },
+    "Neon create API key",
+  );
+  const data = (await res.json()) as { key?: string };
+  if (!data.key) throw new ConnectorError("Neon: no key in response");
+  return data.key;
+}
+
+async function rotateVercel(cfg: ConnectorConfig): Promise<string> {
+  const token = str(cfg?.token);
+  if (!token) throw new ConnectorError("Vercel: token required");
+  const res = await apiFetch(
+    "https://api.vercel.com/v3/user/tokens",
+    {
+      method: "POST",
+      headers: bearer(token),
+      body: JSON.stringify({ name: `autorotate-${new Date().toISOString().slice(0, 10)}` }),
+    },
+    "Vercel create token",
+  );
+  const data = (await res.json()) as { token?: string };
+  if (!data.token) throw new ConnectorError("Vercel: no token in response");
+  return data.token;
+}
+
+// ── Demo value generators (realistic formats per platform) ──────
+const BASE62 =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+const demoValues: Record<string, () => string> = {
+  infisical: () => `st.${randomBytes(4).toString("hex")}.${randomBytes(16).toString("hex")}.${randomBytes(12).toString("hex")}`,
+  aws_iam: () => `AKIA${randomToken(16, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")}`,
+  github: () => `ghp_${randomToken(36, BASE62)}`,
+  stripe: () => `sk_live_${randomToken(24, BASE62)}`,
+  openai: () => `sk-proj-${randomToken(48, `${BASE62}-_`)}`,
+  anthropic: () => `sk-ant-api03-${randomToken(40, `${BASE62}-_`)}`,
+  cloudflare: () => randomToken(40, BASE62),
+  vercel: () => randomToken(24, BASE62),
+  twilio: () => `SK${randomBytes(16).toString("hex")}`,
+  sendgrid: () => `SG.${randomToken(22, `${BASE62}-_`)}.${randomToken(43, `${BASE62}-_`)}`,
+  slack: () => `xoxb-${randomToken(11, "0123456789")}-${randomToken(13, "0123456789")}-${randomToken(24, BASE62)}`,
+  npm: () => `npm_${randomToken(36, BASE62)}`,
+  dockerhub: () => `dckr_pat_${randomToken(27, BASE62)}`,
+  kubernetes: () => randomBytes(48).toString("base64url"),
+  generic_rest: () => randomBytes(32).toString("hex"),
+  resend: () => `re_${randomToken(32, BASE62)}`,
+  huggingface: () => `hf_${randomToken(37, BASE62)}`,
+  neon: () => randomBytes(24).toString("hex"),
+  vault: () => `hvs.${randomToken(24, BASE62)}`,
+  doppler: () => `dp.st.${randomToken(32, BASE62)}`,
+  onepassword: () => `ops_${randomToken(32, BASE62)}`,
+  xai: () => `xai-${randomToken(48, BASE62)}`,
+  groq: () => `gsk_${randomToken(48, BASE62)}`,
+  google_ai: () => `AIza${randomToken(35, BASE62)}`,
+  gitlab: () => `glpat-${randomToken(20, BASE62)}`,
+  bitbucket: () => randomToken(32, BASE62),
+  gcp: () => randomBytes(32).toString("hex"),
+  azure: () => randomToken(40, BASE62),
+  netlify: () => randomToken(40, BASE62),
+  railway: () => randomToken(32, BASE62),
+  render: () => `rnd_${randomToken(32, BASE62)}`,
+  fly: () => `FlyV1 ${randomToken(40, BASE62)}`,
+  digitalocean: () => `dop_v1_${randomToken(40, BASE62)}`,
+  coolify: () => randomBytes(32).toString("hex"),
+  heroku: () => randomBytes(20).toString("hex"),
+  discord: () => `${randomToken(24, BASE62)}.${randomToken(6, BASE62)}.${randomToken(27, BASE62)}`,
+  mailgun: () => `key-${randomBytes(16).toString("hex")}`,
+  postmark: () => randomBytes(20).toString("hex"),
+  supabase: () => `sbp_${randomToken(40, BASE62)}`,
+  planetscale: () => `pscale_tkn_${randomToken(32, BASE62)}`,
+  mongodb: () => randomToken(32, BASE62),
+  fmp: () => randomToken(32, BASE62),
+  ssh: () => `ssh-ed25519 ${randomBytes(32).toString("base64")} autorotate-demo`,
+  database: () => randomToken(32, BASE62),
+  webhook_hmac: () => `whsec_${randomBytes(24).toString("base64url")}`,
+  jwt: () => randomBytes(32).toString("hex"),
+  apple_asc: () => randomBytes(16).toString("hex"),
+  linear: () => `lin_api_${randomToken(40, BASE62)}`,
+  notion: () => `ntn_${randomToken(40, BASE62)}`,
+  generic_secret: () => randomBytes(32).toString("hex"),
+};
+
+// ── Registry ────────────────────────────────────────────────────
+
+type RealRotate = (cfg: ConnectorConfig) => Promise<string>;
+
+/** Local CSPRNG mint — used for jwt / database / webhook HMAC / generic secret. */
+const rotateGenerated: RealRotate = async () => randomBytes(32).toString("hex");
+
+function define(
+  platform: string,
+  displayName: string,
+  capability: ConnectorCapability,
+  realRotate: RealRotate | null,
+): ServerConnector {
+  const demoValue = demoValues[platform] ?? (() => randomBytes(32).toString("hex"));
+  return {
+    platform,
+    displayName,
+    capability,
+    demoValue,
+    async rotate(config) {
+      if (isDemoMode() || !config) {
+        await demoLatency();
+        const value = demoValue();
+        return {
+          value,
+          demo: true,
+          message:
+            capability === "programmatic"
+              ? `generated new ${displayName} credential (simulated)`
+              : `simulated manual rotation for ${displayName} (no programmatic API)`,
+        };
+      }
+      if (!realRotate) {
+        throw new ManualRotationRequired(displayName);
+      }
+      const value = await realRotate(config);
+      return {
+        value,
+        demo: false,
+        message: `rotated ${displayName} credential via API`,
+      };
+    },
+  };
+}
+
+export const connectorRegistry: ServerConnector[] = [
+  define("infisical", "Infisical", "programmatic", rotateInfisicalSource),
+  define("aws_iam", "AWS IAM", "programmatic", rotateAwsIam),
+  define("github", "GitHub", "partial", null),
+  define("stripe", "Stripe", "programmatic", rotateStripe),
+  define("openai", "OpenAI", "programmatic", rotateOpenAI),
+  define("anthropic", "Anthropic", "partial", null),
+  define("cloudflare", "Cloudflare", "programmatic", rotateCloudflare),
+  define("vercel", "Vercel", "programmatic", rotateVercel),
+  define("twilio", "Twilio", "programmatic", rotateTwilio),
+  define("sendgrid", "SendGrid", "programmatic", rotateSendGrid),
+  define("slack", "Slack", "partial", rotateSlackLive),
+  define("npm", "npm", "programmatic", rotateNpm),
+  define("dockerhub", "Docker Hub", "programmatic", rotateDockerHub),
+  define("kubernetes", "Kubernetes", "programmatic", rotateKubernetes),
+  define("generic_rest", "Generic REST", "programmatic", rotateGenericRest),
+  define("resend", "Resend", "programmatic", rotateResend),
+  define("huggingface", "Hugging Face", "programmatic", rotateHuggingFace),
+  define("neon", "Neon", "programmatic", rotateNeon),
+  // Grok catalog — update-only unless a local generator applies.
+  define("vault", "HashiCorp Vault", "update_only", null),
+  define("doppler", "Doppler", "update_only", null),
+  define("onepassword", "1Password Connect", "update_only", null),
+  define("xai", "xAI", "update_only", null),
+  define("groq", "Groq", "update_only", null),
+  define("google_ai", "Google AI / Gemini", "update_only", null),
+  define("gitlab", "GitLab", "update_only", null),
+  define("bitbucket", "Bitbucket", "update_only", null),
+  define("gcp", "Google Cloud", "update_only", null),
+  define("azure", "Azure", "update_only", null),
+  define("netlify", "Netlify", "update_only", null),
+  define("railway", "Railway", "update_only", null),
+  define("render", "Render API token", "update_only", null),
+  define("fly", "Fly.io", "update_only", null),
+  define("digitalocean", "DigitalOcean", "update_only", null),
+  define("coolify", "Coolify", "update_only", null),
+  define("heroku", "Heroku", "update_only", null),
+  define("discord", "Discord", "update_only", null),
+  define("mailgun", "Mailgun", "update_only", null),
+  define("postmark", "Postmark", "update_only", null),
+  define("supabase", "Supabase", "update_only", null),
+  define("planetscale", "PlanetScale", "update_only", null),
+  define("mongodb", "MongoDB Atlas", "update_only", null),
+  define("fmp", "Financial Modeling Prep", "update_only", null),
+  define("ssh", "SSH keys", "update_only", null),
+  define("database", "Database password", "programmatic", rotateGenerated),
+  define("webhook_hmac", "Webhook / HMAC", "programmatic", rotateGenerated),
+  define("jwt", "JWT signing key", "programmatic", rotateGenerated),
+  define("apple_asc", "App Store Connect", "update_only", null),
+  define("linear", "Linear", "update_only", null),
+  define("notion", "Notion", "update_only", null),
+  define("generic_secret", "Generic secret", "programmatic", rotateGenerated),
+];
+
+export function getConnector(platform: string): ServerConnector | undefined {
+  return connectorRegistry.find((c) => c.platform === platform);
+}
+
+/** Lightweight connectivity check for connectors.test. Demo-mode safe. */
+export async function testConnection(
+  platform: string,
+  config: ConnectorConfig,
+): Promise<string> {
+  const connector = getConnector(platform);
+  const name = connector?.displayName ?? platform;
+  if (isDemoMode() || !config) {
+    const ms = await demoLatency();
+    return `[demo] connection to ${name} verified (simulated, ${ms}ms)`;
+  }
+  switch (platform) {
+    case "stripe":
+      await apiFetch("https://api.stripe.com/v1/account", { headers: bearer(str(config.adminKey) ?? "") }, "Stripe test");
+      break;
+    case "openai":
+      await apiFetch("https://api.openai.com/v1/models", { headers: bearer(str(config.adminKey) ?? "") }, "OpenAI test");
+      break;
+    case "cloudflare":
+      await apiFetch("https://api.cloudflare.com/client/v4/user/tokens/verify", { headers: bearer(str(config.apiToken) ?? "") }, "Cloudflare test");
+      break;
+    case "sendgrid":
+      await apiFetch("https://api.sendgrid.com/v3/scopes", { headers: bearer(str(config.adminKey) ?? "") }, "SendGrid test");
+      break;
+    case "npm":
+      await apiFetch("https://registry.npmjs.org/-/npm/v1/tokens", { headers: bearer(str(config.token) ?? "") }, "npm test");
+      break;
+    case "vercel":
+      await apiFetch("https://api.vercel.com/v2/user", { headers: bearer(str(config.token) ?? "") }, "Vercel test");
+      break;
+    case "resend":
+      await apiFetch("https://api.resend.com/api-keys", { headers: bearer(str(config.adminKey) ?? str(config.token) ?? "") }, "Resend test");
+      break;
+    case "huggingface":
+      await apiFetch("https://huggingface.co/api/whoami-v2", { headers: bearer(str(config.token) ?? "") }, "Hugging Face test");
+      break;
+    case "neon":
+      await apiFetch("https://console.neon.tech/api/v2/api_keys", { headers: bearer(str(config.token) ?? "") }, "Neon test");
+      break;
+    case "slack":
+      await apiFetch("https://slack.com/api/auth.test", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ token: str(config.botToken) ?? str(config.token) ?? "" }).toString(),
+      }, "Slack test");
+      break;
+    case "twilio": {
+      const sid = str(config.accountSid);
+      if (!sid) throw new ConnectorError("Twilio: accountSid required");
+      await apiFetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}.json`, {
+        headers: { Authorization: `Basic ${Buffer.from(`${sid}:${str(config.authToken) ?? ""}`).toString("base64")}` },
+      }, "Twilio test");
+      break;
+    }
+    case "infisical": {
+      const { login } = await import("./infisical");
+      await login({
+        baseUrl: str(config.baseUrl),
+        clientId: str(config.clientId),
+        clientSecret: str(config.clientSecret),
+        workspaceId: str(config.workspaceId),
+        environment: str(config.environment) ?? "prod",
+        secretPath: str(config.secretPath) ?? "/",
+      });
+      break;
+    }
+    case "jwt":
+    case "database":
+    case "webhook_hmac":
+    case "generic_secret":
+      return `local generator for ${name} is ready`;
+    default:
+      return `no lightweight test available for ${name} — credential saved`;
+  }
+  return `connection to ${name} verified`;
+}

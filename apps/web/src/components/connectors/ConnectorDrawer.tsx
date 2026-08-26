@@ -211,7 +211,7 @@ export function ConnectorDrawer({
               ) : (
                 <div className="space-y-3">
                   <p className="text-[13px] leading-5 text-ink-secondary">
-                    No credentials on file. Connect to let TopSpin verify, rotate, and audit{' '}
+                    No credentials on file. Connect to let Autorotate verify, rotate, and audit{' '}
                     {entry.displayName} credentials.
                   </p>
                   <PrimaryButton onClick={() => onConfigure(entry)}>Connect</PrimaryButton>

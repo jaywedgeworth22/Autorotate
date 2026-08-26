@@ -5,9 +5,9 @@ import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "./router";
 import { createContext } from "./context";
 import { env } from "./lib/env";
-import { startScheduler } from "./topspin/scheduler";
+import { startScheduler } from "./autorotate/scheduler";
 
-// Start the TopSpin rotation scheduler (60s tick, non-blocking).
+// Start the Autorotate rotation scheduler (60s tick, non-blocking).
 startScheduler();
 
 const app = new Hono<{ Bindings: HttpBindings }>();
