@@ -21,17 +21,45 @@ let cachedKey: Buffer | null = null;
 function getKey(): Buffer {
   if (cachedKey) return cachedKey;
   const configured = process.env.AUTOROTATE_ENC_KEY;
-  if (!configured && process.env.NODE_ENV === "production") {
-    throw new Error(
-      "AUTOROTATE_ENC_KEY is required in production — stored connector admin credentials must not be protected by a published development passphrase",
-    );
+  const isProduction = process.env.NODE_ENV === "production";
+  if (!configured) {
+    if (isProduction) {
+      throw new Error(
+        "AUTOROTATE_ENC_KEY is required in production — stored connector admin credentials must not be protected by a published development passphrase",
+      );
+    }
+    // Non-production only: the published dev passphrase keeps local play working.
+    cachedKey = scryptSync(DEV_PASSPHRASE, SCRYPT_SALT, 32);
+    return cachedKey;
   }
-  const raw = configured || DEV_PASSPHRASE;
-  if (/^[0-9a-fA-F]{64}$/.test(raw)) {
-    cachedKey = Buffer.from(raw, "hex");
-  } else {
-    cachedKey = scryptSync(raw, SCRYPT_SALT, 32);
+  if (/^[0-9a-fA-F]{64}$/.test(configured)) {
+    const buf = Buffer.from(configured, "hex");
+    // F2: the .env.example used to ship 64 zeros — a valid AES key published in
+    // a public repo.  An all-zero key is always refused, dev or prod.
+    if (buf.every((b) => b === 0)) {
+      throw new Error(
+        "AUTOROTATE_ENC_KEY is all zero bytes — generate a real key with `openssl rand -hex 32`",
+      );
+    }
+    cachedKey = buf;
+    return cachedKey;
   }
+  // Not a full 64-char hex key: treated as a passphrase (scrypt-derived).  In
+  // production a too-short value is almost always a truncated/typo'd hex key or
+  // a weak passphrase, so fail closed rather than silently stretch it.
+  if (isProduction) {
+    if (/^[0-9a-fA-F]+$/.test(configured) && configured.length < 64) {
+      throw new Error(
+        "AUTOROTATE_ENC_KEY looks like a truncated hex key (fewer than 64 hex chars) — provide a full 32-byte key from `openssl rand -hex 32`",
+      );
+    }
+    if (configured.length < 16) {
+      throw new Error(
+        "AUTOROTATE_ENC_KEY passphrase is too short (fewer than 16 chars) in production — use a 32-byte hex key or a strong passphrase",
+      );
+    }
+  }
+  cachedKey = scryptSync(configured, SCRYPT_SALT, 32);
   return cachedKey;
 }
 

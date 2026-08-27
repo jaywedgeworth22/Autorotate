@@ -25,7 +25,7 @@ import { getConnector, probeNewCredential } from "./connectors";
 import { isDemoMode, demoMessage, demoLatency } from "./demo";
 import { hasInfisicalConfig, upsertSecret, readSecret } from "./infisical";
 import { writeFileTarget, readFileTarget } from "./files";
-import { assertSafeWebhookUrl } from "./netguard";
+import { safeFetch } from "./netguard";
 import { notifyRunOutcome } from "./alerts";
 
 // ── Rotation pipeline (architecture.md §2) ──────────────────────
@@ -88,6 +88,59 @@ export function infisicalSecretName(
 ): string {
   const named = cfg.secretName?.trim();
   return named ? named : fallbackName;
+}
+
+/**
+ * F4 — how a real vs demo run must treat an Infisical target.
+ *
+ * "simulate": demo mode only.  "deliver": real mode with complete credentials.
+ * "reject": real mode with MISSING credentials — the Track Secret wizard seeds
+ * an Infisical target with empty clientId/clientSecret/workspaceId, and the old
+ * code let that fall through to a simulated success, so PUSH faked delivery,
+ * VERIFY compared nothing, and COMMIT marked the secret healthy.  That defeats
+ * the AR-02/AR-06 fail-closed guarantee, so a missing-config target in real
+ * mode is now an error, never a simulation.
+ */
+export function infisicalDeliveryMode(
+  cfg: Partial<InfisicalTargetConfig> | null | undefined,
+): "simulate" | "deliver" | "reject" {
+  if (isDemoMode()) return "simulate";
+  return hasInfisicalConfig(cfg) ? "deliver" : "reject";
+}
+
+const INFISICAL_NO_CONFIG = (targetId: number): string =>
+  `infisical target ${targetId} has no credentials — configure it or disable it`;
+
+// ── Target-config masking for the client (F9) ───────────────────
+// secrets.list/get return targets.configJson to the browser.  Those blobs hold
+// operator secrets (an Infisical machine-identity clientSecret, a file/webhook
+// password or token, custom Authorization headers).  Redact the known-secret
+// fields and every header VALUE while keeping display fields (path, key, url,
+// environment, secretName, service, account) so the UI still renders.
+// (Full encryption-at-rest of target configs is a larger migration — OUT OF
+// SCOPE here; see the PR body.)
+const MASKED_MARKER = "••••••";
+const SECRET_CONFIG_KEYS = new Set(["clientSecret", "password", "token"]);
+
+export function maskTargetConfig(config: unknown): Record<string, unknown> | null {
+  if (config === null || config === undefined || typeof config !== "object") {
+    return null;
+  }
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(config as Record<string, unknown>)) {
+    if (SECRET_CONFIG_KEYS.has(key)) {
+      // Redact a set value; leave an empty/unset one so the UI shows "not set".
+      out[key] = value ? MASKED_MARKER : value;
+    } else if (key === "headers" && value && typeof value === "object") {
+      const headers = value as Record<string, unknown>;
+      out[key] = Object.fromEntries(
+        Object.keys(headers).map((name) => [name, MASKED_MARKER]),
+      );
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
 }
 
 /**
@@ -231,6 +284,14 @@ function firstRow<T>(result: unknown): T | undefined {
  * Deployment note: GET_LOCK is a MySQL server function.  It exists on MySQL,
  * MariaDB and TiDB >= 6.2; a Vitess-fronted deployment must confirm it is
  * routed before relying on this.
+ *
+ * F5: GET_LOCK is SESSION-scoped, but the drizzle mysql2 client is a POOL that
+ * hands each statement a possibly-different connection — so taking the lock on
+ * one statement and reading/inserting on others protected nothing.  The whole
+ * critical section now runs inside db.transaction, which pins ONE connection
+ * for every statement, so the named lock actually serializes the read-last +
+ * insert.  RELEASE_LOCK runs in a finally (before COMMIT) so a throwing insert
+ * still frees it.
  */
 export async function appendAudit(
   actor: string,
@@ -240,42 +301,44 @@ export async function appendAudit(
   ts: Date = new Date(),
 ): Promise<void> {
   const db = getDb();
-  const acquired = firstRow<{ acquired: number | null }>(
-    await db.execute(
-      sql`SELECT GET_LOCK(${AUDIT_LOCK_NAME}, ${AUDIT_LOCK_TIMEOUT_SECONDS}) AS acquired`,
-    ),
-  );
-  if (Number(acquired?.acquired) !== 1) {
-    throw new Error(
-      `audit append lock not acquired within ${AUDIT_LOCK_TIMEOUT_SECONDS}s — refusing to append out of order`,
+  await db.transaction(async (tx) => {
+    const acquired = firstRow<{ acquired: number | null }>(
+      await tx.execute(
+        sql`SELECT GET_LOCK(${AUDIT_LOCK_NAME}, ${AUDIT_LOCK_TIMEOUT_SECONDS}) AS acquired`,
+      ),
     );
-  }
-  try {
-    const [last] = await db
-      .select({ entryHash: auditLog.entryHash })
-      .from(auditLog)
-      .orderBy(desc(auditLog.id))
-      .limit(1);
-    const prevHash = last?.entryHash ?? GENESIS_HASH;
-    const canonical: AuditCanonical = {
-      ts: ts.toISOString(),
-      actor,
-      action,
-      secretId,
-      detail: detail ?? null,
-    };
-    await db.insert(auditLog).values({
-      ts,
-      actor,
-      action,
-      secretId,
-      detailJson: (detail ?? null) as never,
-      prevHash,
-      entryHash: computeEntryHash(prevHash, canonical),
-    });
-  } finally {
-    await db.execute(sql`SELECT RELEASE_LOCK(${AUDIT_LOCK_NAME})`);
-  }
+    if (Number(acquired?.acquired) !== 1) {
+      throw new Error(
+        `audit append lock not acquired within ${AUDIT_LOCK_TIMEOUT_SECONDS}s — refusing to append out of order`,
+      );
+    }
+    try {
+      const [last] = await tx
+        .select({ entryHash: auditLog.entryHash })
+        .from(auditLog)
+        .orderBy(desc(auditLog.id))
+        .limit(1);
+      const prevHash = last?.entryHash ?? GENESIS_HASH;
+      const canonical: AuditCanonical = {
+        ts: ts.toISOString(),
+        actor,
+        action,
+        secretId,
+        detail: detail ?? null,
+      };
+      await tx.insert(auditLog).values({
+        ts,
+        actor,
+        action,
+        secretId,
+        detailJson: (detail ?? null) as never,
+        prevHash,
+        entryHash: computeEntryHash(prevHash, canonical),
+      });
+    } finally {
+      await tx.execute(sql`SELECT RELEASE_LOCK(${AUDIT_LOCK_NAME})`);
+    }
+  });
 }
 
 /**
@@ -330,10 +393,16 @@ async function pushToTarget(
     case "infisical": {
       const icfg = cfg as InfisicalTargetConfig;
       const secretName = infisicalSecretName(icfg, secret.name);
-      if (!isDemoMode() && hasInfisicalConfig(icfg)) {
+      const mode = infisicalDeliveryMode(icfg);
+      if (mode === "reject") {
+        // F4: real mode with no credentials must throw, never simulate.
+        throw new Error(INFISICAL_NO_CONFIG(target.id));
+      }
+      if (mode === "deliver") {
         await upsertSecret(icfg, secretName, value);
         return `upserted ${secretName} to Infisical (${icfg.environment || "prod"}:${icfg.secretPath || "/"})`;
       }
+      // simulate (demo mode only)
       const ms = await demoLatency();
       return demoMessage(
         `upserted ${secretName} to Infisical ${icfg.environment || "prod"}:${icfg.secretPath || "/"} (simulated, ${ms}ms)`,
@@ -356,9 +425,9 @@ async function pushToTarget(
     case "webhook": {
       const wcfg = cfg as unknown as WebhookTargetConfig;
       if (!isDemoMode() && wcfg.url) {
-        // AR-09: https-only, no loopback/link-local/RFC1918 destinations.
-        const safeUrl = await assertSafeWebhookUrl(wcfg.url);
-        const res = await fetch(safeUrl, {
+        // AR-09 / F1: https-only, no loopback/link-local/RFC1918 destinations,
+        // and no following a 3xx redirect to an internal host.
+        const res = await safeFetch(wcfg.url, {
           method: wcfg.method || "POST",
           headers: {
             "Content-Type": "application/json",
@@ -383,7 +452,10 @@ async function pushToTarget(
     }
     case "keychain": {
       const kcfg = cfg as { service?: string; account?: string };
-      // On web, Keychain writes are handled by the native companion app.
+      // On web, Keychain writes are handled by the native companion app.  This
+      // is an INTENTIONAL delegation (a documented no-op on the web side), not
+      // a simulated success like the F4 demo path — there is no live web
+      // Keychain to write to, and the companion app owns delivery.
       return `delegated to companion app (keychain item ${kcfg.service ?? "?"}/${kcfg.account ?? secret.name})`;
     }
   }
@@ -399,13 +471,19 @@ async function verifyTarget(
   switch (target.kind) {
     case "infisical": {
       const icfg = cfg as InfisicalTargetConfig;
-      if (!isDemoMode() && hasInfisicalConfig(icfg)) {
+      const mode = infisicalDeliveryMode(icfg);
+      if (mode === "reject") {
+        // F4: never claim a read-back verified a target we cannot reach.
+        throw new Error(INFISICAL_NO_CONFIG(target.id));
+      }
+      if (mode === "deliver") {
         const read = await readSecret(icfg, infisicalSecretName(icfg, secret.name));
         if (read === null || fingerprint(read) !== expectedFp) {
           throw new Error("Infisical read-back fingerprint mismatch");
         }
         return "read-back verified against Infisical";
       }
+      // simulate (demo mode only)
       await demoLatency();
       return demoMessage("read-back verified against Infisical (simulated)");
     }
@@ -445,23 +523,6 @@ export async function rotateSecret(
   if (locks.has(secretId)) throw new RotationLockedError(secretId);
   locks.add(secretId);
 
-  // AR-19: claim the secret in the database before any live work, so two
-  // replicas cannot rotate the same credential concurrently.  The claim
-  // doubles as the "rotating" status write the UI reads.
-  let claimed = false;
-  if (!dryRun) {
-    try {
-      claimed = await claimRotation(secretId);
-    } catch (err) {
-      locks.delete(secretId);
-      throw err;
-    }
-    if (!claimed) {
-      locks.delete(secretId);
-      throw new RotationLockedError(secretId);
-    }
-  }
-
   const steps: RotationStep[] = [];
   const record = async (
     step: RotationStep["step"],
@@ -493,23 +554,37 @@ export async function rotateSecret(
     }
   };
 
-  const [runRow] = await db
-    .insert(rotationRuns)
-    .values({
-      secretId,
-      trigger,
-      status: "running",
-      startedAt: new Date(),
-      stepsJson: [] as never,
-    })
-    .$returningId();
-  const runId = runRow.id;
-
+  let claimed = false;
+  let runId: number | undefined;
   let runStatus: "committed" | "partial" | "failed" = "failed";
   let runError: string | null = null;
   let newFp: string | null = null;
 
   try {
+    // AR-19 / F7: claim the secret in the database before any live work, so two
+    // replicas cannot rotate the same credential concurrently (the claim also
+    // writes the "rotating" status the UI reads).  The claim, the run-row
+    // insert, and the whole pipeline are INSIDE this try, so its finally always
+    // releases both the in-memory lock and the DB "rotating" claim — a throw
+    // between the claim and the pipeline (e.g. the run insert) can no longer
+    // leave the secret stuck "rotating" with the in-process lock held forever.
+    if (!dryRun) {
+      claimed = await claimRotation(secretId);
+      if (!claimed) throw new RotationLockedError(secretId);
+    }
+
+    const [runRow] = await db
+      .insert(rotationRuns)
+      .values({
+        secretId,
+        trigger,
+        status: "running",
+        startedAt: new Date(),
+        stepsJson: [] as never,
+      })
+      .$returningId();
+    runId = runRow.id;
+
     // 1. LOCK
     await record("lock", async () =>
       dryRun ? "acquired in-process rotation lock (dry-run simulator)" : "acquired in-process rotation lock",
@@ -628,28 +703,66 @@ export async function rotateSecret(
         );
       }
 
-      // 5. COMMIT
+      // 5. LIVENESS GATE (F6 / AR-11) — prove the NEW credential actually
+      // authenticates, BEFORE the COMMIT DB writes.  VERIFY only reads back
+      // what PUSH just wrote and compares it to itself, so a dead or fabricated
+      // credential passes it.  Running the probe as a gate here (rather than
+      // after COMMIT) removes the window in which the secret was already
+      // "healthy" while the probe ran — a window in which a concurrent replica
+      // could legitimately re-claim it, only for this run's finally to reset
+      // that other claim to "failed" — and keeps the audit version honest.
       const totalFailures = pushFailures + verifyFailures;
-      const committed =
+      const deliveredOk =
         totalFailures === 0 &&
         (enabledTargets.length === 0 || pushedTargets.length > 0);
+
+      let livenessOk = true;
+      if (!dryRun) {
+        if (deliveredOk) {
+          const platform = connectorRow?.platform ?? "";
+          livenessOk = await record("liveness", async () => {
+            if (isDemoMode()) {
+              await demoLatency();
+              return demoMessage("new credential authenticated against the provider (simulated)");
+            }
+            let probe: string | null;
+            try {
+              probe = await probeNewCredential(platform, value);
+            } catch (err) {
+              throw new Error(
+                `credential delivered but failed liveness probe: ${(err as Error).message}.  The previous credential was already revoked during ROTATE, so this cannot be rolled back — reconnect the platform and rotate again.`,
+              );
+            }
+            return (
+              probe ??
+              `no liveness probe available for ${platform || "this platform"} — delivery verified by read-back only`
+            );
+          });
+        } else {
+          await record(
+            "liveness",
+            async () => "skipped — delivery incomplete, credential not committed",
+          );
+        }
+      }
+
+      // 6. COMMIT
+      const committed = deliveredOk && (dryRun || livenessOk);
       runStatus = committed
         ? "committed"
         : pushedTargets.length > 0
           ? "partial"
           : "failed";
       await record("commit", async () => {
-        if (!committed && pushedTargets.length === 0) {
+        if (!deliveredOk && pushedTargets.length === 0) {
           throw new Error("all target deliveries failed — old value retained");
         }
         if (dryRun) {
           return `[dry-run] simulation complete: all ${pushedTargets.length} target(s) passed validation (no live state changed)`;
         }
+        const now = new Date();
+        const nextDue = new Date(now.getTime() + policy.intervalHours * 3600 * 1000);
         if (committed) {
-          const now = new Date();
-          const nextDue = new Date(
-            now.getTime() + policy.intervalHours * 3600 * 1000,
-          );
           await db
             .update(secrets)
             .set({
@@ -662,51 +775,31 @@ export async function rotateSecret(
             .where(eq(secrets.id, secretId));
           return `committed version ${secret.version + 1}; next rotation due ${nextDue.toISOString()}`;
         }
+        // Partial: some targets took the new value, or the liveness probe
+        // failed.  Do NOT advance to a healthy-committed version (F6) — keep the
+        // old version and flag the secret for retry.  DO advance nextDueAt by
+        // the policy interval (F13): leaving it in the past makes the scheduler
+        // re-mint every tick, burning provider credentials.  The old plaintext
+        // was already discarded during ROTATE, so there is nothing to roll back.
         await db
           .update(secrets)
-          .set({ status: "healthy", fingerprint: newFp })
+          .set({ status: "failed", fingerprint: newFp, nextDueAt: nextDue })
           .where(eq(secrets.id, secretId));
-        return `partial commit: ${pushedTargets.length}/${enabledTargets.length} targets updated — flagged for retry`;
+        const why = !livenessOk
+          ? "liveness probe failed"
+          : `${pushedTargets.length}/${enabledTargets.length} targets updated`;
+        return `partial commit (${why}) — old plaintext already discarded during ROTATE, cannot roll back; flagged for retry`;
       });
-      if (!committed && runStatus !== "partial" && !dryRun) {
+      if (runStatus === "partial") {
+        runError = !livenessOk
+          ? "credential delivered but failed liveness probe"
+          : steps.find((s) => s.status === "failed")?.message ?? "partial delivery";
+      } else if (runStatus === "failed" && !dryRun) {
         runError = steps.find((s) => s.status === "failed")?.message ?? null;
         await db
           .update(secrets)
           .set({ status: "failed" })
           .where(eq(secrets.id, secretId));
-      }
-
-      // 5b. LIVENESS — prove the new credential actually authenticates (AR-11).
-      // VERIFY only reads back what PUSH just wrote and compares it to
-      // itself, so a dead or fabricated credential passes it.
-      if (!dryRun && runStatus === "committed") {
-        const platform = connectorRow?.platform ?? "";
-        const liveOk = await record("liveness", async () => {
-          if (isDemoMode()) {
-            await demoLatency();
-            return demoMessage("new credential authenticated against the provider (simulated)");
-          }
-          let probe: string | null;
-          try {
-            probe = await probeNewCredential(platform, value);
-          } catch (err) {
-            throw new Error(
-              `credential delivered but failed liveness probe: ${(err as Error).message}.  The previous credential was already revoked during ROTATE, so this cannot be rolled back — reconnect the platform and rotate again.`,
-            );
-          }
-          return (
-            probe ??
-            `no liveness probe available for ${platform || "this platform"} — delivery verified by read-back only`
-          );
-        });
-        if (!liveOk) {
-          runStatus = "partial";
-          runError = "credential delivered but failed liveness probe";
-          await db
-            .update(secrets)
-            .set({ status: "failed" })
-            .where(eq(secrets.id, secretId));
-        }
       }
     } else {
       runStatus = "failed";
@@ -725,7 +818,7 @@ export async function rotateSecret(
       }
     }
 
-    // 6. AUDIT — hash-chained, fingerprints only, never values
+    // 7. AUDIT — hash-chained, fingerprints only, never values
     await record("audit", async () => {
       await appendAudit(
         actor,
@@ -761,26 +854,30 @@ export async function rotateSecret(
         .set({ status: "failed" })
         .where(and(eq(secrets.id, secretId), eq(secrets.status, "rotating")));
     }
-    await db
-      .update(rotationRuns)
-      .set({
-        status: runStatus,
-        finishedAt: new Date(),
-        stepsJson: steps as never,
-        newFingerprint: newFp,
-        error: runError,
-      })
-      .where(eq(rotationRuns.id, runId));
+    // runId is undefined only when the claim or the run-row insert threw before
+    // a run existed; there is nothing to finalize in that case (F7).
+    if (runId !== undefined) {
+      await db
+        .update(rotationRuns)
+        .set({
+          status: runStatus,
+          finishedAt: new Date(),
+          stepsJson: steps as never,
+          newFingerprint: newFp,
+          error: runError,
+        })
+        .where(eq(rotationRuns.id, runId));
 
-    if (!dryRun) {
-      // AR-16: fire-and-forget; notifyRunOutcome never throws and never
-      // carries a value or fingerprint.
-      void notifyRunOutcome({ runId, secretName: secret.name, status: runStatus });
+      if (!dryRun) {
+        // AR-16: fire-and-forget; notifyRunOutcome never throws and never
+        // carries a value or fingerprint.
+        void notifyRunOutcome({ runId, secretName: secret.name, status: runStatus });
+      }
     }
   }
 
   const run = await db.query.rotationRuns.findFirst({
-    where: eq(rotationRuns.id, runId),
+    where: eq(rotationRuns.id, runId!),
   });
   return run!;
 }
@@ -884,7 +981,19 @@ export async function checkSecretDrift(secretId: number): Promise<{
     try {
       if (target.kind === "infisical") {
         const icfg = cfg as InfisicalTargetConfig;
-        if (!isDemoMode() && hasInfisicalConfig(icfg)) {
+        const mode = infisicalDeliveryMode(icfg);
+        if (mode === "reject") {
+          // F4: a missing-config target in real mode is an error, not "in sync".
+          // Reporting sync here would hide the same fail-open PUSH/VERIFY does.
+          targetResults.push({
+            targetId: target.id,
+            kind: target.kind,
+            status: "error",
+            detail: INFISICAL_NO_CONFIG(target.id),
+            expectedFingerprint: secret.fingerprint,
+            actualFingerprint: null,
+          });
+        } else if (mode === "deliver") {
           const val = await readSecret(icfg, infisicalSecretName(icfg, secret.name));
           if (val === null) {
             hasDrift = true;
@@ -910,6 +1019,7 @@ export async function checkSecretDrift(secretId: number): Promise<{
             });
           }
         } else {
+          // Demo mode only.
           targetResults.push({
             targetId: target.id,
             kind: target.kind,

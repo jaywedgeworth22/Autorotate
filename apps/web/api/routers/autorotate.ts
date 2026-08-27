@@ -13,6 +13,8 @@ import {
   targets,
   rotationRuns,
   auditLog,
+  type Connector,
+  type Target,
 } from "@db/schema";
 import {
   connectorCreateInput,
@@ -46,7 +48,7 @@ import { isDemoMode, demoLatency, demoMessage } from "../autorotate/demo";
 import { connectorRegistry, getConnector, testConnection } from "../autorotate/connectors";
 import { hasInfisicalConfig, upsertSecret } from "../autorotate/infisical";
 import { writeFileTarget } from "../autorotate/files";
-import { assertSafeWebhookUrl } from "../autorotate/netguard";
+import { safeFetch } from "../autorotate/netguard";
 import {
   maskAlertConfig,
   postAlert,
@@ -62,11 +64,33 @@ import {
   verifyAuditChain,
   infisicalSecretName,
   canaryDeliveryName,
+  maskTargetConfig,
   RotationLockedError,
   SecretNotFoundError,
 } from "../autorotate/engine";
 
 const ACTOR = "web-user";
+
+// F9: secrets.list/get eager-load the connector and targets.  The raw connector
+// row carries configEnc (AES-encrypted admin credentials) and each target's
+// configJson carries provider secrets — neither may reach the browser.  Strip
+// configEnc (connectorsRouter.list already does this) and mask secret fields in
+// every target config before returning.
+function sanitizeSecretForClient<
+  R extends { connector?: Connector | null; targets?: Target[] },
+>(row: R) {
+  const { connector, targets: targetRows, ...rest } = row;
+  return {
+    ...rest,
+    connector: connector
+      ? { ...connector, hasConfig: !!connector.configEnc, configEnc: undefined as never }
+      : null,
+    targets: (targetRows ?? []).map((t) => ({
+      ...t,
+      configJson: maskTargetConfig(t.configJson),
+    })),
+  };
+}
 
 function toTrpcError(err: unknown): never {
   if (err instanceof TRPCError) throw err;
@@ -248,11 +272,12 @@ export const secretsRouter = createRouter({
     if (input?.connectorId) conditions.push(eq(secrets.connectorId, input.connectorId));
     if (input?.environment) conditions.push(eq(secrets.environment, input.environment));
     if (input?.search) conditions.push(like(secrets.name, `%${input.search}%`));
-    return db.query.secrets.findMany({
+    const rows = await db.query.secrets.findMany({
       where: conditions.length ? and(...conditions) : undefined,
       with: { connector: true, targets: true },
       orderBy: desc(secrets.id),
     });
+    return rows.map(sanitizeSecretForClient);
   }),
 
   get: protectedProcedure
@@ -264,7 +289,7 @@ export const secretsRouter = createRouter({
         with: { connector: true, targets: true },
       });
       if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "secret not found" });
-      return row;
+      return sanitizeSecretForClient(row);
     }),
 
   create: protectedProcedure
@@ -296,10 +321,11 @@ export const secretsRouter = createRouter({
         connectorId: input.connectorId,
         environment: input.environment,
       });
-      return db.query.secrets.findFirst({
+      const created = await db.query.secrets.findFirst({
         where: eq(secrets.id, id),
         with: { connector: true, targets: true },
       });
+      return created ? sanitizeSecretForClient(created) : null;
     }),
 
   update: protectedProcedure
@@ -328,10 +354,11 @@ export const secretsRouter = createRouter({
       await appendAudit(ACTOR, "secret.updated", input.id, {
         fields: Object.keys(patch),
       });
-      return db.query.secrets.findFirst({
+      const updated = await db.query.secrets.findFirst({
         where: eq(secrets.id, input.id),
         with: { connector: true, targets: true },
       });
+      return updated ? sanitizeSecretForClient(updated) : null;
     }),
 
   delete: protectedProcedure
@@ -637,16 +664,25 @@ export const targetsRouter = createRouter({
               ...fcfg,
               key: canaryDeliveryName(fcfg.key),
             };
-            await writeFileTarget(canaryCfg, canary);
-            message = `canary written to ${canaryCfg.path} key ${canaryCfg.key}`;
+            // F11: demo mode must not write a canary to a real file on disk —
+            // simulate it, matching the demo guards in pushToTarget/verify/drift.
+            if (isDemoMode()) {
+              const ms = await demoLatency();
+              message = demoMessage(
+                `canary written to ${canaryCfg.path} key ${canaryCfg.key} (simulated, ${ms}ms)`,
+              );
+            } else {
+              await writeFileTarget(canaryCfg, canary);
+              message = `canary written to ${canaryCfg.path} key ${canaryCfg.key}`;
+            }
             break;
           }
           case "webhook": {
             const wcfg = cfg as unknown as WebhookTargetConfig;
             if (!isDemoMode() && wcfg.url) {
-              // AR-09: same guard as the rotation engine's PUSH.
-              const safeUrl = await assertSafeWebhookUrl(wcfg.url);
-              const res = await fetch(safeUrl, {
+              // AR-09 / F1: same guarded sink as the rotation engine's PUSH —
+              // https-only, no private hosts, and no 3xx redirect following.
+              const res = await safeFetch(wcfg.url, {
                 method: wcfg.method || "POST",
                 headers: { "Content-Type": "application/json", ...(wcfg.headers ?? {}) },
                 body: JSON.stringify({
@@ -724,10 +760,11 @@ export const policiesRouter = createRouter({
         ...policy,
         nextDueAt: nextDueAt.toISOString(),
       });
-      return db.query.secrets.findFirst({
+      const row2 = await db.query.secrets.findFirst({
         where: eq(secrets.id, input.secretId),
         with: { connector: true, targets: true },
       });
+      return row2 ? sanitizeSecretForClient(row2) : null;
     }),
 });
 

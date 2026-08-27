@@ -50,7 +50,7 @@ export default function LiveBar({
               <span className="text-ink-faint"> · </span>
               {secretName}
               <span className="text-ink-faint"> · </span>
-              step {currentIdx + 1}/6{" "}
+              step {currentIdx + 1}/{RUN_STEP_NAMES.length}{" "}
               <span className="uppercase text-info">{currentName}…</span>
             </span>
             <ElapsedTicker since={run.startedAt} />

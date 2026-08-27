@@ -5,9 +5,17 @@ import {
   canMintForTargets,
   computeEntryHash,
   verifyChainLink,
+  infisicalDeliveryMode,
+  maskTargetConfig,
   NO_TARGET_REFUSAL,
 } from "./engine";
-import { isForbiddenAddress, expandIPv6, assertSafeWebhookUrl, BlockedUrlError } from "./netguard";
+import {
+  isForbiddenAddress,
+  expandIPv6,
+  assertSafeWebhookUrl,
+  safeFetch,
+  BlockedUrlError,
+} from "./netguard";
 import { maskWebhookUrl, maskAlertConfig, runOutcomeMessage } from "./alerts";
 
 // Regression tests for the findings in docs/AUDIT-2026-08-26.md. Everything
@@ -167,10 +175,41 @@ describe("AR-09 — outbound address guard", () => {
     }
   });
 
+  it("blocks the special-purpose v4 blocks added in F14", () => {
+    for (const ip of [
+      "192.0.0.1", // 192.0.0.0/24 IETF protocol assignments
+      "192.0.2.1", // 192.0.2.0/24 TEST-NET-1
+      "198.18.0.1", // 198.18.0.0/15 benchmarking
+      "198.19.255.255", // 198.18.0.0/15 upper half
+      "198.51.100.1", // 198.51.100.0/24 TEST-NET-2
+      "203.0.113.1", // 203.0.113.0/24 TEST-NET-3
+    ]) {
+      expect(isForbiddenAddress(ip), ip).toBe(true);
+    }
+  });
+
   it("blocks loopback, link-local and unique-local v6", () => {
     for (const ip of ["::1", "::", "fe80::1", "febf::1", "fc00::1", "fd12:3456::1", "::ffff:127.0.0.1"]) {
       expect(isForbiddenAddress(ip), ip).toBe(true);
     }
+  });
+
+  it("blocks IPv6 transition wrappers around a private v4 (F14)", () => {
+    for (const ip of [
+      "64:ff9b::10.0.0.1", // NAT64 → 10.0.0.1
+      "64:ff9b::a00:1", // same, hex tail
+      "64:ff9b:1::10.0.0.1", // 64:ff9b:1::/48 local-use NAT64
+      "2002:0a00:0001::", // 6to4 → 10.0.0.1
+      "2002:c0a8:0001::", // 6to4 → 192.168.0.1
+    ]) {
+      expect(isForbiddenAddress(ip), ip).toBe(true);
+    }
+  });
+
+  it("still allows transition wrappers around a genuinely public v4 (F14)", () => {
+    // NAT64 / 6to4 around a public v4 must NOT be over-blocked.
+    expect(isForbiddenAddress("64:ff9b::8.8.8.8")).toBe(false); // 8.8.8.8
+    expect(isForbiddenAddress("2002:0808:0808::")).toBe(false); // 6to4 → 8.8.8.8
   });
 
   it("allows public addresses", () => {
@@ -320,5 +359,113 @@ describe("AR-10 — AWS IAM is registered honestly", () => {
     await expect(getConnector("aws_iam")!.rotate({ userName: "svc" })).rejects.toThrow(
       /MANUAL_ROTATION_REQUIRED/,
     );
+  });
+});
+
+describe("F1 — safeFetch refuses redirects to internal hosts", () => {
+  it("rejects a 3xx response instead of following it", async () => {
+    dnsLookup.mockResolvedValue([{ address: "93.184.216.34", family: 4 }]);
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(null, {
+          status: 307,
+          headers: { location: "http://169.254.169.254/latest/meta-data" },
+        }),
+      );
+    await expect(
+      safeFetch("https://hooks.example.com/x", { method: "POST", body: "{}" }),
+    ).rejects.toThrow(/refused to follow redirect/);
+    // The redirect was NOT followed — fetch was called exactly once, for the
+    // original (validated) URL, with redirect handling forced to manual.
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy.mock.calls[0][1]).toMatchObject({ redirect: "manual" });
+  });
+
+  it("returns a non-redirect response unchanged", async () => {
+    dnsLookup.mockResolvedValue([{ address: "93.184.216.34", family: 4 }]);
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("ok", { status: 200 }));
+    const res = await safeFetch("https://hooks.example.com/x");
+    expect(res.status).toBe(200);
+  });
+
+  it("rejects a private destination before any fetch happens", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    await expect(safeFetch("https://169.254.169.254/")).rejects.toBeInstanceOf(BlockedUrlError);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("F4 — real-mode Infisical delivery requires complete credentials", () => {
+  it("rejects an empty or partial config when demo mode is off", () => {
+    expect(infisicalDeliveryMode({})).toBe("reject");
+    expect(infisicalDeliveryMode(null)).toBe("reject");
+    expect(infisicalDeliveryMode({ clientId: "a" })).toBe("reject");
+    expect(infisicalDeliveryMode({ clientId: "a", clientSecret: "b" })).toBe("reject");
+  });
+
+  it("delivers only when clientId, clientSecret and workspaceId are all present", () => {
+    expect(
+      infisicalDeliveryMode({ clientId: "a", clientSecret: "b", workspaceId: "c" }),
+    ).toBe("deliver");
+  });
+
+  it("simulates only when AUTOROTATE_DEMO is explicitly on", () => {
+    process.env.AUTOROTATE_DEMO = "1";
+    expect(infisicalDeliveryMode({})).toBe("simulate");
+    expect(
+      infisicalDeliveryMode({ clientId: "a", clientSecret: "b", workspaceId: "c" }),
+    ).toBe("simulate");
+  });
+});
+
+describe("F9 — maskTargetConfig redacts secrets, keeps display fields", () => {
+  it("redacts clientSecret/password/token and every header value", () => {
+    const masked = maskTargetConfig({
+      clientId: "id-123",
+      clientSecret: "super-secret",
+      workspaceId: "ws-9",
+      environment: "prod",
+      secretPath: "/",
+      secretName: "API_KEY",
+      password: "pw",
+      token: "tok",
+      url: "https://hooks.example.com/x",
+      headers: { Authorization: "Bearer abc123", "X-Trace": "on" },
+      service: "svc",
+      account: "acct",
+    })!;
+    // Display fields survive.
+    expect(masked.clientId).toBe("id-123");
+    expect(masked.environment).toBe("prod");
+    expect(masked.secretName).toBe("API_KEY");
+    expect(masked.url).toBe("https://hooks.example.com/x");
+    expect(masked.service).toBe("svc");
+    expect(masked.account).toBe("acct");
+    // Secret fields are redacted.
+    expect(masked.clientSecret).not.toBe("super-secret");
+    expect(masked.password).not.toBe("pw");
+    expect(masked.token).not.toBe("tok");
+    // Header names survive, values are redacted.
+    const headers = masked.headers as Record<string, string>;
+    expect(Object.keys(headers)).toEqual(["Authorization", "X-Trace"]);
+    expect(headers.Authorization).not.toBe("Bearer abc123");
+    // Nothing sensitive survives serialization.
+    const json = JSON.stringify(masked);
+    expect(json).not.toContain("super-secret");
+    expect(json).not.toContain("Bearer abc123");
+    expect(json).not.toContain('"pw"');
+  });
+
+  it("leaves empty/unset secret fields untouched so the UI shows 'not set'", () => {
+    const masked = maskTargetConfig({ clientSecret: "", token: undefined, path: "x/.env" })!;
+    expect(masked.clientSecret).toBe("");
+    expect(masked.token).toBeUndefined();
+    expect(masked.path).toBe("x/.env");
+  });
+
+  it("returns null for a null/undefined config", () => {
+    expect(maskTargetConfig(null)).toBeNull();
+    expect(maskTargetConfig(undefined)).toBeNull();
   });
 });

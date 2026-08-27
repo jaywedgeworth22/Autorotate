@@ -72,12 +72,20 @@ const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 300;
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
 
+/**
+ * Best-effort client IP: x-forwarded-for first hop (later hops are
+ * attacker-controlled), else the Node socket remote address, else "unknown".
+ * Feeds both the per-IP API rate limiter and the per-IP login throttle (F3).
+ */
+function clientIpOf(c: { req: { header: (name: string) => string | undefined }; env: unknown }): string {
+  const forwarded = c.req.header("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return (c.env as HttpBindings | undefined)?.incoming?.socket?.remoteAddress ?? "unknown";
+}
+
 app.use("/api/*", async (c, next) => {
   const now = Date.now();
-  const forwarded = c.req.header("x-forwarded-for");
-  const key = forwarded
-    ? forwarded.split(",")[0].trim()
-    : ((c.env as HttpBindings | undefined)?.incoming?.socket?.remoteAddress ?? "unknown");
+  const key = clientIpOf(c);
   const bucket = rateBuckets.get(key);
   if (!bucket || bucket.resetAt <= now) {
     rateBuckets.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
@@ -101,11 +109,12 @@ app.use("/api/*", async (c, next) => {
 // its API, and the SameSite=Strict session cookie is only safe against CSRF
 // while that stays true.  Adding CORS means adding CSRF tokens first.
 app.use("/api/trpc/*", async (c) => {
+  const clientIp = clientIpOf(c);
   return fetchRequestHandler({
     endpoint: "/api/trpc",
     req: c.req.raw,
     router: appRouter,
-    createContext,
+    createContext: (opts) => createContext(opts, clientIp),
   });
 });
 app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));

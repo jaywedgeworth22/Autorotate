@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import type { ConnectorCapability } from "@contracts/autorotate";
 import { isDemoMode, demoLatency } from "./demo";
 import { randomToken } from "./crypto";
+import { safeFetch, BlockedUrlError } from "./netguard";
 
 // Server-side connector registry mirroring the capability matrix in
 // docs/architecture.md §3. Each connector knows how to rotate() a credential
@@ -50,15 +51,24 @@ export type ServerConnector = {
 const str = (v: unknown): string | undefined =>
   typeof v === "string" && v.length > 0 ? v : undefined;
 
+// AR-09 / F10: every outbound fetch to an OPERATOR-SUPPLIED URL (generic_rest
+// cfg.url, kubernetes cfg.apiServer, infisical cfg.baseUrl) must pass through
+// the netguard so it cannot be pointed at a metadata endpoint or an internal
+// host, nor be redirected to one.  Hardcoded provider hosts (api.stripe.com,
+// …) are trusted constants and use a plain fetch.
 async function apiFetch(
   url: string,
   init: RequestInit,
   what: string,
+  opts?: { guardUrl?: boolean },
 ): Promise<Response> {
   let res: Response;
   try {
-    res = await fetch(url, init);
+    res = opts?.guardUrl ? await safeFetch(url, init) : await fetch(url, init);
   } catch (err) {
+    if (err instanceof BlockedUrlError) {
+      throw new ConnectorError(`${what}: blocked outbound URL — ${err.message}`);
+    }
     throw new ConnectorError(`${what}: network error — ${(err as Error).message}`);
   }
   if (!res.ok) {
@@ -263,6 +273,7 @@ async function rotateKubernetes(cfg: ConnectorConfig): Promise<string> {
       }),
     },
     "Kubernetes create service account",
+    { guardUrl: true }, // F10: apiServer is operator-supplied
   );
   const data = (await res.json()) as { metadata?: { name?: string } };
   if (!data.metadata?.name) throw new ConnectorError("Kubernetes: no SA in response");
@@ -308,6 +319,7 @@ async function rotateGenericRest(cfg: ConnectorConfig): Promise<string> {
       body: typeof cfg?.body === "string" ? cfg.body : JSON.stringify(cfg?.body ?? {}),
     },
     "generic-rest rotate",
+    { guardUrl: true }, // F10: url is operator-supplied
   );
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   const path = str(cfg?.responsePath) ?? "secret";

@@ -7,7 +7,7 @@ import {
   type WorkspaceAlertConfig,
   type WorkspaceAlertUpdateInput,
 } from "@contracts/autorotate";
-import { assertSafeWebhookUrl } from "./netguard";
+import { safeFetch } from "./netguard";
 
 // ── Workspace alerts (AR-16) ────────────────────────────────────
 // Alert configuration used to live in a module-level object that no replica
@@ -99,9 +99,10 @@ export async function postAlert(
   url: string,
   text: string,
 ): Promise<void> {
-  const safe = await assertSafeWebhookUrl(url);
   const payload = service === "slack" ? { text } : { content: text };
-  const res = await fetch(safe, {
+  // F1: safeFetch validates the URL and refuses to follow a 3xx redirect to an
+  // internal host, so an alert webhook cannot be turned into an SSRF pivot.
+  const res = await safeFetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
