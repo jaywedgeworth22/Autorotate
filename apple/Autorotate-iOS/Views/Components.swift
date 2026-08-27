@@ -36,7 +36,7 @@ struct StatusDot: View {
 
 // MARK: - Fingerprint chip
 
-/// Monospaced `sha256[0:8]` chip. Long-press copies to the pasteboard.
+/// Monospaced `sha256[0:16]` chip. Long-press copies to the pasteboard.
 struct FingerprintChip: View {
     let fingerprint: String?
 

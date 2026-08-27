@@ -425,7 +425,7 @@ private struct SecretDetailView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Import manually rotated value")
                 .font(.headline)
-            Text("Paste the value you just rotated in the provider UI. It is held in memory, fingerprinted (sha256[0:8]) and pushed to every enabled target — never persisted by Autorotate.")
+            Text("Paste the value you just rotated in the provider UI.  It is held in memory, fingerprinted (sha256[0:16]) and pushed to every enabled target — never persisted by Autorotate.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             SecureField("New value", text: $importedValue)

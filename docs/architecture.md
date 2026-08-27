@@ -77,6 +77,7 @@ The Grok App Builder snapshot catalogs 40+ platforms (xAI, Groq, Anthropic, Cool
 - `KeychainManager` (Apple): generic-password items, service = `codes.autorotate.<secretId>`, account = secret name.
 - Accessibility: `kSecAttrAccessibleAfterFirstUnlock`; optional `kSecAttrSynchronizable = true` (iCloud Keychain) — user toggle, **"if allowed"** per entitlements.
 - Access group: `$(AppIdentifierPrefix)codes.autorotate.shared` so iOS + macOS share items.
+- Every query sets `kSecUseDataProtectionKeychain: true`. Without it, macOS writes generic-password items to the legacy file-based keychain, which ignores `kSecAttrAccessible`, handles access groups differently, and does not sync via iCloud — so the three bullets above would be true on iOS only. A read that misses in the data-protection keychain falls back to the legacy keychain and migrates a hit: data-protection write first, legacy delete only after it succeeds, so no path loses an item.
 - `EncryptedStorage` (Android): `EncryptedSharedPreferences` backed by Android Keystore `AES256_GCM` master key.
 - Keychain & Keystore are ALSO the credential store for connector admin credentials and Infisical clientSecret on native — the web server uses its DB (AES-GCM encrypted at rest) instead.
 
@@ -84,7 +85,30 @@ The Grok App Builder snapshot catalogs 40+ platforms (xAI, Groq, Anthropic, Cool
 
 Plaintext secret values exist only in memory during a rotation run. Persistent stores hold
 metadata + references. The ONLY places values land: the provider, Infisical, target files,
-Keychain, Keystore. Audit logs contain `sha256(value)[0:8]` fingerprints only.
+Keychain, Keystore. Audit logs contain `sha256(value)[0:16]` fingerprints only.
+
+**Fingerprint length: 16 hex characters** (64 bits of the SHA-256 digest), identical on every
+platform — `Fingerprint.prefixLength` in AutorotateCore and `fingerprint()` in
+`apps/web/api/autorotate/crypto.ts`. This spec previously said 8 while the web engine already
+kept 16 and Apple kept 8, so a cross-platform drift comparison mismatched by construction.
+Records written by an Apple build older than 2026-08-26 hold 8 characters; comparison goes
+through `Fingerprint.matches(_:_:)`, which compares on the shorter of the two lengths so those
+records do not all report drift on upgrade.
+
+### Audit hash chain
+
+The audit log is append-only **and** hash-chained on both platforms (AGENTS.md invariant 2).
+Each entry carries `prevHash` (the previous entry's `entryHash`, or 64 zeros for the first
+chained entry) and `entryHash` = full 64-character lowercase hex SHA-256 over a canonical
+serialization of the entry including `prevHash`. The canonical form is a hand-written JSON
+object — fixed alphabetical field order, no whitespace, `detail` keys sorted by UTF-8 bytes,
+timestamps as **integer milliseconds since epoch** so a store's date round-trip cannot change
+the hash. The normative definition lives in
+`apple/AutorotateCore/Sources/AutorotateCore/AuditChain.swift`.
+
+Entries persisted before chaining shipped have neither field. Verification treats them as a
+pre-chain prefix: it skips them, reports how many it skipped, and starts at the first chained
+entry, so upgrading an existing install never reports a false break.
 
 
 ## 7. Web data model (Drizzle / MySQL)

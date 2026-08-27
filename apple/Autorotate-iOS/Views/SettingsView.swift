@@ -288,7 +288,7 @@ struct SettingsView: View {
 
     private var aboutSection: some View {
         Section {
-            LabeledContent("Storage rule", value: "metadata + sha256[0:8] only")
+            LabeledContent("Storage rule", value: "metadata + sha256[0:16] only")
             LabeledContent("Pipeline", value: "LOCK·ROTATE·PUSH·VERIFY·COMMIT·AUDIT")
             LabeledContent("Core", value: "AutorotateCore (SwiftPM, local)")
         } header: {

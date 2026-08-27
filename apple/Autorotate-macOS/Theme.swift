@@ -111,7 +111,7 @@ enum AutorotateTheme {
 // MARK: - Reusable components
 
 /// Monospaced fingerprint chip — the only persisted trace of a secret value
-/// (`sha256(value)[0:8]`).
+/// (`sha256(value)[0:16]`).
 struct FingerprintChip: View {
     let fingerprint: String?
 
