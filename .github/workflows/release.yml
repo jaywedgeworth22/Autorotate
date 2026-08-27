@@ -32,12 +32,12 @@ jobs:
 
       - name: Zip apple/ sources
         run: |
-          zip -r topspin-apple-sources.zip apple \
+          zip -r autorotate-apple-sources.zip apple \
             -x '*/.build/*' '*/DerivedData/*' '*.xcworkspace/*' '*/xcuserdata/*'
 
       - name: Create Release
         uses: softprops/action-gh-release@v3
         with:
           body_path: release_notes.md
-          files: topspin-apple-sources.zip
+          files: autorotate-apple-sources.zip
           generate_release_notes: false

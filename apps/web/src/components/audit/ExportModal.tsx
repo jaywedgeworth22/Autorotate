@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Braces, Check, FileSpreadsheet, X } from "lucide-react";
-import type { AuditEntry } from "@contracts/topspin";
+import type { AuditEntry } from "@contracts/autorotate";
 import { toastSuccess } from "@/components/primitives";
 import { cn } from "@/lib/utils";
 import { downloadText, sha256Hex, toCsv } from "./audit-utils";

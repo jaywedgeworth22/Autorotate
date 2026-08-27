@@ -1,25 +1,25 @@
-# 2026-08-20 — TopSpin joins the fleet
+# 2026-08-20 — Autorotate joins the fleet
 
 **Agent:** KIMI · **Branches:** `kimi/fleet-onboard` (this repo) ·
-`kimi/topspin-onboard` (ai-fleet-coordinator)
+`kimi/autorotate-onboard` (ai-fleet-coordinator)
 
 ## What happened
 
-TopSpin was built by a Kimi orchestration swarm (see `HANDOFF.md`) but was
+Autorotate was built by a Kimi orchestration swarm (see `HANDOFF.md`) but was
 not yet on GitHub or registered with the fleet.  This rollout lands both.
 
 1. **GitHub** — mandatory secret sweep first: `gitleaks git` over full
    history = 0 leaks; manual grep hits are placeholders/format docs only;
    `apps/web/.env` is not tracked.  Created **public**
-   `jaywedgeworth22/TopSpin` via `gh repo create --source . --push`.
+   `jaywedgeworth22/Autorotate` via `gh repo create --source . --push`.
    `origin` now points at GitHub; the old local bundle remote kept as
    `bundle`.
-2. **Fleet script** — ran `scripts/onboard-new-app.sh --repo TopSpin
-   --acronym TS --code-dir TopSpin --worktree-prefix topspin --board
-   TOPSPIN-EFFORT-LOG.md --slack-repo TopSpin` from the fleet worktree
+2. **Fleet script** — ran `scripts/onboard-new-app.sh --repo Autorotate
+   --acronym TS --code-dir Autorotate --worktree-prefix autorotate --board
+   AUTOROTATE-EFFORT-LOG.md --slack-repo Autorotate` from the fleet worktree
    `~/apps/fleet-kimi`.  It created the live board
-   `~/apps/TOPSPIN-EFFORT-LOG.md`, the grok lane `~/apps/topspin-grok`,
-   `~/Code/copilot-worktrees/TopSpin`, and the `fleet-apps.json` row.
+   `~/apps/AUTOROTATE-EFFORT-LOG.md`, the grok lane `~/apps/autorotate-grok`,
+   `~/Code/copilot-worktrees/Autorotate`, and the `fleet-apps.json` row.
 3. **Bootstrap files (this commit)** — per ONBOARDING-NEW-APP.md Phase 3:
    - `AGENTS.md`: fleet identity header, worktree keepout table, verbatim
      Inter-agent coordination stanza.
@@ -30,8 +30,8 @@ not yet on GitHub or registered with the fleet.  This rollout lands both.
      differs (`41 5 * * *`).
    - `scripts/slack-sync.sh` (verbatim), `auto-update-prs.yml`,
      `.claude/hooks/block-xcode-project-writes.py` + `.claude/settings.json`.
-   - README CI badge URL fixed (`topspin-systems` → `jaywedgeworth22`).
-4. **Coordinator registries** — patched in the `kimi/topspin-onboard`
+   - README CI badge URL fixed (`autorotate-systems` → `jaywedgeworth22`).
+4. **Coordinator registries** — patched in the `kimi/autorotate-onboard`
    branch: `fleet-apps.json` (script), `EFFORT-LOG-PROTOCOL.md` board
    registry, `AGENT-SYNC.md` app list + acronym table + Slack `repo:` names,
    `AGENT-COORDINATION-QUICKSTART.md`, `FLEET-UI-COPY.md`,
@@ -43,12 +43,12 @@ not yet on GitHub or registered with the fleet.  This rollout lands both.
 
 | Field | Value |
 |-------|-------|
-| GitHub repo | `jaywedgeworth22/TopSpin` (public) |
-| `~/Code` folder | `TopSpin` (integration tree — agents keep out) |
-| Slack `repo:` | `TopSpin` |
+| GitHub repo | `jaywedgeworth22/Autorotate` (public) |
+| `~/Code` folder | `Autorotate` (integration tree — agents keep out) |
+| Slack `repo:` | `Autorotate` |
 | Acronym | `TS` |
-| Live board | `/Users/jay/apps/TOPSPIN-EFFORT-LOG.md` |
-| Worktree prefix | `topspin` (`~/apps/topspin-<seat>`) |
+| Live board | `/Users/jay/apps/AUTOROTATE-EFFORT-LOG.md` |
+| Worktree prefix | `autorotate` (`~/apps/autorotate-<seat>`) |
 
 ## Owner dashboard items (not done — need the owner)
 

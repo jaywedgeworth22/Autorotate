@@ -5,7 +5,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // TopSpin design tokens (design.md §2)
+        // Autorotate design tokens (design.md §2)
         abyss: "#07090D",
         panel: "#0C0F16",
         raised: "#11151F",
@@ -25,7 +25,7 @@ module.exports = {
         danger: "#F4586B",
         info: "#5EA8FF",
         violet: "#9B8CFF",
-        // shadcn tokens (mapped to TopSpin palette)
+        // shadcn tokens (mapped to Autorotate palette)
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

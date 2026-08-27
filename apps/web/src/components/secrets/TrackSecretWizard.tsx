@@ -8,7 +8,7 @@ import {
   FILE_FORMATS,
   type RotationPolicy,
   type TargetKind,
-} from '@contracts/topspin'
+} from '@contracts/autorotate'
 import {
   ConnectorTile,
   Field,
@@ -639,7 +639,7 @@ export function TrackSecretWizard({
                         </div>
                       </div>
                       <p className="text-[11px] leading-4 text-ink-muted">
-                        TopSpin rotates through the connector API — plaintext is never stored, only a
+                        Autorotate rotates through the connector API — plaintext is never stored, only a
                         sha256 fingerprint of each version.
                       </p>
                     </div>

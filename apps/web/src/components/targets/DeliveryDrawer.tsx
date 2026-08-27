@@ -58,7 +58,7 @@ export function DeliveryDrawer({
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `topspin-deliveries-${group?.kind ?? 'target'}.json`
+    a.download = `autorotate-deliveries-${group?.kind ?? 'target'}.json`
     a.click()
     URL.revokeObjectURL(url)
   }

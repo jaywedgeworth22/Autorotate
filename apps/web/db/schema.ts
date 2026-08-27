@@ -11,7 +11,7 @@ import {
   json,
 } from "drizzle-orm/mysql-core";
 
-// ── TopSpin data model ──────────────────────────────────────────
+// ── Autorotate data model ──────────────────────────────────────────
 // Hard rule: plaintext secret values are NEVER persisted. Only metadata,
 // encrypted connector admin credentials (AES-256-GCM), and sha256
 // fingerprint prefixes live in the database.
@@ -89,7 +89,7 @@ export const rotationRuns = mysqlTable("rotationRuns", {
     .notNull()
     .default("running"),
   trigger: mysqlEnum("trigger", ["manual", "scheduled", "retry"]).notNull(),
-  // Array of RotationStep (see contracts/topspin.ts)
+  // Array of RotationStep (see contracts/autorotate.ts)
   stepsJson: json("stepsJson"),
   newFingerprint: varchar("newFingerprint", { length: 16 }),
   error: text("error"),

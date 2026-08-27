@@ -35,8 +35,8 @@ jobs:
           npm run build
 
   apple:
-    name: Apple (TopSpinCore + iOS + macOS)
-    runs-on: macos-26
+    name: Apple (AutorotateCore + iOS + macOS)
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
 
@@ -52,8 +52,8 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      - name: Build & test TopSpinCore (SwiftPM)
-        working-directory: apple/TopSpinCore
+      - name: Build & test AutorotateCore (SwiftPM)
+        working-directory: apple/AutorotateCore
         run: |
           swift build
           swift test

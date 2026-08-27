@@ -10,7 +10,7 @@ import {
 import { trpc } from '@/providers/trpc'
 import { Modal, toastError, toastSuccess } from '@/components/primitives'
 import { cn } from '@/lib/utils'
-import { detectPlatformForKey, parseGlobalApiKeys } from '../../../api/topspin/env-parse'
+import { detectPlatformForKey, parseGlobalApiKeys } from '../../../api/autorotate/env-parse'
 
 type ParsedItem = {
   id: string
@@ -45,7 +45,7 @@ export function EnvImportModal({
 
   const importMut = trpc.secrets.importBatch.useMutation({
     onSuccess: (data) => {
-      toastSuccess('Import complete', `${data.importedCount} secret(s) registered into TopSpin`)
+      toastSuccess('Import complete', `${data.importedCount} secret(s) registered into Autorotate`)
       handleReset()
       onClose()
       onImported?.()

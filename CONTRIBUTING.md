@@ -1,4 +1,4 @@
-# Contributing to TopSpin
+# Contributing to Autorotate
 
 Thanks for helping make secret rotation safer. This document covers the
 day-to-day contribution workflow. If you are an AI coding agent, read
@@ -33,7 +33,7 @@ Example: `fix(core): zero secret buffer after PUSH failure`.
 Before opening (or merging) a PR, confirm:
 
 - [ ] Tests pass locally (`npm run test` in `apps/web`; `swift test` in
-      `apple/TopSpinCore`) and CI is green.
+      `apple/AutorotateCore`) and CI is green.
 - [ ] **No plaintext secrets** are persisted, logged, or committed — the
       zero-plaintext rule is a hard invariant (see SECURITY.md).
 - [ ] **Audit-chain integrity is preserved** — audit records remain

@@ -1,5 +1,5 @@
 import { RotateCw } from 'lucide-react'
-import type { SecretWithRelations } from '@contracts/topspin'
+import type { SecretWithRelations } from '@contracts/autorotate'
 import {
   CapabilityBadge,
   FingerprintChip,

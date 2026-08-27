@@ -1,8 +1,8 @@
 import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { AlertTriangle, ArrowRight, Check, RotateCw, ScrollText, X } from "lucide-react";
-import type { RotationRun, RotationStep } from "@contracts/topspin";
-import { RUN_STEP_NAMES } from "@contracts/topspin";
+import type { RotationRun, RotationStep } from "@contracts/autorotate";
+import { RUN_STEP_NAMES } from "@contracts/autorotate";
 import { FingerprintChip, PipelineStepper } from "@/components/primitives";
 import { cn } from "@/lib/utils";
 import {

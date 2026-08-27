@@ -1,14 +1,14 @@
 # 2026-08-22 — Autorotate Apple IDs (portal leftover)
 
 Lives with AG PR #48 (`ag/utility-power-enhancements`).  Duplicate Grok
-https://github.com/jaywedgeworth22/TopSpin/pull/50 stays CLOSED.  Do not
+https://github.com/jaywedgeworth22/Autorotate/pull/50 stays CLOSED.  Do not
 reopen it or merge that branch onto #48.
 
 ## Why
 
 Product is Autorotate at https://autorotate.codes.  Do not TestFlight on
-`com.topspin.ios`.  Do not treat `topspin.pw` or `codes.topspin` as primary.
-GitHub may still be https://github.com/jaywedgeworth22/TopSpin.
+`com.autorotate.ios`.  Do not treat `autorotate.pw` or `codes.autorotate` as primary.
+GitHub may still be https://github.com/jaywedgeworth22/Autorotate.
 
 ## What (already in #48 git)
 

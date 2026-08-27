@@ -5,7 +5,7 @@ import { FileKey2, Globe, KeyRound, Database } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Capability, StatusState } from '@/components/primitives'
-import type { RotationPolicy, SecretStatus, TargetKind } from '@contracts/topspin'
+import type { RotationPolicy, SecretStatus, TargetKind } from '@contracts/autorotate'
 
 /* ------------------------------------------------------------------ */
 /* Status / capability mapping (contracts → design-system primitives)  */

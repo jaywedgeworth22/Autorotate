@@ -1,6 +1,6 @@
 # Autorotate
 
-[![CI](https://github.com/jaywedgeworth22/TopSpin/actions/workflows/ci.yml/badge.svg)](https://github.com/jaywedgeworth22/TopSpin/actions/workflows/ci.yml)
+[![CI](https://github.com/jaywedgeworth22/Autorotate/actions/workflows/ci.yml/badge.svg)](https://github.com/jaywedgeworth22/Autorotate/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](CHANGELOG.md)
 
@@ -30,10 +30,10 @@ Autorotate/
 │   │                       #   Hono + tRPC + Drizzle backend, MySQL)
 │   └── agent/              # Mac Python agent (global-api-keys + Keychain)
 ├── apple/                  # Apple-platform workspace (XcodeGen)
-│   ├── TopSpinCore/        #   Shared SwiftPM package: rotation engine,
+│   ├── AutorotateCore/        #   Shared SwiftPM package: rotation engine,
 │   │                       #   connectors, crypto, Keychain, stores
-│   ├── TopSpin-iOS/        #   iOS app (SwiftUI, iOS 17+, codes.autorotate)
-│   ├── TopSpin-macOS/      #   macOS app (SwiftUI, macOS 14+, codes.autorotate.macos)
+│   ├── Autorotate-iOS/        #   iOS app (SwiftUI, iOS 17+, codes.autorotate)
+│   ├── Autorotate-macOS/      #   macOS app (SwiftUI, macOS 14+, codes.autorotate.macos)
 │   └── project.yml         #   XcodeGen spec → Autorotate.xcodeproj
 ├── android/                # Android companion app (Kotlin + Compose, codes.autorotate)
 │   ├── app/                #   Material 3, Biometrics, QR Scanner, .env Importer
@@ -71,7 +71,7 @@ open Autorotate.xcodeproj
 Or build/test just the shared core with SwiftPM:
 
 ```bash
-cd apple/TopSpinCore
+cd apple/AutorotateCore
 swift build && swift test
 ```
 
@@ -97,5 +97,5 @@ cd android
 Apache License 2.0 — © 2026 Jay.  See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 This project was previously distributed under the MIT License (placeholder
-copyright "TopSpin Systems").  As of 2026-08-21 new copies are Apache-2.0.
+copyright "Autorotate Systems").  As of 2026-08-21 new copies are Apache-2.0.
 Historical commits remain MIT as originally published.
