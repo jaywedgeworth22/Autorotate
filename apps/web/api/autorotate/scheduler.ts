@@ -1,4 +1,10 @@
-import { rotateSecret, refreshDueStatuses, findDueSecrets } from "./engine";
+import {
+  rotateSecret,
+  refreshDueStatuses,
+  findDueSecrets,
+  countOverdueSecrets,
+} from "./engine";
+import { notifyOverdue } from "./alerts";
 
 // Internal scheduler: every tick, refresh due_soon/overdue statuses and
 // rotate all secrets that are autoRotate && nextDueAt <= now && not rotating.
@@ -13,6 +19,9 @@ export async function tick(): Promise<{ rotated: number; errors: number }> {
   let errors = 0;
   try {
     await refreshDueStatuses();
+    // AR-16: at most one overdue digest per process per 6h (throttled inside
+    // notifyOverdue, which also never throws).
+    await notifyOverdue(await countOverdueSecrets());
     const due = await findDueSecrets();
     for (const secret of due) {
       try {

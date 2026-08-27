@@ -8,17 +8,25 @@ import {
 
 // AES-256-GCM encryption for connector admin credentials at rest.
 // Key comes from AUTOROTATE_ENC_KEY: either a 64-char hex key or an arbitrary
-// passphrase (derived with scrypt). A built-in default keeps demo mode
-// explorable — set AUTOROTATE_ENC_KEY in any real deployment.
+// passphrase (derived with scrypt).  The development passphrase below keeps
+// local play working — it is published in this repository, so production
+// refuses to start without a real key (AR-04, enforced here as well as in
+// lib/env.ts so a bundle that skips env validation still fails closed).
 
-const DEFAULT_PASSPHRASE = "autorotate-demo-passphrase";
+const DEV_PASSPHRASE = "autorotate-demo-passphrase";
 const SCRYPT_SALT = "autorotate-connector-config-v1";
 
 let cachedKey: Buffer | null = null;
 
 function getKey(): Buffer {
   if (cachedKey) return cachedKey;
-  const raw = process.env.AUTOROTATE_ENC_KEY || DEFAULT_PASSPHRASE;
+  const configured = process.env.AUTOROTATE_ENC_KEY;
+  if (!configured && process.env.NODE_ENV === "production") {
+    throw new Error(
+      "AUTOROTATE_ENC_KEY is required in production — stored connector admin credentials must not be protected by a published development passphrase",
+    );
+  }
+  const raw = configured || DEV_PASSPHRASE;
   if (/^[0-9a-fA-F]{64}$/.test(raw)) {
     cachedKey = Buffer.from(raw, "hex");
   } else {

@@ -9,7 +9,10 @@ dist
 *.db
 *.sqlite
 *.sqlite3
-db/migrations/*.sql
+# db/migrations/*.sql is deliberately NOT ignored: drizzle migrations are
+# source, not build output. A schema change that existing databases must
+# apply (AR-07 widened the audit hash columns) is unreviewable if the
+# generated SQL never reaches the repository.
 # TypeScript cache
 *.tsbuildinfo
 # Build outputs

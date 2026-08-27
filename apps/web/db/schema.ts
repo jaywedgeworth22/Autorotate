@@ -105,9 +105,24 @@ export const auditLog = mysqlTable("auditLog", {
   action: varchar("action", { length: 128 }).notNull(),
   secretId: bigint("secretId", { mode: "number", unsigned: true }),
   detailJson: json("detailJson"),
-  // Hash chain: entryHash = sha256(prevHash + canonical(entry))[0:16]
-  prevHash: varchar("prevHash", { length: 16 }).notNull(),
-  entryHash: varchar("entryHash", { length: 16 }).notNull(),
+  // Hash chain: entryHash = sha256(prevHash + canonical(entry)) — full 64-char
+  // sha256 hex.  Entries written before AR-07 stored a 16-char (64-bit) prefix;
+  // the column is wide enough for both and verifyAuditChain accepts the legacy
+  // width up to the first full-width entry (engine.ts).
+  prevHash: varchar("prevHash", { length: 64 }).notNull(),
+  entryHash: varchar("entryHash", { length: 64 }).notNull(),
+});
+
+// Single-row workspace settings (AR-16).  Alert webhooks used to live in a
+// module-level global that was lost on restart and never consulted by the
+// rotation engine.  No FK columns here, so invariant 4 (bigint unsigned FKs)
+// does not apply.
+export const workspaceSettings = mysqlTable("workspaceSettings", {
+  id: int("id").autoincrement().primaryKey(),
+  // WorkspaceAlertConfig (see contracts/autorotate.ts) — webhook URLs only,
+  // never a secret value.
+  alertsJson: json("alertsJson"),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 // ── Inferred types ─────────────────────────────────────────────
@@ -121,3 +136,5 @@ export type RotationRun = typeof rotationRuns.$inferSelect;
 export type InsertRotationRun = typeof rotationRuns.$inferInsert;
 export type AuditEntry = typeof auditLog.$inferSelect;
 export type InsertAuditEntry = typeof auditLog.$inferInsert;
+export type WorkspaceSettings = typeof workspaceSettings.$inferSelect;
+export type InsertWorkspaceSettings = typeof workspaceSettings.$inferInsert;

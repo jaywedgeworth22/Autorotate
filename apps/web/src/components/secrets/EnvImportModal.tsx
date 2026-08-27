@@ -375,7 +375,8 @@ export function EnvImportModal({
 
             <div className="flex items-center justify-between border-t border-line-subtle pt-3">
               <span className="text-mono-s text-ink-muted">
-                Plaintext values will be held in memory for target delivery and never persisted in database logs.
+                Pasted values are fingerprinted and discarded — never stored, never delivered.
+                Targets receive a value at the next real rotation.
               </span>
               <div className="flex gap-2">
                 <button

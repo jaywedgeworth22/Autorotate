@@ -1,4 +1,4 @@
-import { eq, desc, and, ne, lte, isNotNull } from "drizzle-orm";
+import { eq, desc, and, ne, lte, gt, isNotNull, sql, count } from "drizzle-orm";
 import { getDb } from "../queries/connection";
 import {
   secrets,
@@ -21,10 +21,12 @@ import {
   type WebhookTargetConfig,
 } from "@contracts/autorotate";
 import { decryptJson, fingerprint, sha256Hex } from "./crypto";
-import { getConnector } from "./connectors";
+import { getConnector, probeNewCredential } from "./connectors";
 import { isDemoMode, demoMessage, demoLatency } from "./demo";
 import { hasInfisicalConfig, upsertSecret, readSecret } from "./infisical";
 import { writeFileTarget, readFileTarget } from "./files";
+import { assertSafeWebhookUrl } from "./netguard";
+import { notifyRunOutcome } from "./alerts";
 
 // ── Rotation pipeline (architecture.md §2) ──────────────────────
 // LOCK -> ROTATE -> PUSH (per enabled target) -> VERIFY -> COMMIT -> AUDIT.
@@ -44,10 +46,28 @@ export class SecretNotFoundError extends Error {
   }
 }
 
+// In-process lock: a fast-fail for the common same-replica case and the only
+// lock a dry-run needs (a dry-run changes no live state).  The authoritative
+// lock for a real rotation is an atomic DB claim — see claimRotation (AR-19).
 const locks = new Set<number>();
 
 export function isLocked(secretId: number): boolean {
   return locks.has(secretId);
+}
+
+/**
+ * Atomically claim a secret for rotation across every process sharing the
+ * database: `UPDATE secrets SET status='rotating' WHERE id=? AND status<>'rotating'`.
+ * Zero affected rows means somebody else holds the claim.
+ */
+async function claimRotation(secretId: number): Promise<boolean> {
+  const db = getDb();
+  const result = await db
+    .update(secrets)
+    .set({ status: "rotating" })
+    .where(and(eq(secrets.id, secretId), ne(secrets.status, "rotating")));
+  const header = firstRow<{ affectedRows?: number }>(result);
+  return Number(header?.affectedRows ?? 0) > 0;
 }
 
 function parsePolicy(secret: Secret): RotationPolicy {
@@ -91,10 +111,45 @@ export function shouldMintProviderCredential(dryRun: boolean): boolean {
   return !dryRun;
 }
 
-// ── Hash-chained audit log ──────────────────────────────────────
-// entryHash = sha256(prevHash + canonical(entry))[0:16], genesis prevHash = "0"*16
+/**
+ * Refusal message, kept in parity with the Swift engine's no-target guard
+ * (RotationEngine.swift, commit f13ac35 / PR #17).
+ */
+export const NO_TARGET_REFUSAL =
+  "No enabled target to receive the new value; refusing to rotate.";
 
-const GENESIS_HASH = "0000000000000000";
+/**
+ * AR-06 — port of the AutorotateCore guard.
+ *
+ * A programmatic connector mints (and usually deactivates) the provider
+ * credential during ROTATE.  With nowhere to deliver the result, the new
+ * plaintext exists only inside this function and is then discarded, while the
+ * old credential may already be dead — an unrecoverable outage reported as a
+ * healthy commit.  Demo mode refuses too: a simulated rotation with no target
+ * proves nothing, and consistency here is worth more than explorability.
+ *
+ * Dry-run keeps its simulated path — it never mints, so it has nothing to
+ * lose.
+ */
+export function canMintForTargets(enabledTargetCount: number, dryRun: boolean): boolean {
+  if (dryRun) return true;
+  return enabledTargetCount > 0;
+}
+
+// ── Hash-chained audit log ──────────────────────────────────────
+// entryHash = sha256(prevHash + canonical(entry)), genesis prevHash = "0"*64.
+//
+// AR-07: hashes used to be truncated to 16 hex characters — 64 bits, which is
+// birthday-collision territory for a tamper-evidence claim.  Entries written
+// before this change keep their 16-char form and are still verified (see
+// verifyAuditChain); every new entry is the full 64-char sha256.
+
+const GENESIS_HASH = "0".repeat(64);
+const LEGACY_GENESIS_HASH = "0".repeat(16);
+const LEGACY_HASH_LENGTH = 16;
+const AUDIT_LOCK_NAME = "autorotate.audit_append";
+const AUDIT_LOCK_TIMEOUT_SECONDS = 5;
+const CHAIN_SCAN_BATCH = 1000;
 
 type AuditCanonical = {
   ts: string;
@@ -124,10 +179,59 @@ export function canonicalEntry(entry: AuditCanonical): string {
   )},"ts":${JSON.stringify(entry.ts)}}`;
 }
 
+/** Full 64-char sha256 hex of prevHash ‖ canonical(entry). */
 export function computeEntryHash(prevHash: string, entry: AuditCanonical): string {
-  return sha256Hex(prevHash + canonicalEntry(entry)).slice(0, 16);
+  return sha256Hex(prevHash + canonicalEntry(entry));
 }
 
+/**
+ * Verify one stored entry against its predecessor's stored hash.
+ *
+ * Legacy tolerance (AR-07): an entry whose stored entryHash is 16 characters
+ * was written by the truncating implementation, so it is compared against the
+ * recomputed hash sliced to 16.  Its successor chains onto that stored
+ * 16-char value verbatim, which is exactly what appendAudit writes, so no
+ * special case is needed at the legacy→full boundary.  From the first
+ * full-width entry onward the comparison is exact.
+ */
+export function verifyChainLink(
+  entry: { prevHash: string; entryHash: string },
+  canonical: AuditCanonical,
+  previousStoredHash: string | null,
+): boolean {
+  const legacy = entry.entryHash.length === LEGACY_HASH_LENGTH;
+  const prev = previousStoredHash ?? (legacy ? LEGACY_GENESIS_HASH : GENESIS_HASH);
+  if (entry.prevHash !== prev) return false;
+  const full = computeEntryHash(prev, canonical);
+  const expected = legacy ? full.slice(0, LEGACY_HASH_LENGTH) : full;
+  return entry.entryHash === expected;
+}
+
+/** Extract the first row of a drizzle `execute` result across driver shapes. */
+function firstRow<T>(result: unknown): T | undefined {
+  if (Array.isArray(result)) {
+    const head = result[0];
+    if (Array.isArray(head)) return head[0] as T | undefined;
+    return head as T | undefined;
+  }
+  const rows = (result as { rows?: unknown[] })?.rows;
+  return Array.isArray(rows) ? (rows[0] as T | undefined) : undefined;
+}
+
+/**
+ * Append one hash-chained audit entry.
+ *
+ * AR-07: read-last and insert are serialized by a MySQL named lock, which is
+ * held on the server rather than in this process — so it serializes across
+ * replicas and across the scheduler tick that runs concurrently with web
+ * actions.  Two appends taking the same predecessor break the chain
+ * permanently, because invariant 2 correctly forbids rewriting history to
+ * repair it.
+ *
+ * Deployment note: GET_LOCK is a MySQL server function.  It exists on MySQL,
+ * MariaDB and TiDB >= 6.2; a Vitess-fronted deployment must confirm it is
+ * routed before relying on this.
+ */
 export async function appendAudit(
   actor: string,
   action: string,
@@ -136,52 +240,85 @@ export async function appendAudit(
   ts: Date = new Date(),
 ): Promise<void> {
   const db = getDb();
-  const [last] = await db
-    .select({ entryHash: auditLog.entryHash })
-    .from(auditLog)
-    .orderBy(desc(auditLog.id))
-    .limit(1);
-  const prevHash = last?.entryHash ?? GENESIS_HASH;
-  const canonical: AuditCanonical = {
-    ts: ts.toISOString(),
-    actor,
-    action,
-    secretId,
-    detail: detail ?? null,
-  };
-  await db.insert(auditLog).values({
-    ts,
-    actor,
-    action,
-    secretId,
-    detailJson: (detail ?? null) as never,
-    prevHash,
-    entryHash: computeEntryHash(prevHash, canonical),
-  });
+  const acquired = firstRow<{ acquired: number | null }>(
+    await db.execute(
+      sql`SELECT GET_LOCK(${AUDIT_LOCK_NAME}, ${AUDIT_LOCK_TIMEOUT_SECONDS}) AS acquired`,
+    ),
+  );
+  if (Number(acquired?.acquired) !== 1) {
+    throw new Error(
+      `audit append lock not acquired within ${AUDIT_LOCK_TIMEOUT_SECONDS}s — refusing to append out of order`,
+    );
+  }
+  try {
+    const [last] = await db
+      .select({ entryHash: auditLog.entryHash })
+      .from(auditLog)
+      .orderBy(desc(auditLog.id))
+      .limit(1);
+    const prevHash = last?.entryHash ?? GENESIS_HASH;
+    const canonical: AuditCanonical = {
+      ts: ts.toISOString(),
+      actor,
+      action,
+      secretId,
+      detail: detail ?? null,
+    };
+    await db.insert(auditLog).values({
+      ts,
+      actor,
+      action,
+      secretId,
+      detailJson: (detail ?? null) as never,
+      prevHash,
+      entryHash: computeEntryHash(prevHash, canonical),
+    });
+  } finally {
+    await db.execute(sql`SELECT RELEASE_LOCK(${AUDIT_LOCK_NAME})`);
+  }
 }
 
+/**
+ * Walk the chain in id-ordered batches.  The audit log is append-only and
+ * unbounded, so loading it whole to answer one endpoint was a DoS path of its
+ * own (AR-07/AR-21).
+ */
 export async function verifyAuditChain(): Promise<ChainVerification> {
   const db = getDb();
-  const entries = await db.select().from(auditLog).orderBy(auditLog.id);
-  let prevHash = GENESIS_HASH;
-  for (const entry of entries) {
-    const canonical: AuditCanonical = {
-      ts: entry.ts.toISOString(),
-      actor: entry.actor,
-      action: entry.action,
-      secretId: entry.secretId ?? null,
-      detail: entry.detailJson ?? null,
-    };
-    const expected = computeEntryHash(prevHash, canonical);
-    if (entry.prevHash !== prevHash || entry.entryHash !== expected) {
-      return { valid: false, checked: entries.length, brokenAtId: entry.id };
+  let previousStoredHash: string | null = null;
+  let checked = 0;
+  let lastId = 0;
+  for (;;) {
+    const entries = await db
+      .select()
+      .from(auditLog)
+      .where(gt(auditLog.id, lastId))
+      .orderBy(auditLog.id)
+      .limit(CHAIN_SCAN_BATCH);
+    if (entries.length === 0) break;
+    for (const entry of entries) {
+      const canonical: AuditCanonical = {
+        ts: entry.ts.toISOString(),
+        actor: entry.actor,
+        action: entry.action,
+        secretId: entry.secretId ?? null,
+        detail: entry.detailJson ?? null,
+      };
+      checked++;
+      if (!verifyChainLink(entry, canonical, previousStoredHash)) {
+        return { valid: false, checked, brokenAtId: entry.id };
+      }
+      previousStoredHash = entry.entryHash;
+      lastId = entry.id;
     }
-    prevHash = entry.entryHash;
+    if (entries.length < CHAIN_SCAN_BATCH) break;
   }
-  return { valid: true, checked: entries.length, brokenAtId: null };
+  return { valid: true, checked, brokenAtId: null };
 }
 
 // ── Target delivery ─────────────────────────────────────────────
+
+const WEBHOOK_TIMEOUT_MS = 10_000;
 
 async function pushToTarget(
   target: Target,
@@ -203,15 +340,25 @@ async function pushToTarget(
       );
     }
     case "file": {
-      // File targets always execute for real (inside the sandbox).
       const fcfg = cfg as unknown as FileTargetConfig;
+      // AR-03: file targets used to "always execute for real", which let a
+      // demo-mode deployment overwrite a production .env with a generated
+      // value.  Demo mode now simulates every target kind.
+      if (isDemoMode()) {
+        const ms = await demoLatency();
+        return demoMessage(
+          `wrote ${fcfg.key} to ${fcfg.path} (${fcfg.format}) (simulated, ${ms}ms)`,
+        );
+      }
       await writeFileTarget(fcfg, value);
       return `wrote ${fcfg.key} to ${fcfg.path} (${fcfg.format})`;
     }
     case "webhook": {
       const wcfg = cfg as unknown as WebhookTargetConfig;
       if (!isDemoMode() && wcfg.url) {
-        const res = await fetch(wcfg.url, {
+        // AR-09: https-only, no loopback/link-local/RFC1918 destinations.
+        const safeUrl = await assertSafeWebhookUrl(wcfg.url);
+        const res = await fetch(safeUrl, {
           method: wcfg.method || "POST",
           headers: {
             "Content-Type": "application/json",
@@ -222,6 +369,7 @@ async function pushToTarget(
             valueRef: `autorotate://secrets/${secret.id}/v${secret.version + 1}`,
             ...(wcfg.includeValue ? { value } : {}),
           }),
+          signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
         });
         if (!res.ok) {
           throw new Error(`webhook ${wcfg.url} returned HTTP ${res.status}`);
@@ -263,6 +411,11 @@ async function verifyTarget(
     }
     case "file": {
       const fcfg = cfg as unknown as FileTargetConfig;
+      // Demo mode never wrote the file, so it must not claim to read it back.
+      if (isDemoMode()) {
+        await demoLatency();
+        return demoMessage(`read-back verified ${fcfg.path} (simulated)`);
+      }
       const read = await readFileTarget(fcfg);
       if (read === null || fingerprint(read) !== expectedFp) {
         throw new Error(`file read-back mismatch at ${fcfg.path}`);
@@ -291,6 +444,23 @@ export async function rotateSecret(
   if (!secret) throw new SecretNotFoundError(secretId);
   if (locks.has(secretId)) throw new RotationLockedError(secretId);
   locks.add(secretId);
+
+  // AR-19: claim the secret in the database before any live work, so two
+  // replicas cannot rotate the same credential concurrently.  The claim
+  // doubles as the "rotating" status write the UI reads.
+  let claimed = false;
+  if (!dryRun) {
+    try {
+      claimed = await claimRotation(secretId);
+    } catch (err) {
+      locks.delete(secretId);
+      throw err;
+    }
+    if (!claimed) {
+      locks.delete(secretId);
+      throw new RotationLockedError(secretId);
+    }
+  }
 
   const steps: RotationStep[] = [];
   const record = async (
@@ -335,13 +505,6 @@ export async function rotateSecret(
     .$returningId();
   const runId = runRow.id;
 
-  if (!dryRun) {
-    await db
-      .update(secrets)
-      .set({ status: "rotating" })
-      .where(eq(secrets.id, secretId));
-  }
-
   let runStatus: "committed" | "partial" | "failed" = "failed";
   let runError: string | null = null;
   let newFp: string | null = null;
@@ -359,8 +522,22 @@ export async function rotateSecret(
     const connector = connectorRow
       ? getConnector(connectorRow.platform)
       : undefined;
+
+    // Targets are loaded BEFORE the mint so the no-target guard can refuse
+    // without any provider call having happened (AR-06).
+    const targetRows = await db
+      .select()
+      .from(targets)
+      .where(eq(targets.secretId, secretId));
+    const enabledTargets = targetRows.filter((t) => t.enabled);
+
     let newValue: string | null = null;
     const rotateOk = await record("rotate", async () => {
+      if (!canMintForTargets(enabledTargets.length, dryRun)) {
+        throw new Error(
+          `${NO_TARGET_REFUSAL}  A programmatic mint revokes the old credential and discards the new one when there is nowhere to deliver it.`,
+        );
+      }
       if (!connectorRow || !connector) {
         throw new Error(
           `no connector registered for platform "${connectorRow?.platform ?? "?"}"`,
@@ -386,12 +563,6 @@ export async function rotateSecret(
       }
 
       // 3. PUSH — every enabled target
-      const targetRows = await db
-        .select()
-        .from(targets)
-        .where(eq(targets.secretId, secretId));
-      const enabledTargets = targetRows.filter((t) => t.enabled);
-
       if (enabledTargets.length === 0) {
         await record("push", async () => "no enabled targets — nothing to deliver");
       }
@@ -504,6 +675,39 @@ export async function rotateSecret(
           .set({ status: "failed" })
           .where(eq(secrets.id, secretId));
       }
+
+      // 5b. LIVENESS — prove the new credential actually authenticates (AR-11).
+      // VERIFY only reads back what PUSH just wrote and compares it to
+      // itself, so a dead or fabricated credential passes it.
+      if (!dryRun && runStatus === "committed") {
+        const platform = connectorRow?.platform ?? "";
+        const liveOk = await record("liveness", async () => {
+          if (isDemoMode()) {
+            await demoLatency();
+            return demoMessage("new credential authenticated against the provider (simulated)");
+          }
+          let probe: string | null;
+          try {
+            probe = await probeNewCredential(platform, value);
+          } catch (err) {
+            throw new Error(
+              `credential delivered but failed liveness probe: ${(err as Error).message}.  The previous credential was already revoked during ROTATE, so this cannot be rolled back — reconnect the platform and rotate again.`,
+            );
+          }
+          return (
+            probe ??
+            `no liveness probe available for ${platform || "this platform"} — delivery verified by read-back only`
+          );
+        });
+        if (!liveOk) {
+          runStatus = "partial";
+          runError = "credential delivered but failed liveness probe";
+          await db
+            .update(secrets)
+            .set({ status: "failed" })
+            .where(eq(secrets.id, secretId));
+        }
+      }
     } else {
       runStatus = "failed";
       runError = steps.find((s) => s.status === "failed")?.message ?? "rotate step failed";
@@ -549,8 +753,9 @@ export async function rotateSecret(
     });
   } finally {
     locks.delete(secretId);
-    if (!dryRun) {
-      // Ensure the secret never stays stuck in "rotating" if something crashed.
+    if (!dryRun && claimed) {
+      // Release the DB claim: only the holder may clear a stuck "rotating".
+      // Any other row in that state belongs to a concurrent run.
       await db
         .update(secrets)
         .set({ status: "failed" })
@@ -566,6 +771,12 @@ export async function rotateSecret(
         error: runError,
       })
       .where(eq(rotationRuns.id, runId));
+
+    if (!dryRun) {
+      // AR-16: fire-and-forget; notifyRunOutcome never throws and never
+      // carries a value or fingerprint.
+      void notifyRunOutcome({ runId, secretName: secret.name, status: runStatus });
+    }
   }
 
   const run = await db.query.rotationRuns.findFirst({
@@ -609,6 +820,16 @@ export async function refreshDueStatuses(now = new Date()): Promise<void> {
         .where(eq(secrets.id, row.id));
     }
   }
+}
+
+/** How many secrets are currently past their rotation deadline (AR-16). */
+export async function countOverdueSecrets(): Promise<number> {
+  const db = getDb();
+  const [row] = await db
+    .select({ value: count() })
+    .from(secrets)
+    .where(eq(secrets.status, "overdue"));
+  return Number(row?.value ?? 0);
 }
 
 /** Secrets due for scheduled rotation right now. */
@@ -700,6 +921,19 @@ export async function checkSecretDrift(secretId: number): Promise<{
         }
       } else if (target.kind === "file") {
         const fcfg = cfg as unknown as FileTargetConfig;
+        if (isDemoMode()) {
+          // Demo mode never wrote this file — report the simulation, not a
+          // reading of somebody's real .env.
+          targetResults.push({
+            targetId: target.id,
+            kind: target.kind,
+            status: "in_sync",
+            detail: demoMessage(`file target ${fcfg.path} verified (simulated)`),
+            expectedFingerprint: secret.fingerprint,
+            actualFingerprint: secret.fingerprint,
+          });
+          continue;
+        }
         const val = await readFileTarget(fcfg);
         if (val === null) {
           hasDrift = true;

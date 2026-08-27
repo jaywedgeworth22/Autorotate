@@ -1,10 +1,13 @@
-// Demo-mode switch. AUTOROTATE_DEMO=1 forces demo behavior for every connector;
-// when the variable is unset, demo mode defaults ON so the product is fully
-// explorable without credentials. Set AUTOROTATE_DEMO=0 to require real config.
+// Demo-mode switch (AR-03).  Simulation is opt-in and explicit: demo mode is
+// ON only when AUTOROTATE_DEMO is exactly "1" or "true".  Unset, empty, "0",
+// "false" or anything else means real mode, so a production deploy that
+// forgets the variable fails closed instead of silently faking every
+// rotation.  The marketing sandbox must set AUTOROTATE_DEMO=1 explicitly.
 export function isDemoMode(): boolean {
   const flag = process.env.AUTOROTATE_DEMO;
-  if (flag === undefined || flag === "") return true;
-  return flag === "1" || flag.toLowerCase() === "true";
+  if (!flag) return false;
+  const normalized = flag.trim().toLowerCase();
+  return normalized === "1" || normalized === "true";
 }
 
 /** Prefix every simulated step message with [demo] (hard requirement). */

@@ -1,8 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Bell, Send, Slack, MessageSquare } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
 import { Modal, toastError, toastSuccess } from '@/components/primitives'
 
+/**
+ * Workspace alert webhooks (AR-09 / AR-16).  A stored webhook URL is itself a
+ * credential, so the server only returns a masked form and this modal can
+ * never read one back.  Leaving a field empty keeps the stored webhook;
+ * "Remove" clears it.
+ */
 export function AlertSettingsModal({
   open,
   onClose,
@@ -10,26 +16,32 @@ export function AlertSettingsModal({
   open: boolean
   onClose: () => void
 }) {
+  const utils = trpc.useUtils()
   const alertsQuery = trpc.workspace.getAlerts.useQuery(undefined, { enabled: open })
+  const alerts = alertsQuery.data
   const [slackUrl, setSlackUrl] = useState('')
   const [discordUrl, setDiscordUrl] = useState('')
-  const [notifyOnFailure, setNotifyOnFailure] = useState(true)
-  const [notifyOnPartial, setNotifyOnPartial] = useState(true)
-  const [notifyOnOverdue, setNotifyOnOverdue] = useState(true)
+  const [clearSlack, setClearSlack] = useState(false)
+  const [clearDiscord, setClearDiscord] = useState(false)
+  const [triggerOverrides, setTriggerOverrides] = useState<{
+    notifyOnFailure?: boolean
+    notifyOnPartial?: boolean
+    notifyOnOverdue?: boolean
+  }>({})
 
-  useEffect(() => {
-    if (alertsQuery.data) {
-      setSlackUrl(alertsQuery.data.slackWebhookUrl ?? '')
-      setDiscordUrl(alertsQuery.data.discordWebhookUrl ?? '')
-      setNotifyOnFailure(alertsQuery.data.notifyOnFailure ?? true)
-      setNotifyOnPartial(alertsQuery.data.notifyOnPartial ?? true)
-      setNotifyOnOverdue(alertsQuery.data.notifyOnOverdue ?? true)
-    }
-  }, [alertsQuery.data])
+  const notifyOnFailure = triggerOverrides.notifyOnFailure ?? alerts?.notifyOnFailure ?? true
+  const notifyOnPartial = triggerOverrides.notifyOnPartial ?? alerts?.notifyOnPartial ?? true
+  const notifyOnOverdue = triggerOverrides.notifyOnOverdue ?? alerts?.notifyOnOverdue ?? true
 
   const updateMut = trpc.workspace.updateAlerts.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toastSuccess('Alerts saved', 'Workspace notification preferences updated')
+      setSlackUrl('')
+      setDiscordUrl('')
+      setClearSlack(false)
+      setClearDiscord(false)
+      setTriggerOverrides({})
+      await utils.workspace.getAlerts.invalidate()
       onClose()
     },
     onError: (err: { message: string }) => toastError('Save failed', err.message),
@@ -45,8 +57,12 @@ export function AlertSettingsModal({
 
   const handleSave = () => {
     updateMut.mutate({
-      slackWebhookUrl: slackUrl,
-      discordWebhookUrl: discordUrl,
+      ...(clearSlack ? { slackWebhookUrl: '' } : slackUrl ? { slackWebhookUrl: slackUrl } : {}),
+      ...(clearDiscord
+        ? { discordWebhookUrl: '' }
+        : discordUrl
+          ? { discordWebhookUrl: discordUrl }
+          : {}),
       notifyOnFailure,
       notifyOnPartial,
       notifyOnOverdue,
@@ -69,7 +85,9 @@ export function AlertSettingsModal({
     >
       <div className="space-y-5">
         <p className="text-xs text-ink-secondary">
-          Receive real-time alerts whenever a rotation run fails, partially delivers, or a secret becomes overdue.
+          Alerts fire when a rotation run fails or partially delivers, and once every six hours
+          while any secret is past its deadline.  Messages carry the secret name, run id and
+          time — never a value or a fingerprint.
         </p>
 
         {/* Slack Webhook */}
@@ -79,7 +97,7 @@ export function AlertSettingsModal({
               <Slack className="size-4 text-emerald-400" />
               <span>Slack Incoming Webhook</span>
             </div>
-            {slackUrl && (
+            {alerts?.hasSlack && (
               <button
                 type="button"
                 onClick={() => testMut.mutate({ service: 'slack' })}
@@ -91,12 +109,31 @@ export function AlertSettingsModal({
               </button>
             )}
           </div>
+          {alerts?.hasSlack && (
+            <div className="flex items-center justify-between gap-2 text-mono-s text-ink-muted">
+              <span className="truncate">Stored: {alerts.slackWebhookMasked}</span>
+              <label className="flex shrink-0 cursor-pointer items-center gap-1.5">
+                <input
+                  type="checkbox"
+                  checked={clearSlack}
+                  onChange={(e) => setClearSlack(e.target.checked)}
+                  className="size-3.5 accent-emerald-400"
+                />
+                Remove
+              </label>
+            </div>
+          )}
           <input
             type="url"
             value={slackUrl}
             onChange={(e) => setSlackUrl(e.target.value)}
-            placeholder="https://hooks.slack.com/services/..."
-            className="w-full rounded-control border border-line-subtle bg-inset px-3 py-2 font-mono text-xs text-ink-primary outline-none focus:border-spin-dim"
+            disabled={clearSlack}
+            placeholder={
+              alerts?.hasSlack
+                ? 'Paste a new https:// URL to replace it'
+                : 'https://hooks.slack.com/services/...'
+            }
+            className="w-full rounded-control border border-line-subtle bg-inset px-3 py-2 font-mono text-xs text-ink-primary outline-none focus:border-spin-dim disabled:opacity-50"
           />
         </div>
 
@@ -107,7 +144,7 @@ export function AlertSettingsModal({
               <MessageSquare className="size-4 text-indigo-400" />
               <span>Discord Webhook</span>
             </div>
-            {discordUrl && (
+            {alerts?.hasDiscord && (
               <button
                 type="button"
                 onClick={() => testMut.mutate({ service: 'discord' })}
@@ -119,12 +156,31 @@ export function AlertSettingsModal({
               </button>
             )}
           </div>
+          {alerts?.hasDiscord && (
+            <div className="flex items-center justify-between gap-2 text-mono-s text-ink-muted">
+              <span className="truncate">Stored: {alerts.discordWebhookMasked}</span>
+              <label className="flex shrink-0 cursor-pointer items-center gap-1.5">
+                <input
+                  type="checkbox"
+                  checked={clearDiscord}
+                  onChange={(e) => setClearDiscord(e.target.checked)}
+                  className="size-3.5 accent-emerald-400"
+                />
+                Remove
+              </label>
+            </div>
+          )}
           <input
             type="url"
             value={discordUrl}
             onChange={(e) => setDiscordUrl(e.target.value)}
-            placeholder="https://discord.com/api/webhooks/..."
-            className="w-full rounded-control border border-line-subtle bg-inset px-3 py-2 font-mono text-xs text-ink-primary outline-none focus:border-spin-dim"
+            disabled={clearDiscord}
+            placeholder={
+              alerts?.hasDiscord
+                ? 'Paste a new https:// URL to replace it'
+                : 'https://discord.com/api/webhooks/...'
+            }
+            className="w-full rounded-control border border-line-subtle bg-inset px-3 py-2 font-mono text-xs text-ink-primary outline-none focus:border-spin-dim disabled:opacity-50"
           />
         </div>
 
@@ -136,7 +192,9 @@ export function AlertSettingsModal({
               <input
                 type="checkbox"
                 checked={notifyOnFailure}
-                onChange={(e) => setNotifyOnFailure(e.target.checked)}
+                onChange={(e) =>
+                  setTriggerOverrides((prev) => ({ ...prev, notifyOnFailure: e.target.checked }))
+                }
                 className="size-3.5 accent-emerald-400"
               />
               Notify immediately when any rotation run fails
@@ -145,7 +203,9 @@ export function AlertSettingsModal({
               <input
                 type="checkbox"
                 checked={notifyOnPartial}
-                onChange={(e) => setNotifyOnPartial(e.target.checked)}
+                onChange={(e) =>
+                  setTriggerOverrides((prev) => ({ ...prev, notifyOnPartial: e.target.checked }))
+                }
                 className="size-3.5 accent-emerald-400"
               />
               Notify on partial commits (target delivery failures)
@@ -154,7 +214,9 @@ export function AlertSettingsModal({
               <input
                 type="checkbox"
                 checked={notifyOnOverdue}
-                onChange={(e) => setNotifyOnOverdue(e.target.checked)}
+                onChange={(e) =>
+                  setTriggerOverrides((prev) => ({ ...prev, notifyOnOverdue: e.target.checked }))
+                }
                 className="size-3.5 accent-emerald-400"
               />
               Notify when secret exceeds rotation policy deadline

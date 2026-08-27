@@ -1,7 +1,11 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, desc, and, like, gte, sql, type SQL } from "drizzle-orm";
-import { createRouter, publicQuery } from "../middleware";
+// AR-01: every procedure in this file is a protectedProcedure.  These
+// endpoints enumerate secrets, register connectors, rotate live credentials,
+// delete the inventory and read the audit log — none of it may be reachable
+// without a console session.
+import { createRouter, protectedProcedure } from "../middleware";
 import { getDb } from "../queries/connection";
 import {
   connectors,
@@ -29,7 +33,7 @@ import {
   secretBatchDeleteInput,
   secretBatchRotateInput,
   secretCheckDriftInput,
-  workspaceAlertConfigSchema,
+  workspaceAlertUpdateInput,
   type StatsOverview,
   type RotationPolicy,
   type FileTargetConfig,
@@ -42,6 +46,15 @@ import { isDemoMode, demoLatency, demoMessage } from "../autorotate/demo";
 import { connectorRegistry, getConnector, testConnection } from "../autorotate/connectors";
 import { hasInfisicalConfig, upsertSecret } from "../autorotate/infisical";
 import { writeFileTarget } from "../autorotate/files";
+import { assertSafeWebhookUrl } from "../autorotate/netguard";
+import {
+  maskAlertConfig,
+  postAlert,
+  readAlertConfig,
+  writeAlertConfig,
+} from "../autorotate/alerts";
+import { requestBaseUrl } from "../lib/request-url";
+import { env } from "../lib/env";
 import {
   rotateSecret,
   checkSecretDrift,
@@ -72,7 +85,7 @@ function toTrpcError(err: unknown): never {
 // ── connectors ──────────────────────────────────────────────────
 
 export const connectorsRouter = createRouter({
-  list: publicQuery.query(async () => {
+  list: protectedProcedure.query(async () => {
     const db = getDb();
     const rows = await db.select().from(connectors).orderBy(connectors.id);
     const counts = await db
@@ -94,7 +107,7 @@ export const connectorsRouter = createRouter({
     }));
   }),
 
-  registry: publicQuery.query(() =>
+  registry: protectedProcedure.query(() =>
     connectorRegistry.map((c) => ({
       platform: c.platform,
       displayName: c.displayName,
@@ -102,7 +115,7 @@ export const connectorsRouter = createRouter({
     })),
   ),
 
-  create: publicQuery
+  create: protectedProcedure
     .input(connectorCreateInput)
     .mutation(async ({ input }) => {
       const db = getDb();
@@ -137,7 +150,7 @@ export const connectorsRouter = createRouter({
       return db.query.connectors.findFirst({ where: eq(connectors.id, id) });
     }),
 
-  update: publicQuery
+  update: protectedProcedure
     .input(connectorUpdateInput)
     .mutation(async ({ input }) => {
       const db = getDb();
@@ -162,7 +175,7 @@ export const connectorsRouter = createRouter({
       return db.query.connectors.findFirst({ where: eq(connectors.id, input.id) });
     }),
 
-  delete: publicQuery
+  delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = getDb();
@@ -188,7 +201,7 @@ export const connectorsRouter = createRouter({
       return { ok: true };
     }),
 
-  test: publicQuery
+  test: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = getDb();
@@ -228,7 +241,7 @@ export const connectorsRouter = createRouter({
 // ── secrets ─────────────────────────────────────────────────────
 
 export const secretsRouter = createRouter({
-  list: publicQuery.input(secretListFilter).query(async ({ input }) => {
+  list: protectedProcedure.input(secretListFilter).query(async ({ input }) => {
     const db = getDb();
     const conditions: SQL[] = [];
     if (input?.status) conditions.push(eq(secrets.status, input.status));
@@ -242,7 +255,7 @@ export const secretsRouter = createRouter({
     });
   }),
 
-  get: publicQuery
+  get: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const db = getDb();
@@ -254,7 +267,7 @@ export const secretsRouter = createRouter({
       return row;
     }),
 
-  create: publicQuery
+  create: protectedProcedure
     .input(secretCreateInput)
     .mutation(async ({ input }) => {
       const db = getDb();
@@ -289,7 +302,7 @@ export const secretsRouter = createRouter({
       });
     }),
 
-  update: publicQuery
+  update: protectedProcedure
     .input(secretUpdateInput)
     .mutation(async ({ input }) => {
       const db = getDb();
@@ -321,7 +334,7 @@ export const secretsRouter = createRouter({
       });
     }),
 
-  delete: publicQuery
+  delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = getDb();
@@ -336,7 +349,7 @@ export const secretsRouter = createRouter({
       return { ok: true };
     }),
 
-  rotateNow: publicQuery
+  rotateNow: protectedProcedure
     .input(z.object({ secretId: z.number() }))
     .mutation(async ({ input }) => {
       try {
@@ -346,7 +359,7 @@ export const secretsRouter = createRouter({
       }
     }),
 
-  dryRun: publicQuery
+  dryRun: protectedProcedure
     .input(z.object({ secretId: z.number() }))
     .mutation(async ({ input }) => {
       try {
@@ -356,7 +369,7 @@ export const secretsRouter = createRouter({
       }
     }),
 
-  checkDrift: publicQuery
+  checkDrift: protectedProcedure
     .input(secretCheckDriftInput)
     .query(async ({ input }) => {
       try {
@@ -366,7 +379,7 @@ export const secretsRouter = createRouter({
       }
     }),
 
-  importBatch: publicQuery
+  importBatch: protectedProcedure
     .input(secretImportBatchInput)
     .mutation(async ({ input }) => {
       const db = getDb();
@@ -380,13 +393,16 @@ export const secretsRouter = createRouter({
         if (!connector) {
           const known = getConnector(item.platform);
           const capability = known?.capability ?? "programmatic";
+          // AR-17: an auto-created connector has no admin credential, so it
+          // is "disconnected", not "connected".  Claiming otherwise was the
+          // precondition for AR-02's fabricated rotations.
           const [newConn] = await db
             .insert(connectors)
             .values({
               platform: item.platform,
               displayName: known?.displayName ?? item.platform,
               capability,
-              status: "connected",
+              status: "disconnected",
             })
             .$returningId();
           connector = await db.query.connectors.findFirst({
@@ -398,6 +414,9 @@ export const secretsRouter = createRouter({
         const policy: RotationPolicy = { ...DEFAULT_POLICY, ...(item.policy ?? {}) };
         const now = new Date();
         const initialFp = item.value ? fingerprint(item.value) : null;
+        // AR-17: an import fingerprints the pasted value and discards it — no
+        // target ever received it, so lastRotatedAt stays null.  Autorotate
+        // has not rotated this secret; it has started tracking it.
         const [secretRow] = await db
           .insert(secrets)
           .values({
@@ -407,7 +426,7 @@ export const secretsRouter = createRouter({
             status: "healthy",
             policyJson: policy as never,
             fingerprint: initialFp,
-            lastRotatedAt: item.value ? now : null,
+            lastRotatedAt: null,
             nextDueAt: new Date(now.getTime() + policy.intervalHours * 3600 * 1000),
           })
           .$returningId();
@@ -437,7 +456,7 @@ export const secretsRouter = createRouter({
       return { ok: true, importedCount: createdIds.length, ids: createdIds };
     }),
 
-  batchUpdatePolicy: publicQuery
+  batchUpdatePolicy: protectedProcedure
     .input(secretBatchUpdatePolicyInput)
     .mutation(async ({ input }) => {
       const db = getDb();
@@ -458,7 +477,7 @@ export const secretsRouter = createRouter({
       return { ok: true, count: input.secretIds.length };
     }),
 
-  batchSetStatus: publicQuery
+  batchSetStatus: protectedProcedure
     .input(secretBatchSetStatusInput)
     .mutation(async ({ input }) => {
       const db = getDb();
@@ -469,7 +488,7 @@ export const secretsRouter = createRouter({
       return { ok: true, count: input.secretIds.length };
     }),
 
-  batchDelete: publicQuery
+  batchDelete: protectedProcedure
     .input(secretBatchDeleteInput)
     .mutation(async ({ input }) => {
       const db = getDb();
@@ -482,7 +501,7 @@ export const secretsRouter = createRouter({
       return { ok: true, count: input.secretIds.length };
     }),
 
-  batchRotate: publicQuery
+  batchRotate: protectedProcedure
     .input(secretBatchRotateInput)
     .mutation(async ({ input }) => {
       const runs = [];
@@ -523,7 +542,7 @@ function validateTargetConfig(
 }
 
 export const targetsRouter = createRouter({
-  upsert: publicQuery
+  upsert: protectedProcedure
     .input(targetUpsertInput)
     .mutation(async ({ input }) => {
       const db = getDb();
@@ -563,7 +582,7 @@ export const targetsRouter = createRouter({
       return db.query.targets.findFirst({ where: eq(targets.id, id!) });
     }),
 
-  remove: publicQuery
+  remove: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = getDb();
@@ -579,7 +598,7 @@ export const targetsRouter = createRouter({
       return { ok: true };
     }),
 
-  test: publicQuery
+  test: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = getDb();
@@ -625,7 +644,9 @@ export const targetsRouter = createRouter({
           case "webhook": {
             const wcfg = cfg as unknown as WebhookTargetConfig;
             if (!isDemoMode() && wcfg.url) {
-              const res = await fetch(wcfg.url, {
+              // AR-09: same guard as the rotation engine's PUSH.
+              const safeUrl = await assertSafeWebhookUrl(wcfg.url);
+              const res = await fetch(safeUrl, {
                 method: wcfg.method || "POST",
                 headers: { "Content-Type": "application/json", ...(wcfg.headers ?? {}) },
                 body: JSON.stringify({
@@ -633,6 +654,7 @@ export const targetsRouter = createRouter({
                   valueRef: `autorotate://targets/${target.id}/canary`,
                   canary: fingerprint(canary),
                 }),
+                signal: AbortSignal.timeout(10_000),
               });
               if (!res.ok) throw new Error(`webhook returned HTTP ${res.status}`);
               message = `canary delivered to ${wcfg.url}`;
@@ -672,7 +694,7 @@ export const targetsRouter = createRouter({
 // ── policies ────────────────────────────────────────────────────
 
 export const policiesRouter = createRouter({
-  set: publicQuery
+  set: protectedProcedure
     .input(
       z.object({
         secretId: z.number(),
@@ -712,7 +734,7 @@ export const policiesRouter = createRouter({
 // ── runs ────────────────────────────────────────────────────────
 
 export const runsRouter = createRouter({
-  list: publicQuery
+  list: protectedProcedure
     .input(
       z
         .object({
@@ -731,7 +753,7 @@ export const runsRouter = createRouter({
         .limit(input?.limit ?? 50);
     }),
 
-  get: publicQuery
+  get: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const db = getDb();
@@ -742,7 +764,7 @@ export const runsRouter = createRouter({
       return row;
     }),
 
-  retry: publicQuery
+  retry: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = getDb();
@@ -769,7 +791,7 @@ export const runsRouter = createRouter({
 // ── audit ───────────────────────────────────────────────────────
 
 export const auditRouter = createRouter({
-  list: publicQuery
+  list: protectedProcedure
     .input(
       z
         .object({
@@ -788,13 +810,13 @@ export const auditRouter = createRouter({
         .limit(input?.limit ?? 100);
     }),
 
-  verifyChain: publicQuery.query(() => verifyAuditChain()),
+  verifyChain: protectedProcedure.query(() => verifyAuditChain()),
 });
 
 // ── stats ───────────────────────────────────────────────────────
 
 export const statsRouter = createRouter({
-  overview: publicQuery.query(async (): Promise<StatsOverview> => {
+  overview: protectedProcedure.query(async (): Promise<StatsOverview> => {
     const db = getDb();
     const allSecrets = await db.select().from(secrets);
     const allConnectors = await db.select().from(connectors).orderBy(connectors.id);
@@ -844,36 +866,31 @@ export const statsRouter = createRouter({
 });
 
 // ── workspace & alerts ──────────────────────────────────────────
-
-let memoryAlertConfig = {
-  slackWebhookUrl: "",
-  discordWebhookUrl: "",
-  notifyOnFailure: true,
-  notifyOnPartial: true,
-  notifyOnOverdue: true,
-};
+// AR-16: configuration is persisted in workspaceSettings and consulted by the
+// rotation engine (api/autorotate/alerts.ts).  AR-09: stored webhook URLs are
+// credentials in their own right and are only ever returned masked.
 
 export const workspaceRouter = createRouter({
-  getAlerts: publicQuery.query(() => memoryAlertConfig),
+  getAlerts: protectedProcedure.query(async () => maskAlertConfig(await readAlertConfig())),
 
-  updateAlerts: publicQuery
-    .input(workspaceAlertConfigSchema)
+  updateAlerts: protectedProcedure
+    .input(workspaceAlertUpdateInput)
     .mutation(async ({ input }) => {
-      memoryAlertConfig = { ...memoryAlertConfig, ...input };
+      const next = await writeAlertConfig(input);
       await appendAudit(ACTOR, "workspace.alerts_updated", null, {
-        hasSlack: !!input.slackWebhookUrl,
-        hasDiscord: !!input.discordWebhookUrl,
+        fields: Object.keys(input),
+        hasSlack: !!next.slackWebhookUrl,
+        hasDiscord: !!next.discordWebhookUrl,
       });
-      return memoryAlertConfig;
+      return maskAlertConfig(next);
     }),
 
-  testAlert: publicQuery
+  testAlert: protectedProcedure
     .input(z.object({ service: z.enum(["slack", "discord"]) }))
     .mutation(async ({ input }) => {
+      const config = await readAlertConfig();
       const url =
-        input.service === "slack"
-          ? memoryAlertConfig.slackWebhookUrl
-          : memoryAlertConfig.discordWebhookUrl;
+        input.service === "slack" ? config.slackWebhookUrl : config.discordWebhookUrl;
       if (!url) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -881,20 +898,11 @@ export const workspaceRouter = createRouter({
         });
       }
       try {
-        const payload =
-          input.service === "slack"
-            ? {
-                text: `[Autorotate Alert Test] Test notification delivered successfully at ${new Date().toISOString()}`,
-              }
-            : {
-                content: `[Autorotate Alert Test] Test notification delivered successfully at ${new Date().toISOString()}`,
-              };
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        await postAlert(
+          input.service,
+          url,
+          `[Autorotate Alert Test] Test notification delivered successfully at ${new Date().toISOString()}`,
+        );
         return { ok: true, message: `Test alert sent to ${input.service}` };
       } catch (err) {
         return { ok: false, message: `Failed to deliver test alert: ${(err as Error).message}` };
@@ -905,12 +913,13 @@ export const workspaceRouter = createRouter({
 // ── pairing ─────────────────────────────────────────────────────
 
 export const pairingRouter = createRouter({
-  getPayload: publicQuery.query(async () => {
+  getPayload: protectedProcedure.query(({ ctx }) => {
+    // AR-20: derived from the request, never a hardcoded fleet hostname.
     return {
       version: 1,
       appName: "Autorotate",
-      baseUrl: "https://mac.jays.services",
-      environment: "production",
+      baseUrl: requestBaseUrl(ctx.req),
+      environment: env.isProduction ? "production" : "development",
       timestamp: new Date().toISOString(),
     };
   }),

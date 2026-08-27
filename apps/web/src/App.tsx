@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router'
 import { Toaster } from 'sonner'
 import Layout from '@/components/Layout'
 import AppShell from '@/components/AppShell'
+import RequireAuth from '@/components/RequireAuth'
 import Home from '@/pages/Home'
 import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
@@ -20,8 +21,14 @@ export default function App() {
           <Route index element={<Home />} />
           <Route path="login" element={<Login />} />
         </Route>
-        {/* Authenticated console — AppShell renders <Outlet/> */}
-        <Route element={<AppShell />}>
+        {/* Authenticated console — RequireAuth gates it, AppShell renders <Outlet/> */}
+        <Route
+          element={
+            <RequireAuth>
+              <AppShell />
+            </RequireAuth>
+          }
+        >
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="secrets" element={<Secrets />} />
           <Route path="connectors" element={<Connectors />} />
