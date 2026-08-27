@@ -10,7 +10,7 @@
 //
 //  STORAGE RULE (hard requirement, architecture.md §6): these entities
 //  persist metadata only — names, ids, policies, target bindings, statuses,
-//  timestamps and `sha256(value)[0:8]` fingerprints. Plaintext secret values
+//  timestamps and `sha256(value)[0:16]` fingerprints. Plaintext secret values
 //  are NEVER written to SwiftData; values flow provider → targets in memory
 //  inside `RotationEngine` only. Admin credentials and the Infisical
 //  clientSecret live in the Keychain (`KeychainManager`), not here.
@@ -47,7 +47,7 @@ final class SecretEntity {
     var statusRaw: String
     var lastRotatedAt: Date?
     var version: Int
-    /// `sha256(value)[0:8]` — fingerprint only.
+    /// `sha256(value)[0:16]` — fingerprint only.
     var fingerprint: String?
     var note: String?
     var createdAt: Date
@@ -167,6 +167,12 @@ final class AuditEntity {
     var fingerprint: String?
     /// JSON-encoded `[String: String]` detail dictionary.
     var detailData: Data
+    /// Hash chain (AGENTS.md invariant 2). Optional so rows written before
+    /// chaining shipped still load — those form the pre-chain prefix that
+    /// `AuditChain.verify` tolerates. Adding two optional attributes is a
+    /// SwiftData lightweight migration, so existing stores open unchanged.
+    var prevHash: String?
+    var entryHash: String?
 
     init(entry: AuditEntry) {
         self.id = entry.id
@@ -177,6 +183,8 @@ final class AuditEntity {
         self.runId = entry.runId
         self.fingerprint = entry.fingerprint
         self.detailData = (try? JSONEncoder().encode(entry.detail)) ?? Data()
+        self.prevHash = entry.prevHash
+        self.entryHash = entry.entryHash
     }
 
     func toEntry() -> AuditEntry {
@@ -188,7 +196,9 @@ final class AuditEntity {
             secretId: secretId,
             runId: runId,
             fingerprint: fingerprint,
-            detail: (try? JSONDecoder().decode([String: String].self, from: detailData)) ?? [:])
+            detail: (try? JSONDecoder().decode([String: String].self, from: detailData)) ?? [:],
+            prevHash: prevHash,
+            entryHash: entryHash)
     }
 }
 
@@ -368,12 +378,19 @@ actor SwiftDataRunStore: RotationRunStore {
 // MARK: - AuditStore (SwiftData, append-only)
 
 /// SwiftData-backed ``AuditStore``. Implements append + read only; there is
-/// deliberately no update/delete API (immutable audit log).
+/// deliberately no update/delete API (immutable audit log), and every append
+/// is sealed into the hash chain.
 @ModelActor
 actor SwiftDataAuditStore: AuditStore {
 
     func append(_ entry: AuditEntry) async throws {
-        modelContext.insert(AuditEntity(entry: entry))
+        // Reading the tip and inserting happen with no `await` between them,
+        // so the actor serializes concurrent appends onto one chain.
+        var tipDescriptor = FetchDescriptor<AuditEntity>(
+            sortBy: [SortDescriptor(\.timestamp, order: .reverse)])
+        tipDescriptor.fetchLimit = 1
+        let tip = try modelContext.fetch(tipDescriptor).first?.toEntry()
+        modelContext.insert(AuditEntity(entry: AuditChain.seal(entry, after: tip)))
         try modelContext.save()
     }
 

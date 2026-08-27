@@ -8,8 +8,9 @@
 //  Plaintext secret values exist only in memory during a rotation run.
 //  Everything in this file is metadata — records, policies, run results,
 //  audit entries and target bindings. The only "value-adjacent" field that
-//  is ever persisted is `fingerprint`, which is the first 8 hex characters
-//  of `sha256(value)` — never the value itself.
+//  is ever persisted is `fingerprint`, which is the first
+//  `Fingerprint.prefixLength` (16) hex characters of `sha256(value)` —
+//  never the value itself.
 //
 
 import Foundation
@@ -97,7 +98,7 @@ public struct SecretRecord: Codable, Sendable, Identifiable, Equatable {
     public var lastRotatedAt: Date?
     /// Monotonic version, incremented on every committed rotation.
     public var version: Int
-    /// `sha256(value)[0:8]` of the current value — fingerprint only.
+    /// `sha256(value)[0:16]` of the current value — fingerprint only.
     public var fingerprint: String?
     /// Free-form note shown in the UI (never a secret value).
     public var note: String?
@@ -210,7 +211,7 @@ public struct RotationRun: Codable, Sendable, Identifiable {
     public var finishedAt: Date?
     public var status: RotationRunStatus
     public var steps: [RotationStepResult]
-    /// `sha256(newValue)[0:8]` — fingerprint of the value produced by this
+    /// `sha256(newValue)[0:16]` — fingerprint of the value produced by this
     /// run, never the value itself.
     public var fingerprint: String?
     /// Whether the run was triggered by the scheduler (`auto`) or by a user
@@ -258,11 +259,19 @@ public enum AuditAction: String, Codable, Sendable {
     case credentialDeleted
 }
 
-/// An immutable audit log entry.
+/// An immutable, hash-chained audit log entry.
 ///
-/// Contains **fingerprints only**: `fingerprint` is the first 8 hex chars of
-/// `sha256(secretValue)`. Plaintext values are never written to the audit
-/// log (architecture.md §2 step 6, §6).
+/// Contains **fingerprints only**: `fingerprint` is the leading
+/// ``Fingerprint/prefixLength`` hex chars of `sha256(secretValue)`. Plaintext
+/// values are never written to the audit log (architecture.md §2 step 6, §6).
+///
+/// `prevHash` / `entryHash` implement AGENTS.md invariant 2 — the log is
+/// append-only *and* hash-chained. They are populated by the ``AuditStore``
+/// on append via ``AuditChain/seal(_:after:)``; callers construct entries
+/// without them. Both are optional because entries persisted before hash
+/// chaining existed have neither: those form a pre-chain prefix that
+/// ``AuditChain/verify(_:)`` skips instead of reporting as tampering. See
+/// `AuditChain.swift` for the normative canonical form.
 public struct AuditEntry: Codable, Sendable, Identifiable {
     public var id: UUID
     public var timestamp: Date
@@ -273,10 +282,17 @@ public struct AuditEntry: Codable, Sendable, Identifiable {
     public var secretId: UUID?
     /// The run this entry belongs to, if any.
     public var runId: UUID?
-    /// `sha256(value)[0:8]` fingerprint — never the value.
+    /// `sha256(value)` hex prefix fingerprint — never the value.
     public var fingerprint: String?
     /// Structured, non-secret detail (target kind, connector id, step, ...).
     public var detail: [String: String]
+    /// `entryHash` of the entry appended immediately before this one, or
+    /// ``AuditChain/genesisHash`` for the first chained entry. `nil` only on
+    /// legacy entries written before chaining shipped.
+    public var prevHash: String?
+    /// Full 64-character lowercase hex SHA-256 over this entry's canonical
+    /// form (which includes `prevHash`). `nil` only on legacy entries.
+    public var entryHash: String?
 
     public init(id: UUID = UUID(),
                 timestamp: Date = Date(),
@@ -285,7 +301,9 @@ public struct AuditEntry: Codable, Sendable, Identifiable {
                 secretId: UUID? = nil,
                 runId: UUID? = nil,
                 fingerprint: String? = nil,
-                detail: [String: String] = [:]) {
+                detail: [String: String] = [:],
+                prevHash: String? = nil,
+                entryHash: String? = nil) {
         self.id = id
         self.timestamp = timestamp
         self.actor = actor
@@ -294,6 +312,8 @@ public struct AuditEntry: Codable, Sendable, Identifiable {
         self.runId = runId
         self.fingerprint = fingerprint
         self.detail = detail
+        self.prevHash = prevHash
+        self.entryHash = entryHash
     }
 }
 

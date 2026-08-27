@@ -13,8 +13,34 @@ import XCTest
 final class FingerprintTests: XCTestCase {
     func testFingerprintIsSha256Prefix() {
         // sha256("hello") = 2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824
-        XCTAssertEqual(Fingerprint.of("hello"), "2cf24dba")
+        XCTAssertEqual(Fingerprint.of("hello"), "2cf24dba5fb0a30e")
         XCTAssertEqual(Fingerprint.of("hello").count, Fingerprint.prefixLength)
+    }
+
+    /// AR-18: web keeps 16, Apple kept 8, architecture.md §6 said 8. All
+    /// three are 16 now — this test is what stops Core drifting back.
+    func testFingerprintLengthMatchesTheWebEngine() {
+        XCTAssertEqual(Fingerprint.prefixLength, 16)
+    }
+
+    func testLegacyEightCharFingerprintStillMatchesCurrentOne() {
+        let current = Fingerprint.of("hello")                 // 16 chars
+        let legacy = String(current.prefix(Fingerprint.legacyPrefixLength)) // 8 chars
+        XCTAssertTrue(Fingerprint.matches(legacy, current),
+                      "a pre-upgrade record must not report drift against a fresh fingerprint")
+        XCTAssertTrue(Fingerprint.matches(stored: legacy, value: "hello"))
+    }
+
+    func testDifferentValuesDoNotMatchAtEitherLength() {
+        XCTAssertFalse(Fingerprint.matches(Fingerprint.of("hello"), Fingerprint.of("world")))
+        let legacyHello = String(Fingerprint.of("hello").prefix(8))
+        XCTAssertFalse(Fingerprint.matches(legacyHello, Fingerprint.of("world")))
+    }
+
+    func testUnknownFingerprintIsNeverAMatch() {
+        XCTAssertFalse(Fingerprint.matches(nil, Fingerprint.of("hello")))
+        XCTAssertFalse(Fingerprint.matches(Fingerprint.of("hello"), nil))
+        XCTAssertFalse(Fingerprint.matches("", Fingerprint.of("hello")))
     }
 
     func testGeneratedValuesAreRandomAndPrefixed() {

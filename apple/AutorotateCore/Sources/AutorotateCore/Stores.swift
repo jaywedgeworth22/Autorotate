@@ -40,15 +40,44 @@ public protocol RotationRunStore: Sendable {
 
 // MARK: - AuditStore
 
-/// Append-only persistence for ``AuditEntry`` (the `auditLog` table).
+/// Append-only, hash-chained persistence for ``AuditEntry`` (the `auditLog`
+/// table) — AGENTS.md invariant 2.
 ///
-/// Implementations should treat the log as immutable: append and read only,
-/// no update/delete. Entries contain fingerprints only, never values.
+/// Implementations must treat the log as immutable: append and read only, no
+/// update/delete. Entries contain fingerprints only, never values.
 public protocol AuditStore: Sendable {
     /// Appends an immutable entry.
+    ///
+    /// **Implementations MUST seal the entry into the hash chain**: read the
+    /// newest stored entry, call ``AuditChain/seal(_:after:)`` with it, and
+    /// persist the returned entry — not the one passed in. Callers construct
+    /// entries with `prevHash`/`entryHash` left `nil`; the store owns them.
+    ///
+    /// Reading the tip and inserting must be atomic with respect to
+    /// concurrent appends, or two entries can claim the same predecessor and
+    /// break the chain. An `actor` whose `append` performs both steps with no
+    /// intervening `await` satisfies this, which is why every implementation
+    /// here is an actor.
     func append(_ entry: AuditEntry) async throws
     /// Recent entries, newest first.
     func recent(limit: Int) async throws -> [AuditEntry]
+}
+
+extension AuditStore {
+    /// Verifies the hash chain over the most recent `limit` entries.
+    ///
+    /// Legacy entries written before chaining shipped have no hashes; they
+    /// are counted as a pre-chain prefix and skipped rather than reported as
+    /// tampering, so upgrading an existing install does not brick its audit
+    /// view. See ``AuditChain/verify(_:)`` for the exact rules.
+    ///
+    /// The window is bounded deliberately: verification is a read of the log,
+    /// and an unbounded read of an append-only table is a denial-of-service
+    /// surface. Raise `limit` when you genuinely need to walk further back.
+    public func verifyChain(limit: Int = 500) async throws -> AuditChainVerification {
+        let newestFirst = try await recent(limit: max(0, limit))
+        return AuditChain.verify(newestFirst.reversed())
+    }
 }
 
 // MARK: - CredentialProvider
@@ -142,14 +171,23 @@ public actor InMemoryRotationRunStore: RotationRunStore {
     }
 }
 
-/// Thread-safe in-memory append-only ``AuditStore``.
+/// Thread-safe in-memory append-only, hash-chained ``AuditStore``.
 public actor InMemoryAuditStore: AuditStore {
     private var entries: [AuditEntry] = []
 
     public init() {}
 
+    /// Seeds the store with pre-existing entries **without sealing them** —
+    /// used by tests to reproduce a legacy (pre-chain) log, and by previews.
+    /// Never call this on a live log: it bypasses the chain.
+    public init(seeding entries: [AuditEntry]) {
+        self.entries = entries
+    }
+
     public func append(_ entry: AuditEntry) async throws {
-        entries.append(entry)
+        // Tip lookup and insert happen with no `await` between them, so the
+        // actor serializes concurrent appends onto a single chain.
+        entries.append(AuditChain.seal(entry, after: entries.last))
     }
 
     public func recent(limit: Int) async throws -> [AuditEntry] {

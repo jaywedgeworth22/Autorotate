@@ -98,7 +98,10 @@ final class SDAuditEntry {
     var timestamp: Date
     var actor: String
     var actionRaw: String
-    /// JSON-encoded `AuditEntry` (fingerprints only, never values).
+    /// JSON-encoded `AuditEntry` (fingerprints only, never values). The
+    /// chain fields (`prevHash` / `entryHash`) ride along inside this blob,
+    /// so no schema change was needed; rows written before chaining shipped
+    /// decode with both `nil` and form the tolerated pre-chain prefix.
     var entryData: Data
 
     init(entry: AuditEntry) throws {
@@ -242,6 +245,7 @@ actor SwiftDataRotationRunStore: RotationRunStore {
 // MARK: - AuditStore
 
 /// SwiftData-backed append-only ``AuditStore`` (no update/delete paths).
+/// Every append is sealed into the hash chain (AGENTS.md invariant 2).
 actor SwiftDataAuditStore: AuditStore {
     private let container: ModelContainer
 
@@ -251,7 +255,13 @@ actor SwiftDataAuditStore: AuditStore {
 
     func append(_ entry: AuditEntry) async throws {
         let context = ModelContext(container)
-        context.insert(try SDAuditEntry(entry: entry))
+        // Tip lookup and insert run with no `await` between them, so the
+        // actor serializes concurrent appends onto a single chain.
+        var tipDescriptor = FetchDescriptor<SDAuditEntry>(
+            sortBy: [SortDescriptor(\.timestamp, order: .reverse)])
+        tipDescriptor.fetchLimit = 1
+        let tip = try context.fetch(tipDescriptor).first?.toEntry()
+        context.insert(try SDAuditEntry(entry: AuditChain.seal(entry, after: tip)))
         try context.save()
     }
 
