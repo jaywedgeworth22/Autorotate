@@ -34,7 +34,7 @@ function useCountUp(target: number, duration = 800): number {
 /* ------------------------------------------------------------------ */
 
 function DeltaChip({ delta, invert = false, suffix = '%' }: { delta: number | null; invert?: boolean; suffix?: string }) {
-  if (delta == null) return <span className="text-mono-s text-ink-faint">—</span>
+  if (delta == null) return <span className="text-mono-s text-ink-muted">—</span>
   const good = invert ? delta <= 0 : delta >= 0
   return (
     <span className={cn('text-mono-s rounded-chip border px-1.5 py-0.5', good ? 'border-spin-dim/60 bg-spin/10 text-spin' : 'border-danger/40 bg-danger/10 text-danger')}>
@@ -165,7 +165,7 @@ export function KpiBand({ overview, runs, days }: { overview: StatsOverview; run
               )}
             />
           ))}
-          {totalConnectors === 0 && <span className="text-mono-s text-ink-faint">no connectors</span>}
+          {totalConnectors === 0 && <span className="text-mono-s text-ink-muted">no connectors</span>}
         </div>
       </KpiCard>
     </div>

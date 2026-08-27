@@ -309,7 +309,7 @@ export default function Audit() {
           groups.map((group) => (
             <section key={group.key} className="mb-6">
               <div className="sticky top-[124px] z-10 -mx-2 bg-abyss/90 px-2 py-1.5 backdrop-blur-md">
-                <span className="text-mono-s uppercase text-ink-faint">{group.label}</span>
+                <span className="text-mono-s uppercase text-ink-muted">{group.label}</span>
               </div>
               <div className="mt-1.5 space-y-1.5">
                 {group.entries.map((e, idx) => {

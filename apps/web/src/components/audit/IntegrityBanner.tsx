@@ -73,7 +73,7 @@ export default function IntegrityBanner({ headHash }: { headHash: string | null 
           </span>
         )}
         {verify.dataUpdatedAt > 0 && (
-          <span className="text-mono-s hidden text-ink-faint lg:inline">
+          <span className="text-mono-s hidden text-ink-muted lg:inline">
             verified {relativeTime(verify.dataUpdatedAt)}
           </span>
         )}

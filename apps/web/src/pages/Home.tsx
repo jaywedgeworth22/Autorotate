@@ -88,6 +88,19 @@ export default function Home() {
       window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   )
 
+  // The gyroscope's three.js chunk is ~900kB — defer fetching it until the
+  // browser is idle so it never competes with the critical first paint.
+  const [gyroReady, setGyroReady] = useState(false)
+  useEffect(() => {
+    if (reduced) return
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(() => setGyroReady(true), { timeout: 2000 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const id = window.setTimeout(() => setGyroReady(true), 200)
+    return () => window.clearTimeout(id)
+  }, [reduced])
+
   // Pipeline pinned-scroll state
   const [activeStep, setActiveStep] = useState(0)
   const [pipelineDone, setPipelineDone] = useState(false)
@@ -345,7 +358,7 @@ export default function Home() {
           className="absolute inset-0 h-full w-full object-cover opacity-30 blur-md"
         />
         <div className="hero-radial absolute inset-0" />
-        {!reduced && (
+        {!reduced && gyroReady && (
           <Suspense fallback={null}>
             <div className="absolute inset-0">
               <Gyroscope />
