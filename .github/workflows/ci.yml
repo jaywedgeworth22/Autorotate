@@ -27,11 +27,13 @@ jobs:
       - name: Pin npm 11 (npm 10 exit-handler crash on this lockfile)
         run: npm install -g npm@11.6.2
 
-      - name: Install, typecheck, build
+      - name: Install, typecheck, lint, test, build
         working-directory: apps/web
         run: |
           npm ci --no-audit --no-fund
           npm run check
+          npm run lint
+          npm test
           npm run build
 
   apple:

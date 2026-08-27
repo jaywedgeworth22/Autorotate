@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router'
 import { Toaster } from 'sonner'
 import Layout from '@/components/Layout'
+import RequireAuth from '@/components/RequireAuth'
 import Home from '@/pages/Home'
 import Login from '@/pages/Login'
 
@@ -34,12 +35,17 @@ export default function App() {
           <Route index element={<Home />} />
           <Route path="login" element={<Login />} />
         </Route>
-        {/* Authenticated console — AppShell renders <Outlet/>, code-split from marketing */}
+        {/* Authenticated console — RequireAuth gates it, AppShell renders
+            <Outlet/>, and the whole thing is code-split from marketing.  The
+            guard sits outside Suspense so an unauthenticated visitor is
+            redirected without fetching the console chunk at all. */}
         <Route
           element={
-            <Suspense fallback={<ConsoleFallback />}>
-              <AppShell />
-            </Suspense>
+            <RequireAuth>
+              <Suspense fallback={<ConsoleFallback />}>
+                <AppShell />
+              </Suspense>
+            </RequireAuth>
           }
         >
           <Route path="dashboard" element={<Dashboard />} />

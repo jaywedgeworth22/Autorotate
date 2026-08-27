@@ -2,14 +2,17 @@ import { randomBytes } from "node:crypto";
 import type { ConnectorCapability } from "@contracts/autorotate";
 import { isDemoMode, demoLatency } from "./demo";
 import { randomToken } from "./crypto";
+import { safeFetch, BlockedUrlError } from "./netguard";
 
 // Server-side connector registry mirroring the capability matrix in
 // docs/architecture.md §3. Each connector knows how to rotate() a credential
 // using an admin credential/config (already decrypted by the caller).
 //
-// DEMO MODE: when the connector has no real config, or AUTOROTATE_DEMO=1,
-// rotate() returns a realistic random secret in the platform's format
-// instead of calling the real API. Partial/update-only connectors throw
+// DEMO MODE (AR-02): rotate() returns a realistic random secret ONLY when
+// AUTOROTATE_DEMO is explicitly on. A missing config in real mode is a hard
+// error — never a fabricated value — because the engine cannot tell a demo
+// value from a real one and will happily write it to live targets, verify it
+// against itself, and report success. Partial/update-only connectors throw
 // MANUAL_ROTATION_REQUIRED outside demo mode.
 
 export class ManualRotationRequired extends Error {
@@ -48,15 +51,24 @@ export type ServerConnector = {
 const str = (v: unknown): string | undefined =>
   typeof v === "string" && v.length > 0 ? v : undefined;
 
+// AR-09 / F10: every outbound fetch to an OPERATOR-SUPPLIED URL (generic_rest
+// cfg.url, kubernetes cfg.apiServer, infisical cfg.baseUrl) must pass through
+// the netguard so it cannot be pointed at a metadata endpoint or an internal
+// host, nor be redirected to one.  Hardcoded provider hosts (api.stripe.com,
+// …) are trusted constants and use a plain fetch.
 async function apiFetch(
   url: string,
   init: RequestInit,
   what: string,
+  opts?: { guardUrl?: boolean },
 ): Promise<Response> {
   let res: Response;
   try {
-    res = await fetch(url, init);
+    res = opts?.guardUrl ? await safeFetch(url, init) : await fetch(url, init);
   } catch (err) {
+    if (err instanceof BlockedUrlError) {
+      throw new ConnectorError(`${what}: blocked outbound URL — ${err.message}`);
+    }
     throw new ConnectorError(`${what}: network error — ${(err as Error).message}`);
   }
   if (!res.ok) {
@@ -72,33 +84,15 @@ function bearer(token: string): Record<string, string> {
 
 // ── Real API call shapes (used only when not in demo mode) ──────
 
-async function rotateAwsIam(cfg: ConnectorConfig): Promise<string> {
-  const accessKeyId = str(cfg?.accessKeyId);
-  const secretAccessKey = str(cfg?.secretAccessKey);
-  const userName = str(cfg?.userName);
-  if (!accessKeyId || !secretAccessKey || !userName) {
-    throw new ConnectorError("AWS IAM: accessKeyId/secretAccessKey/userName required");
-  }
-  // Real shape: POST https://iam.amazonaws.com/ Action=CreateAccessKey&UserName=...
-  // (SigV4 signing elided here; production deployments should use aws4 signing.)
-  const res = await apiFetch(
-    "https://iam.amazonaws.com/",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        Action: "CreateAccessKey",
-        UserName: userName,
-        Version: "2010-05-08",
-      }).toString(),
-    },
-    "AWS IAM CreateAccessKey",
-  );
-  const text = await res.text();
-  const match = text.match(/<AccessKeyId>([^<]+)<\/AccessKeyId>/);
-  if (!match) throw new ConnectorError("AWS IAM: no AccessKeyId in response");
-  return `AKIA${randomToken(16, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")}`; // secret half returned out-of-band
-}
+// AWS IAM has no programmatic rotate here (AR-10).  The previous
+// implementation POSTed CreateAccessKey with no SigV4 signature — so it
+// always failed auth — and on its success path parsed the returned
+// AccessKeyId, discarded it, and returned a locally generated "AKIA…"
+// string.  Adding signing without fixing the return would have created a
+// real access key, thrown it away, and pushed a value that authenticates to
+// nothing.  AWS is registered as update_only until SigV4 signing and the
+// out-of-band SecretAccessKey are both handled; docs/architecture.md §3
+// matches.
 
 async function rotateStripe(cfg: ConnectorConfig): Promise<string> {
   const adminKey = str(cfg?.adminKey);
@@ -279,6 +273,7 @@ async function rotateKubernetes(cfg: ConnectorConfig): Promise<string> {
       }),
     },
     "Kubernetes create service account",
+    { guardUrl: true }, // F10: apiServer is operator-supplied
   );
   const data = (await res.json()) as { metadata?: { name?: string } };
   if (!data.metadata?.name) throw new ConnectorError("Kubernetes: no SA in response");
@@ -324,6 +319,7 @@ async function rotateGenericRest(cfg: ConnectorConfig): Promise<string> {
       body: typeof cfg?.body === "string" ? cfg.body : JSON.stringify(cfg?.body ?? {}),
     },
     "generic-rest rotate",
+    { guardUrl: true }, // F10: url is operator-supplied
   );
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   const path = str(cfg?.responsePath) ?? "secret";
@@ -499,7 +495,7 @@ function define(
     capability,
     demoValue,
     async rotate(config) {
-      if (isDemoMode() || !config) {
+      if (isDemoMode()) {
         await demoLatency();
         const value = demoValue();
         return {
@@ -510,6 +506,14 @@ function define(
               ? `generated new ${displayName} credential (simulated)`
               : `simulated manual rotation for ${displayName} (no programmatic API)`,
         };
+      }
+      // AR-02: fail closed. Without an admin credential there is nothing to
+      // rotate, and a fabricated value would be pushed to live targets and
+      // then "verified" against itself.
+      if (!config) {
+        throw new ConnectorError(
+          `${displayName}: no stored admin credential — connect the platform before rotating`,
+        );
       }
       if (!realRotate) {
         throw new ManualRotationRequired(displayName);
@@ -526,7 +530,9 @@ function define(
 
 export const connectorRegistry: ServerConnector[] = [
   define("infisical", "Infisical", "programmatic", rotateInfisicalSource),
-  define("aws_iam", "AWS IAM", "programmatic", rotateAwsIam),
+  // AR-10: update_only until SigV4 signing lands and the real
+  // SecretAccessKey is returned. See the note above rotateStripe.
+  define("aws_iam", "AWS IAM", "update_only", null),
   define("github", "GitHub", "partial", null),
   define("stripe", "Stripe", "programmatic", rotateStripe),
   define("openai", "OpenAI", "programmatic", rotateOpenAI),
@@ -580,6 +586,85 @@ export const connectorRegistry: ServerConnector[] = [
 
 export function getConnector(platform: string): ServerConnector | undefined {
   return connectorRegistry.find((c) => c.platform === platform);
+}
+
+/**
+ * Post-commit liveness probe (AR-11).
+ *
+ * VERIFY only proves the new value landed where it was written — it reads
+ * back what it just wrote and compares it to itself, so a dead, malformed or
+ * fabricated credential is indistinguishable from a healthy one.  This
+ * authenticates the NEW value against its own provider with the cheapest
+ * available read.
+ *
+ * Returns null when the platform has no probe — a rotated database password
+ * or JWT signing key is not an API credential and there is nothing to call.
+ * Never returns a value or fingerprint in its message.
+ */
+export async function probeNewCredential(
+  platform: string,
+  value: string,
+): Promise<string | null> {
+  const connector = getConnector(platform);
+  const name = connector?.displayName ?? platform;
+  switch (platform) {
+    case "stripe":
+      await apiFetch("https://api.stripe.com/v1/account", { headers: bearer(value) }, "Stripe liveness probe");
+      break;
+    case "openai":
+      await apiFetch("https://api.openai.com/v1/models", { headers: bearer(value) }, "OpenAI liveness probe");
+      break;
+    case "cloudflare":
+      await apiFetch(
+        "https://api.cloudflare.com/client/v4/user/tokens/verify",
+        { headers: bearer(value) },
+        "Cloudflare liveness probe",
+      );
+      break;
+    case "npm":
+      await apiFetch("https://registry.npmjs.org/-/whoami", { headers: bearer(value) }, "npm liveness probe");
+      break;
+    case "vercel":
+      await apiFetch("https://api.vercel.com/v2/user", { headers: bearer(value) }, "Vercel liveness probe");
+      break;
+    case "resend":
+      await apiFetch("https://api.resend.com/api-keys", { headers: bearer(value) }, "Resend liveness probe");
+      break;
+    case "huggingface":
+      await apiFetch(
+        "https://huggingface.co/api/whoami-v2",
+        { headers: bearer(value) },
+        "Hugging Face liveness probe",
+      );
+      break;
+    case "neon":
+      await apiFetch(
+        "https://console.neon.tech/api/v2/api_keys",
+        { headers: bearer(value) },
+        "Neon liveness probe",
+      );
+      break;
+    case "slack": {
+      // Slack answers 200 with {ok:false} for a dead token.
+      const res = await apiFetch(
+        "https://slack.com/api/auth.test",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ token: value }).toString(),
+        },
+        "Slack liveness probe",
+      );
+      const data = (await res.json()) as { ok?: boolean; error?: string };
+      if (!data.ok) {
+        throw new ConnectorError(`Slack liveness probe: ${data.error ?? "auth.test returned ok:false"}`);
+      }
+      break;
+    }
+    default:
+      return null;
+  }
+  return `new ${name} credential authenticated against the provider`;
 }
 
 /** Lightweight connectivity check for connectors.test. Demo-mode safe. */

@@ -440,7 +440,8 @@ async function seed() {
   };
 
   // Chain audit entries in the same chronological order as the runs.
-  let prevHash = "0000000000000000";
+  // Genesis is 64 zeros — full-width sha256 hashes since AR-07.
+  let prevHash = "0".repeat(64);
   const chain = async (
     ts: Date,
     actor: string,

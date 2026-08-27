@@ -39,10 +39,12 @@ describe("audit hash chain", () => {
       secretId: 7,
       detail: { runId: 3 },
     };
-    const h1 = computeEntryHash("0000000000000000", entry);
-    expect(h1).toHaveLength(16);
-    expect(computeEntryHash("0000000000000000", entry)).toBe(h1);
-    expect(computeEntryHash("1111111111111111", entry)).not.toBe(h1);
+    // AR-07 widened the entry hash from a 16-char prefix to full sha256.
+    const genesis = "0".repeat(64);
+    const h1 = computeEntryHash(genesis, entry);
+    expect(h1).toHaveLength(64);
+    expect(computeEntryHash(genesis, entry)).toBe(h1);
+    expect(computeEntryHash("1".repeat(64), entry)).not.toBe(h1);
     expect(canonicalEntry(entry)).toBe(canonicalEntry({ ...entry }));
   });
 });

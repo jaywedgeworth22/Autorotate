@@ -40,7 +40,7 @@ rotate(secretId):
 | Platform | Programmatic rotation | Mechanism |
 |---|---|---|
 | Infisical | ✅ (as target & source) | REST v3 raw secrets, service tokens / universal auth |
-| AWS IAM | ✅ | CreateAccessKey → propagate → deactivate/delete old |
+| AWS IAM | ⚠️ update-only | No signed CreateAccessKey call ships today (SigV4 signing and the out-of-band SecretAccessKey are both unimplemented); import the new key pair manually |
 | GitHub | ⚠️ partial | Fine-grained PATs can't self-rotate; OAuth app secrets ✅ via API; PAT = updateOnly |
 | Stripe | ✅ | Roll/create restricted keys via API |
 | OpenAI | ✅ | Admin API: create/delete project service-account keys |

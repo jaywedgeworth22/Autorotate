@@ -1,9 +1,15 @@
 import type { InfisicalTargetConfig } from "@contracts/autorotate";
+import { safeFetch, BlockedUrlError } from "./netguard";
 
 // Minimal Infisical REST client (Node 20 global fetch).
 // Auth: Universal Auth (clientId/clientSecret -> access token).
 // All failures raise typed InfisicalError so the pipeline can record
 // the failing step instead of crashing.
+//
+// AR-09 / F10: baseUrl is operator-supplied (it defaults to the public
+// app.infisical.com but can point anywhere), so every request goes through
+// the netguard safeFetch — no bare fetch to a self-hosted URL that could be an
+// internal host or a metadata endpoint, and no following a 3xx to one.
 
 export type InfisicalErrorCode =
   | "CONFIG_MISSING"
@@ -42,8 +48,14 @@ async function request(
 ): Promise<Response> {
   let res: Response;
   try {
-    res = await fetch(url, init);
+    res = await safeFetch(url, init);
   } catch (err) {
+    if (err instanceof BlockedUrlError) {
+      throw new InfisicalError(
+        "API_ERROR",
+        `Infisical baseUrl blocked by outbound guard: ${err.message}`,
+      );
+    }
     throw new InfisicalError(
       "NETWORK",
       `Network error contacting Infisical: ${(err as Error).message}`,
@@ -128,8 +140,16 @@ export async function readSecret(
   url.searchParams.set("type", "shared");
   let res: Response;
   try {
-    res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    res = await safeFetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
   } catch (err) {
+    if (err instanceof BlockedUrlError) {
+      throw new InfisicalError(
+        "API_ERROR",
+        `Infisical baseUrl blocked by outbound guard: ${err.message}`,
+      );
+    }
     throw new InfisicalError(
       "NETWORK",
       `Network error contacting Infisical: ${(err as Error).message}`,

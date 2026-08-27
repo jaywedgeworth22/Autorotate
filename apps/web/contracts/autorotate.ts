@@ -65,6 +65,11 @@ export const DEFAULT_POLICY: RotationPolicy = {
 };
 
 // ── Rotation run steps ─────────────────────────────────────────
+// Execution order is LOCK → ROTATE → PUSH → VERIFY → COMMIT → LIVENESS →
+// AUDIT.  "liveness" is listed last deliberately: the six-node pipeline
+// stepper in the UI is index-aligned with this list, and appending keeps the
+// familiar six nodes rendering exactly as before while run detail views pick
+// the extra step up automatically.
 export const RUN_STEP_NAMES = [
   "lock",
   "rotate",
@@ -72,6 +77,7 @@ export const RUN_STEP_NAMES = [
   "verify",
   "commit",
   "audit",
+  "liveness",
 ] as const;
 export const stepStatusSchema = z.enum(["ok", "failed", "skipped", "running"]);
 export const rotationStepSchema = z.object({
@@ -110,8 +116,21 @@ export const fileTargetConfigSchema = z.object({
 });
 export type FileTargetConfig = z.infer<typeof fileTargetConfigSchema>;
 
+/**
+ * https-only URL (AR-09).  SECURITY.md has always claimed webhook targets use
+ * HTTPS; nothing enforced it, so an http:// target with includeValue:true
+ * shipped freshly rotated secrets in cleartext.  Enforced here at write time
+ * and again in api/autorotate/netguard.ts at delivery time.
+ */
+export const httpsUrlSchema = z
+  .string()
+  .url()
+  .refine((value) => value.toLowerCase().startsWith("https://"), {
+    message: "must use https://",
+  });
+
 export const webhookTargetConfigSchema = z.object({
-  url: z.string().url(),
+  url: httpsUrlSchema,
   method: z.enum(["POST", "PUT"]).default("POST"),
   headers: z.record(z.string(), z.string()).optional(),
   includeValue: z.boolean().default(false),
@@ -242,14 +261,44 @@ export const secretDriftResultSchema = z.object({
 export type SecretDriftResult = z.infer<typeof secretDriftResultSchema>;
 
 // ── Workspace alert settings schema ───────────────────────────
+// Stored shape (persisted in workspaceSettings.alertsJson).
 export const workspaceAlertConfigSchema = z.object({
-  slackWebhookUrl: z.string().url().optional().or(z.literal("")),
-  discordWebhookUrl: z.string().url().optional().or(z.literal("")),
+  slackWebhookUrl: httpsUrlSchema.or(z.literal("")).default(""),
+  discordWebhookUrl: httpsUrlSchema.or(z.literal("")).default(""),
   notifyOnFailure: z.boolean().default(true),
   notifyOnPartial: z.boolean().default(true),
   notifyOnOverdue: z.boolean().default(true),
 });
 export type WorkspaceAlertConfig = z.infer<typeof workspaceAlertConfigSchema>;
+
+/**
+ * Update patch.  Every field is optional — an omitted webhook keeps whatever
+ * is stored, which is what lets the UI show a masked URL it can never read
+ * back.  An explicit "" clears the webhook.
+ */
+export const workspaceAlertUpdateInput = z.object({
+  slackWebhookUrl: httpsUrlSchema.or(z.literal("")).optional(),
+  discordWebhookUrl: httpsUrlSchema.or(z.literal("")).optional(),
+  notifyOnFailure: z.boolean().optional(),
+  notifyOnPartial: z.boolean().optional(),
+  notifyOnOverdue: z.boolean().optional(),
+});
+export type WorkspaceAlertUpdateInput = z.infer<typeof workspaceAlertUpdateInput>;
+
+/**
+ * What `workspace.getAlerts` returns (AR-09).  A Slack or Discord webhook URL
+ * is itself a credential — anyone holding it can post as the workspace — so
+ * the console only ever sees a masked form.
+ */
+export type MaskedWorkspaceAlertConfig = {
+  hasSlack: boolean;
+  hasDiscord: boolean;
+  slackWebhookMasked: string | null;
+  discordWebhookMasked: string | null;
+  notifyOnFailure: boolean;
+  notifyOnPartial: boolean;
+  notifyOnOverdue: boolean;
+};
 
 // ── QR Code Pairing payload schema ────────────────────────────
 export const pairingPayloadSchema = z.object({
