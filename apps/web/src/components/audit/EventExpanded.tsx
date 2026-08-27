@@ -71,7 +71,7 @@ export default function EventExpanded({
         <Line index={5}>
           {"  "}
           <K>"secret_id"</K>:{" "}
-          {entry.secretId != null ? <N>{entry.secretId}</N> : <span className="text-ink-faint">null</span>},
+          {entry.secretId != null ? <N>{entry.secretId}</N> : <span className="text-ink-muted">null</span>},
         </Line>
         <Line index={6}>
           {"  "}
@@ -79,7 +79,7 @@ export default function EventExpanded({
           {entry.detailJson != null ? (
             <S>{JSON.stringify(entry.detailJson)}</S>
           ) : (
-            <span className="text-ink-faint">null</span>
+            <span className="text-ink-muted">null</span>
           )}
           ,
         </Line>
@@ -110,7 +110,7 @@ export default function EventExpanded({
             <FingerprintChip fingerprint={prev.entryHash} />
           </button>
         ) : (
-          <span className="text-mono-s text-ink-faint">genesis</span>
+          <span className="text-mono-s text-ink-muted">genesis</span>
         )}
         <FingerprintChip fingerprint={entry.entryHash} className="ring-1 ring-violet/40" />
         {next ? (
@@ -123,7 +123,7 @@ export default function EventExpanded({
             <ArrowRight className="size-3 text-ink-muted transition-transform group-hover:translate-x-0.5" />
           </button>
         ) : (
-          <span className="text-mono-s text-ink-faint">chain head</span>
+          <span className="text-mono-s text-ink-muted">chain head</span>
         )}
 
         {runId && (

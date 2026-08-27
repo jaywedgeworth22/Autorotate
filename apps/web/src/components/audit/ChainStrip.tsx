@@ -88,7 +88,7 @@ export default function ChainStrip({
         </div>
       </div>
 
-      <p className="text-mono-s mt-3 text-ink-faint">
+      <p className="text-mono-s mt-3 text-ink-muted">
         head block pulses · hover any block for its record summary · click to jump to the event
       </p>
     </motion.section>

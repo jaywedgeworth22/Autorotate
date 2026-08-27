@@ -302,7 +302,7 @@ export function SecretDetailDrawer({
                 <span className="text-mono-s text-ink-muted">value</span>
                 <MaskedValue />
               </div>
-              <p className="mt-1 text-[11px] leading-4 text-ink-faint">
+              <p className="mt-1 text-[11px] leading-4 text-ink-muted">
                 Plaintext is never stored by Autorotate — fingerprints only.
               </p>
               <div className="mt-3 flex items-center justify-between gap-3">
