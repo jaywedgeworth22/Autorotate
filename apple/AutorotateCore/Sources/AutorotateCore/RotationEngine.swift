@@ -9,7 +9,7 @@
 //  - Per-secret locking: concurrent runs for the same secret are skipped.
 //  - The new secret value exists only in memory for the duration of a run.
 //  - Every step produces a ``RotationStepResult`` and terminal audit
-//    entries carry `sha256(value)[0:8]` fingerprints only.
+//    entries carry `sha256(value)[0:16]` fingerprints only.
 //
 
 import Foundation
@@ -543,7 +543,7 @@ public struct WebhookPayload: Encodable, Sendable {
     public let name: String
     /// Opaque reference: `autorotate://secret/<id>/versions/<version>`.
     public let valueRef: String
-    /// `sha256(value)[0:8]` fingerprint.
+    /// `sha256(value)[0:16]` fingerprint.
     public let fingerprint: String
     /// New record version.
     public let version: Int
