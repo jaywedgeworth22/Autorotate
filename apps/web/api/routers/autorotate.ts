@@ -606,7 +606,11 @@ export const targetsRouter = createRouter({
         targetId: id,
         kind: input.kind,
       });
-      return db.query.targets.findFirst({ where: eq(targets.id, id!) });
+      const saved = await db.query.targets.findFirst({ where: eq(targets.id, id!) });
+      // Mask stored credentials on the way back out — the same redaction
+      // secrets.list/get apply — so an updated target never echoes its
+      // clientSecret / auth headers to the browser.
+      return saved ? { ...saved, configJson: maskTargetConfig(saved.configJson) } : null;
     }),
 
   remove: protectedProcedure
