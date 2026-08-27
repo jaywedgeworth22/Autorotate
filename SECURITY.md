@@ -7,7 +7,9 @@ standard.
 
 **Do not open a public issue for security reports.**
 
-Email **security@autorotate.dev** (placeholder contact) with:
+Use **GitHub's private vulnerability reporting:** https://github.com/jaywedgeworth22/Autorotate/security/advisories/new
+
+Include:
 
 - a description of the vulnerability and affected module(s)
   (`apps/web`, `apple/AutorotateCore`, `apple/Autorotate-iOS`, `apple/Autorotate-macOS`);

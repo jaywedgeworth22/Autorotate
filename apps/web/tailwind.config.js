@@ -14,7 +14,7 @@ module.exports = {
         "line-strong": "#2A3247",
         "ink-primary": "#E8ECF4",
         "ink-secondary": "#9AA5B8",
-        "ink-muted": "#5C6679",
+        "ink-muted": "#7C8698",
         "ink-faint": "#3A4152",
         spin: {
           DEFAULT: "#2EE6A8",

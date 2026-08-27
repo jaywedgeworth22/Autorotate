@@ -58,8 +58,8 @@ rotate(secretId):
 | Doppler / generic REST | ✅ | Generic connector: configurable request template |
 | Kubernetes secrets | ✅ | kubectl/REST apply as target |
 | `.env` / JSON / YAML / TOML / INI files | ✅ | File target engine |
-| `global-api-keys` | ✅ | Env-style parser (trailing Mac agent token, `export`, comments) |
-| Mac agent (`mac.jays.services`) | ✅ | Writes `~/.secrets` and Apple Keychain history |
+| `global-api-keys` | ✅ | Env-style parser (`export`, comments) — Mac agent support not implemented |
+| Mac agent (`mac.jays.services`) | ⛔ not implemented (stub) | Placeholder only; no implementation exists. |
 | Extra catalog (Grok) | ⚠️ update-only or local generate | HashiCorp Vault, Doppler, 1Password Connect, xAI, Groq, Google AI, GitLab, Bitbucket, GCP, Azure, Netlify, Railway, Render API token (credential target only — this fleet does not host on Render), Fly.io, DigitalOcean, Coolify, Heroku, Discord, Mailgun, Postmark, Supabase, PlanetScale, MongoDB Atlas, FMP, SSH import, App Store Connect, Linear, Notion |
 | Local generators | ✅ | JWT signing key, database password, webhook HMAC, generic secret (CSPRNG, then PUSH) |
 

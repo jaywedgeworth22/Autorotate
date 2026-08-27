@@ -10,8 +10,17 @@ import codes.autorotate.model.RotationRun
 import java.security.MessageDigest
 import java.util.UUID
 
-class SecretStore(context: Context) {
-    private val storage = EncryptedStorage(context)
+/**
+ * Read-only-plus-import inventory of secrets, encrypted at rest via
+ * [storage]. This app does not implement a rotation engine — no connector,
+ * no HTTP client, nothing that could actually rotate a live credential
+ * (AR-05) — so it deliberately exposes no `rotateSecret` / `rotateAllDue`
+ * API and never writes a [RotationRun] for a rotation that did not happen.
+ * The only writers of secret state are [addSecret] (the .env importer) and
+ * whatever the encrypted-prefs migration in [EncryptedStorage] copies over.
+ */
+class SecretStore(private val storage: SecretStorage) {
+    constructor(context: Context) : this(EncryptedStorage(context))
 
     private val _secrets = MutableStateFlow(storage.getSecrets())
     val secrets: StateFlow<List<SecretRecord>> = _secrets.asStateFlow()
@@ -35,41 +44,6 @@ class SecretStore(context: Context) {
         _secrets.value = updated
         storage.saveSecrets(updated)
         return record
-    }
-
-    fun rotateSecret(secretId: String): RotationRun {
-        val list = _secrets.value.toMutableList()
-        val idx = list.indexOfFirst { it.id == secretId }
-        val secret = if (idx >= 0) list[idx] else null
-        val secretName = secret?.name ?: "Unknown Secret"
-
-        val newFp = UUID.randomUUID().toString().replace("-", "").substring(0, 8)
-        if (idx >= 0 && secret != null) {
-            list[idx] = secret.copy(
-                status = SecretStatus.ACTIVE,
-                fingerprint = newFp,
-                lastRotatedAt = System.currentTimeMillis()
-            )
-            _secrets.value = list
-            storage.saveSecrets(list)
-        }
-
-        val run = RotationRun(
-            secretId = secretId,
-            secretName = secretName,
-            status = "completed",
-            trigger = "mobile-manual",
-            newFingerprint = newFp,
-            detail = "Pipeline LOCK·ROTATE·PUSH·VERIFY·COMMIT·AUDIT executed successfully on-device."
-        )
-        val updatedRuns = listOf(run) + _runs.value
-        _runs.value = updatedRuns
-        storage.saveRuns(updatedRuns)
-        return run
-    }
-
-    fun rotateAllDue(): List<RotationRun> {
-        return _secrets.value.map { rotateSecret(it.id) }
     }
 
     private fun sha256Prefix(input: String): String {

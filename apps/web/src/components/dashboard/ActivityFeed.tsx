@@ -129,7 +129,7 @@ export function ActivityFeed({
                     <p className="text-mono-s mt-0.5 flex items-center gap-2 text-ink-muted">
                       <Icon className="size-3" />
                       {relTime(entry.ts)}
-                      {typeof d.runId === 'number' && <span className="text-ink-faint">run_{d.runId}</span>}
+                      {typeof d.runId === 'number' && <span className="text-ink-muted">run_{d.runId}</span>}
                     </p>
                   </div>
                 </>

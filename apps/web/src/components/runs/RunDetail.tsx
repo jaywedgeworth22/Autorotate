@@ -46,7 +46,7 @@ function StepLogBlock({
       <div className="flex items-center gap-2 border-b border-line-subtle/60 px-3 py-2">
         <span className="text-label font-mono uppercase text-ink-secondary">{name}</span>
         {entries.length === 0 ? (
-          <span className="size-3 text-center font-mono text-[10px] leading-3 text-ink-faint">–</span>
+          <span className="size-3 text-center font-mono text-[10px] leading-3 text-ink-muted">–</span>
         ) : (
           STEP_STATUS_ICON[
             hasFailed ? "failed" : isRunning ? "running" : entries[entries.length - 1].status
@@ -56,12 +56,12 @@ function StepLogBlock({
           {entries.length > 0 ? formatMs(totalMs) : "—"}
         </span>
         {firstTs && (
-          <span className="text-mono-s text-ink-faint">{clockTime(firstTs)}</span>
+          <span className="text-mono-s text-ink-muted">{clockTime(firstTs)}</span>
         )}
       </div>
       <div className="space-y-1 px-3 py-2">
         {entries.length === 0 && (
-          <p className="font-mono text-[11px] leading-4 text-ink-faint">· not reached</p>
+          <p className="font-mono text-[11px] leading-4 text-ink-muted">· not reached</p>
         )}
         {entries.map((e, i) => (
           <div key={i} className="font-mono text-[11px] leading-4">

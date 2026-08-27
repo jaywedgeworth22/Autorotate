@@ -119,7 +119,7 @@ export function SecretDrawerContent({
         <RotateCw className={rotating ? 'size-4 animate-dial-spin' : 'size-4'} />
         {rotating ? 'Rotating…' : 'Rotate now'}
       </button>
-      <p className="text-mono-s text-center text-ink-faint">plaintext is never stored</p>
+      <p className="text-mono-s text-center text-ink-muted">plaintext is never stored</p>
     </div>
   )
 }

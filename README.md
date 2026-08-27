@@ -18,8 +18,7 @@
   [docs/architecture.md](docs/architecture.md).
 - **Audit chain** — every run appends a hash-chained audit record, so the
   history is tamper-evident.
-- **Mac agent** — optional Python agent writes `~/.secrets/global-api-keys`
-  and Keychain history on `mac.jays.services`.
+- **Mac agent** — placeholder stub only; no implementation exists.
 
 ## Monorepo layout
 
@@ -28,7 +27,7 @@ Autorotate/
 ├── apps/
 │   ├── web/                # Web control center (React + Vite frontend,
 │   │                       #   Hono + tRPC + Drizzle backend, MySQL)
-│   └── agent/              # Mac Python agent (global-api-keys + Keychain)
+│   └── agent/              # Mac Python agent (stub placeholder only)
 ├── apple/                  # Apple-platform workspace (XcodeGen)
 │   ├── AutorotateCore/        #   Shared SwiftPM package: rotation engine,
 │   │                       #   connectors, crypto, Keychain, stores
@@ -82,6 +81,25 @@ cd android
 ./gradlew assembleDebug
 ```
 
+To produce a signed release build locally, create `android/keystore.properties`
+(never committed — see `.gitignore`) with `storeFile`, `storePassword`,
+`keyAlias`, and `keyPassword`, then run `./gradlew assembleRelease`.  Without
+that file the release build type is left unsigned rather than falling back to
+the debug key.
+
+## Releases
+
+Distributable artifacts (APK, IPA, `.pkg`) are published through
+[GitHub Releases](../../releases), never committed to the repository — see
+`.gitignore`.  A prior release (`1.0.0`) committed a debug-signed Android APK
+and a development provisioning profile containing a hardware device UDID
+directly to this public repo; both were removed, but the signing identity and
+UDID were exposed in git history and **must be treated as public** going
+forward (see `docs/AUDIT-2026-08-26.md`, findings AR-33 and AR-34).  The
+debug keystore in particular is not a secret an owner can rotate — it ships
+with every Android SDK install — so no additional action recovers
+confidentiality for that artifact; the fix is that release builds are no
+longer signed with it (see AR-13).
 
 ## Documentation
 

@@ -50,7 +50,7 @@ export function Field({
     <label className="block">
       <span className="text-label mb-1.5 flex items-center gap-2 text-ink-muted">
         {label}
-        {optional && <span className="normal-case tracking-normal text-ink-faint">optional</span>}
+        {optional && <span className="normal-case tracking-normal text-ink-muted">optional</span>}
       </span>
       {children}
     </label>
