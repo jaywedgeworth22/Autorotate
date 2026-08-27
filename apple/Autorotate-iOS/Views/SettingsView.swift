@@ -38,6 +38,10 @@ struct SettingsView: View {
     // Notifications
     @State private var notificationsEnabled = false
 
+    // Audit chain verification
+    @State private var chainVerification: AuditChainVerification?
+    @State private var isVerifyingChain = false
+
     @State private var errorMessage: String?
 
 
@@ -53,6 +57,7 @@ struct SettingsView: View {
                 infisicalSection
                 keychainOptionsSection
                 keychainInventorySection
+                auditChainSection
                 backgroundSection
                 companionSection
                 aboutSection
@@ -129,14 +134,14 @@ struct SettingsView: View {
                 .foregroundStyle(Theme.accent)
 
             if savedBanner {
-                Label("Saved. clientSecret is in the Keychain only.", systemImage: "checkmark.circle.fill")
+                Label("Saved.  clientSecret is in the Keychain only.", systemImage: "checkmark.circle.fill")
                     .font(.caption)
                     .foregroundStyle(Theme.accent)
             }
         } header: {
             InstrumentSectionHeader(title: "Infisical workspace", systemImage: "cloud")
         } footer: {
-            Text("Universal Auth (architecture.md §4). The clientId/workspaceId live in app settings; the clientSecret is stored ONLY in the Keychain and read in-memory per rotation run.")
+            Text("Universal Auth (architecture.md §4).  The clientId/workspaceId live in app settings; the clientSecret is stored ONLY in the Keychain and read in-memory per rotation run.")
                 .font(.caption2)
         }
         .listRowBackground(Theme.surface)
@@ -163,7 +168,7 @@ struct SettingsView: View {
             Toggle(isOn: $useSharedGroup) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Shared access group (com.autorotate.shared)")
-                    Text("Requires the Keychain Sharing capability. Turn off for app-private items during development.")
+                    Text("Requires the Keychain Sharing capability.  Turn off for app-private items during development.")
                         .font(.caption2)
                         .foregroundStyle(Theme.textSecondary)
                 }
@@ -233,7 +238,71 @@ struct SettingsView: View {
         } header: {
             InstrumentSectionHeader(title: "Keychain — managed items", systemImage: "lock.rectangle.stack")
         } footer: {
-            Text("Values are never displayed. “updated” is the Keychain modification timestamp; iCloud badge means the item is synchronizable (if allowed).")
+            Text("Values are never displayed.  “updated” is the Keychain modification timestamp; iCloud badge means the item is synchronizable (if allowed).")
+                .font(.caption2)
+        }
+        .listRowBackground(Theme.surface)
+    }
+
+    // MARK: Audit chain
+
+    private var auditChainSection: some View {
+        Section {
+            if let result = chainVerification {
+                HStack(spacing: 10) {
+                    Image(systemName: result.isValid ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
+                        .foregroundStyle(result.isValid ? Theme.accent : Theme.danger)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(result.isValid ? "Chain intact" : "Chain broken")
+                            .font(.callout)
+                            .foregroundStyle(Theme.text)
+                        Text("\(result.checked) entries checked")
+                            .font(.caption2)
+                            .foregroundStyle(Theme.textSecondary)
+                    }
+                    Spacer()
+                }
+                if result.legacyPrefixCount > 0 {
+                    LabeledContent("Legacy (pre-chain) entries skipped", value: "\(result.legacyPrefixCount)")
+                        .font(.caption)
+                        .foregroundStyle(Theme.textSecondary)
+                }
+                if !result.isValid, let brokenId = result.brokenAtEntryId {
+                    LabeledContent("Broken at entry") {
+                        Text(brokenId.uuidString)
+                            .font(Theme.mono(.caption2))
+                            .foregroundStyle(Theme.danger)
+                    }
+                }
+                if !result.isValid, let reason = result.failureReason {
+                    Text(reason)
+                        .font(.caption2)
+                        .foregroundStyle(Theme.danger)
+                }
+            } else if isVerifyingChain {
+                HStack(spacing: 8) {
+                    ProgressView()
+                    Text("Verifying…")
+                        .font(.caption)
+                        .foregroundStyle(Theme.textSecondary)
+                }
+            } else {
+                Text("Not yet verified.")
+                    .font(.caption)
+                    .foregroundStyle(Theme.textSecondary)
+            }
+
+            Button {
+                verifyAuditChain()
+            } label: {
+                Label(isVerifyingChain ? "Verifying…" : "Verify audit chain", systemImage: "checkmark.seal")
+                    .foregroundStyle(Theme.accent)
+            }
+            .disabled(isVerifyingChain)
+        } header: {
+            InstrumentSectionHeader(title: "Audit chain", systemImage: "link.badge.plus")
+        } footer: {
+            Text("Verifies the hash-chained audit log has not been altered or removed (AGENTS.md invariant 2).  Read-only — a broken chain is reported, never repaired.")
                 .font(.caption2)
         }
         .listRowBackground(Theme.surface)
@@ -263,7 +332,7 @@ struct SettingsView: View {
         } header: {
             InstrumentSectionHeader(title: "Background rotation", systemImage: "clock.arrow.2.circlepath")
         } footer: {
-            Text("A BGAppRefreshTask (com.autorotate.refresh) runs rotateDueSecrets() when iOS schedules it; a new refresh is requested every time the app backgrounds. Keychain items use AfterFirstUnlock so background runs can read credentials.")
+            Text("A BGAppRefreshTask (com.autorotate.refresh) runs rotateDueSecrets() when iOS schedules it; a new refresh is requested every time the app backgrounds.  Keychain items use AfterFirstUnlock so background runs can read credentials.")
                 .font(.caption2)
         }
         .listRowBackground(Theme.surface)
@@ -275,7 +344,7 @@ struct SettingsView: View {
         Section {
             Label("Pair with the Autorotate web app", systemImage: "link")
                 .foregroundStyle(Theme.accent)
-            Text("The web dashboard manages the same rotation pipeline server-side. Point both at the same Infisical workspace (same workspaceId/environment above) and fingerprints will match across platforms. A signed pairing flow (QR code + shared access group) is planned; for now keep connector admin credentials on-device and let the web app hold its own encrypted copies.")
+            Text("The web dashboard manages the same rotation pipeline server-side.  Point both at the same Infisical workspace (same workspaceId/environment above) and fingerprints will match across platforms.  A signed pairing flow (QR code + shared access group) is planned; for now keep connector admin credentials on-device and let the web app hold its own encrypted copies.")
                 .font(.caption)
                 .foregroundStyle(Theme.textSecondary)
         } header: {
@@ -313,6 +382,7 @@ struct SettingsView: View {
             ? false
             : model.hasInfisicalClientSecret(workspaceId: model.settings.infisicalWorkspaceId)
         refreshInventory()
+        verifyAuditChain()
     }
 
     private func saveInfisical() {
@@ -335,6 +405,19 @@ struct SettingsView: View {
 
     private func refreshInventory() {
         keychainItems = model.keychainInventory()
+    }
+
+    private func verifyAuditChain() {
+        guard !isVerifyingChain else { return }
+        isVerifyingChain = true
+        Task {
+            do {
+                chainVerification = try await model.verifyAuditChain()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isVerifyingChain = false
+        }
     }
 
     private func icon(for category: KeychainItemInfo.Category) -> String {

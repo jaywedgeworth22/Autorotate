@@ -17,11 +17,16 @@ struct SettingsView: View {
     @State private var keychainItems: [KeychainItemInfo] = []
     @State private var message: String?
 
+    // Audit chain verification
+    @State private var chainVerification: AuditChainVerification?
+    @State private var isVerifyingChain = false
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 infisicalSection
                 keychainSection
+                auditChainSection
                 schedulerSection
                 if let message {
                     Text(message)
@@ -32,7 +37,10 @@ struct SettingsView: View {
             .padding(24)
         }
         .navigationTitle("Settings")
-        .onAppear { reloadKeychainItems() }
+        .onAppear {
+            reloadKeychainItems()
+            Task { await verifyChain() }
+        }
     }
 
     // MARK: - Infisical
@@ -113,7 +121,7 @@ struct SettingsView: View {
                        isOn: Binding(
                         get: { appState.settings.iCloudKeychainSyncEnabled },
                         set: { appState.settings.iCloudKeychainSyncEnabled = $0 }))
-                Text("Requires the Keychain Sharing capability and the user's iCloud Keychain setting. When not allowed, items are stored device-local automatically. Admin credentials and the Infisical clientSecret are never synced.")
+                Text("Requires the Keychain Sharing capability and the user's iCloud Keychain setting.  When not allowed, items are stored device-local automatically.  Admin credentials and the Infisical clientSecret are never synced.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
 
@@ -147,6 +155,68 @@ struct SettingsView: View {
                         .padding(.vertical, 2)
                     }
                 }
+            }
+        }
+    }
+
+    // MARK: - Audit chain
+
+    private var auditChainSection: some View {
+        AutorotateCard {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Label("Audit chain", systemImage: "checkmark.seal.fill")
+                        .font(.headline)
+                    Spacer()
+                    Button {
+                        Task { await verifyChain() }
+                    } label: {
+                        if isVerifyingChain {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(AutorotateTheme.textSecondary)
+                    .disabled(isVerifyingChain)
+                }
+
+                if let result = chainVerification {
+                    HStack {
+                        StatusBadge(color: result.isValid ? AutorotateTheme.accent : AutorotateTheme.danger,
+                                    label: result.isValid ? "Chain intact" : "Chain broken")
+                        Spacer()
+                        Text("\(result.checked) checked")
+                            .font(.caption)
+                            .foregroundStyle(AutorotateTheme.textSecondary)
+                    }
+                    if result.legacyPrefixCount > 0 {
+                        Text("\(result.legacyPrefixCount) legacy (pre-chain) entries skipped.")
+                            .font(.caption2)
+                            .foregroundStyle(AutorotateTheme.textSecondary)
+                    }
+                    if !result.isValid, let brokenId = result.brokenAtEntryId {
+                        Text("Broken at entry \(brokenId.uuidString).")
+                            .font(AutorotateTheme.mono(10))
+                            .foregroundStyle(AutorotateTheme.danger)
+                    }
+                    if !result.isValid, let reason = result.failureReason {
+                        Text(reason)
+                            .font(.caption2)
+                            .foregroundStyle(AutorotateTheme.danger)
+                    }
+                } else {
+                    Text("Not yet verified.")
+                        .font(.caption)
+                        .foregroundStyle(AutorotateTheme.textSecondary)
+                }
+
+                Divider().overlay(AutorotateTheme.border)
+
+                Text("Verifies the hash-chained audit log has not been altered or removed (AGENTS.md invariant 2).  Read-only — a broken chain is reported, never repaired.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -208,5 +278,16 @@ struct SettingsView: View {
 
     private func reloadKeychainItems() {
         keychainItems = KeychainInventory(accessGroup: appState.keychain.accessGroup).managedItems()
+    }
+
+    private func verifyChain() async {
+        guard !isVerifyingChain else { return }
+        isVerifyingChain = true
+        defer { isVerifyingChain = false }
+        do {
+            chainVerification = try await appState.verifyAuditChain()
+        } catch {
+            message = "Audit chain verification failed: \(String(describing: error))"
+        }
     }
 }

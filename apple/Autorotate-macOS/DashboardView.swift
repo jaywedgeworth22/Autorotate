@@ -162,7 +162,7 @@ struct DashboardView: View {
             let entries = auditEntities.prefix(12)
             if entries.isEmpty {
                 AutorotateCard {
-                    Text("Audit log is empty. Rotations and credential changes appear here — fingerprints only, never values.")
+                    Text("Audit log is empty.  Rotations and credential changes appear here — fingerprints only, never values.")
                         .font(.callout)
                         .foregroundStyle(AutorotateTheme.textSecondary)
                 }

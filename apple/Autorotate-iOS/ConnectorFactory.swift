@@ -146,7 +146,7 @@ enum ConnectorFactory {
                     FieldSpec(key: "token", label: "API token",
                               placeholder: "paste credential",
                               isOptional: true,
-                              help: "Update-only catalog platforms: rotate in the vendor console, then import. Generate-local platforms ignore this field.")
+                              help: "Update-only catalog platforms: rotate in the vendor console, then import.  Generate-local platforms ignore this field.")
                 ]
             }
             return []

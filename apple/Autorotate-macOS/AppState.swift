@@ -371,4 +371,14 @@ final class AppState {
             account: settings.infisicalClientId,
             service: KeychainManager.infisicalClientSecretService(workspaceId: settings.infisicalWorkspaceId))
     }
+
+    // MARK: - Audit chain verification
+
+    /// Verifies the hash-chained audit log for Settings → Audit chain
+    /// (AR-08: tamper evidence that is never checked at runtime is
+    /// documentation, not a control).  Read-only — never rewrites entries;
+    /// a broken or legacy-prefixed chain is surfaced, not repaired.
+    func verifyAuditChain(limit: Int = 500) async throws -> AuditChainVerification {
+        try await auditStore.verifyChain(limit: limit)
+    }
 }
