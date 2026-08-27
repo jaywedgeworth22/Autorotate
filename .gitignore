@@ -39,3 +39,11 @@ local.properties
 .gradle/
 releases/
 
+# Root-level build output (e.g. Apple archives / dSYMs exported to ./build)
+build/
+
+# Android release signing — never commit keystores or credentials
+android/keystore.properties
+*.keystore
+*.jks
+
