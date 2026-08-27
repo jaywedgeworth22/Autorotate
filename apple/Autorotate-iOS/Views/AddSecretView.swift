@@ -181,7 +181,7 @@ struct AddSecretView: View {
         } header: {
             InstrumentSectionHeader(title: "Admin credential", systemImage: "lock.shield")
         } footer: {
-            Text("\(descriptor.adminCredentialHint). Stored ONLY in the Apple Keychain — never written to disk or synced.")
+            Text("\(descriptor.adminCredentialHint).  Stored ONLY in the Apple Keychain — never written to disk or synced.")
                 .font(.caption2)
         }
         .listRowBackground(Theme.surface)
@@ -214,7 +214,7 @@ struct AddSecretView: View {
         } header: {
             InstrumentSectionHeader(title: "Targets", systemImage: "target")
         } footer: {
-            Text("Destinations that receive each newly rotated value. More targets can be added later from the secret's detail screen.")
+            Text("Destinations that receive each newly rotated value.  More targets can be added later from the secret's detail screen.")
                 .font(.caption2)
         }
         .listRowBackground(Theme.surface)

@@ -140,7 +140,7 @@ enum ConnectorFactory {
                 return catalog
             }
             throw ConnectorError.misconfigured(
-                "Unknown connector id '\(record.connectorId)'. Registered ids are listed in ConnectorRegistry.all.")
+                "Unknown connector id '\(record.connectorId)'.  Registered ids are listed in ConnectorRegistry.all.")
         }
     }
 }

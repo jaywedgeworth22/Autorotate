@@ -111,7 +111,7 @@ struct AddTargetView: View {
         } header: {
             InstrumentSectionHeader(title: "Infisical", systemImage: "cloud")
         } footer: {
-            Text("Uses the Universal Auth clientSecret from Settings (Keychain). Values are upserted via REST v3 raw secrets.")
+            Text("Uses the Universal Auth clientSecret from Settings (Keychain).  Values are upserted via REST v3 raw secrets.")
                 .font(.caption2)
         }
     }
@@ -135,7 +135,7 @@ struct AddTargetView: View {
         } header: {
             InstrumentSectionHeader(title: "File", systemImage: "doc")
         } footer: {
-            Text("iOS sandbox note: file targets are most useful for files inside the app's container or shared via document picker. On macOS, paths like ~/.aws/credentials work with the right entitlements.")
+            Text("iOS sandbox note: file targets are most useful for files inside the app's container or shared via document picker.  On macOS, paths like ~/.aws/credentials work with the right entitlements.")
                 .font(.caption2)
         }
     }
@@ -149,7 +149,7 @@ struct AddTargetView: View {
         } header: {
             InstrumentSectionHeader(title: "Webhook", systemImage: "antenna.radiowaves.left.and.right")
         } footer: {
-            Text("By default the POST body contains only name + valueRef + sha256 fingerprint. Enable plaintext only for receivers you fully trust.")
+            Text("By default the POST body contains only name + valueRef + sha256 fingerprint.  Enable plaintext only for receivers you fully trust.")
                 .font(.caption2)
         }
     }

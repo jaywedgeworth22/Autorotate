@@ -114,7 +114,7 @@ struct FileTargetsView: View {
             SectionLabel(title: "Registered files")
             if fileEntities.isEmpty {
                 AutorotateCard {
-                    Text("No file targets yet. Add your .env, config.json, ~/.aws/credentials, …")
+                    Text("No file targets yet.  Add your .env, config.json, ~/.aws/credentials, …")
                         .font(.callout)
                         .foregroundStyle(AutorotateTheme.textSecondary)
                 }

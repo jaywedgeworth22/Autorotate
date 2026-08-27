@@ -67,7 +67,7 @@ struct SecretsView: View {
             }
             Button("Cancel", role: .cancel) { pendingDelete = nil }
         } message: {
-            Text("Metadata, the Keychain admin credential and the managed Keychain value are removed. Values already written to files/Infisical are left in place.")
+            Text("Metadata, the Keychain admin credential and the managed Keychain value are removed.  Values already written to files/Infisical are left in place.")
         }
         .onDeleteCommand {
             if let selection, let entity = entities.first(where: { $0.id == selection }) {
@@ -222,7 +222,7 @@ private struct AddSecretSheet: View {
             SecureField(descriptor?.adminCredentialHint ?? "Admin credential",
                         text: $adminCredential)
                 .textFieldStyle(.roundedBorder)
-            Text("Stored in the Keychain only — never on disk. Access group: $(AppIdentifierPrefix)com.autorotate.shared.")
+            Text("Stored in the Keychain only — never on disk.  Access group: $(AppIdentifierPrefix)com.autorotate.shared.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 

@@ -79,7 +79,7 @@ struct SecretDetailView: View {
             }
             Button("Cancel", role: .cancel) { importedValue = "" }
         } message: {
-            Text("The value is validated, fingerprinted and pushed to targets. It is never stored by Autorotate.")
+            Text("The value is validated, fingerprinted and pushed to targets.  It is never stored by Autorotate.")
         }
         .alert("Update admin credential", isPresented: $showingCredentialSheet) {
             SecureField("Admin credential", text: $newCredential)
@@ -198,7 +198,7 @@ struct SecretDetailView: View {
                     Label("Import rotated value…", systemImage: "square.and.arrow.down")
                         .foregroundStyle(Theme.accent)
                 }
-                Text("This platform is \(secret.connectorCapability == .updateOnly ? "update-only" : "partially programmatic"). Rotate in the provider UI, then import the new value — Autorotate propagates it to all targets.")
+                Text("This platform is \(secret.connectorCapability == .updateOnly ? "update-only" : "partially programmatic").  Rotate in the provider UI, then import the new value — Autorotate propagates it to all targets.")
                     .font(.caption)
                     .foregroundStyle(Theme.textSecondary)
             }
