@@ -1,0 +1,19 @@
+# Extends the default ruleset.  Do not replace it — Autorotate's public-repo
+# invariant is zero plaintext, so every built-in rule stays on.
+#
+# gitleaks 8.24.x (secret-scan.yml / gitleaks-action v3) requires the global
+# allowlist as a singular [allowlist] table.  The [[allowlists]] array form
+# is silently ignored on that version.
+
+title = "Autorotate"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Pinned AuditChain fixture record UUID"
+regexes = [
+  # Record identifier used by AuditChainTests / AuditChain canonical form.
+  # Not a credential.  Listed so PR history of that fixture stays clean.
+  '''(?i)a41c0d1e-2f30-4152-6374-8596a7b8c9da''',
+]

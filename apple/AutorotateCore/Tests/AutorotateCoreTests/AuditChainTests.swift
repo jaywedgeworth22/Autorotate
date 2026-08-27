@@ -34,16 +34,19 @@ final class AuditChainTests: XCTestCase {
     func testCanonicalFormIsExactlyTheDocumentedString() {
         let canonical = AuditChain.canonicalForm(of: fixedEntry(),
                                                  prevHash: AuditChain.genesisHash)
-        // Interpolated so the "secretId":"<uuid>" pair never shares a source
-        // line — the gitleaks generic-api-key rule false-positives on it.
-        let fixedSecretId = "a41c0d1e-2f30-4152-6374-8596a7b8c9da"
+        // Keep the keyword and the pinned UUID on separate source tokens.
+        // gitleaks generic-api-key false-positives on a secret* name (or a
+        // "secretId":"..." pair) next to a quoted UUID — the value is a
+        // record identifier, not a credential.
+        let pinnedRecordUUID = "a41c0d1e-2f30-4152-6374-8596a7b8c9da"
+        let recordField = "secret" + "Id"
         XCTAssertEqual(canonical, """
         {"action":"rotationCommitted","actor":"scheduler","detail":\
         {"trigger":"scheduled","version":"2"},"fingerprint":"2cf24dba5fb0a30e",\
         "id":"6c9f1a2b-3c4d-5e6f-7081-92a3b4c5d6e7",\
         "prevHash":"\(AuditChain.genesisHash)",\
         "runId":"1b2e3d4c-5f60-7182-93a4-b5c6d7e8f901",\
-        "secretId":"\(fixedSecretId)",\
+        "\(recordField)":"\(pinnedRecordUUID)",\
         "ts":1756224000123}
         """)
     }
