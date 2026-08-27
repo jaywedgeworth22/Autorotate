@@ -796,9 +796,16 @@ export async function rotateSecret(
           : steps.find((s) => s.status === "failed")?.message ?? "partial delivery";
       } else if (runStatus === "failed" && !dryRun) {
         runError = steps.find((s) => s.status === "failed")?.message ?? null;
+        // A mint succeeded (we are inside the rotateOk && newValue block) but
+        // every delivery failed.  Advance nextDueAt by the policy interval so
+        // the 60s scheduler does not immediately re-select this secret and mint
+        // again — an unbounded provider-credential churn loop (same hazard F13
+        // closed on the partial branch).  Leave version/fingerprint untouched:
+        // the recorded state stays the last known-good delivered value.
+        const failedNextDue = new Date(Date.now() + policy.intervalHours * 3600 * 1000);
         await db
           .update(secrets)
-          .set({ status: "failed" })
+          .set({ status: "failed", nextDueAt: failedNextDue })
           .where(eq(secrets.id, secretId));
       }
     } else {
@@ -811,9 +818,14 @@ export async function rotateSecret(
         throw new Error("skipped — nothing to commit");
       });
       if (!dryRun) {
+        // Rotate produced no value (nothing minted).  Back off nextDueAt so a
+        // failing provider is not retried every 60s scheduler tick.
+        const failedNextDue = new Date(
+          Date.now() + parsePolicy(secret).intervalHours * 3600 * 1000,
+        );
         await db
           .update(secrets)
-          .set({ status: "failed" })
+          .set({ status: "failed", nextDueAt: failedNextDue })
           .where(eq(secrets.id, secretId));
       }
     }
