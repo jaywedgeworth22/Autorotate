@@ -18,8 +18,7 @@
   [docs/architecture.md](docs/architecture.md).
 - **Audit chain** — every run appends a hash-chained audit record, so the
   history is tamper-evident.
-- **Mac agent** — optional Python agent writes `~/.secrets/global-api-keys`
-  and Keychain history on `mac.jays.services`.
+- **Mac agent** — placeholder stub only; no implementation exists.
 
 ## Monorepo layout
 
@@ -28,7 +27,7 @@ Autorotate/
 ├── apps/
 │   ├── web/                # Web control center (React + Vite frontend,
 │   │                       #   Hono + tRPC + Drizzle backend, MySQL)
-│   └── agent/              # Mac Python agent (global-api-keys + Keychain)
+│   └── agent/              # Mac Python agent (stub placeholder only)
 ├── apple/                  # Apple-platform workspace (XcodeGen)
 │   ├── AutorotateCore/        #   Shared SwiftPM package: rotation engine,
 │   │                       #   connectors, crypto, Keychain, stores
