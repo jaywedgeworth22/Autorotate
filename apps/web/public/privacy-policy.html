@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy Policy — Autorotate</title>
+    <meta name="description" content="Autorotate Privacy Policy. Zero-plaintext secret rotation lifecycle management." />
+    <link rel="icon" href="/favicon.png" />
+    <style>
+      :root {
+        --bg: #09090b;
+        --card: #18181b;
+        --border: #27272a;
+        --text: #fafafa;
+        --muted: #a1a1aa;
+        --accent: #22c55e;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        line-height: 1.6;
+        padding: 2rem 1rem;
+      }
+      .container {
+        max-width: 720px;
+        margin: 0 auto;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 2.5rem 2rem;
+      }
+      h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+      .date { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+      h2 { font-size: 1.3rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.75rem; color: var(--text); }
+      p { margin-bottom: 1rem; color: var(--muted); }
+      ul { margin-left: 1.5rem; margin-bottom: 1rem; color: var(--muted); }
+      li { margin-bottom: 0.5rem; }
+      a { color: var(--accent); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      .header-link { display: inline-block; margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <a href="/" class="header-link">&larr; Back to Autorotate</a>
+      <h1>Privacy Policy</h1>
+      <p class="date">Last updated: August 26, 2026</p>
+
+      <h2>Overview</h2>
+      <p>Autorotate ("we", "our", or "us") provides a zero-plaintext secret-rotation lifecycle management engine across web, macOS, and iOS platforms. Protecting your sensitive credentials and security posture is our core purpose.</p>
+
+      <h2>Zero-Plaintext Architecture</h2>
+      <p>Autorotate is designed with mathematical privacy and zero-plaintext guarantees:</p>
+      <ul>
+        <li><strong>No Plaintext Persistence:</strong> Secret material exists only in ephemeral memory during an active rotation execution and is never stored unencrypted in databases, disk logs, or analytics.</li>
+        <li><strong>On-Device Encryption:</strong> Apple Keychain and secure hardware enclaves are used for local client storage.</li>
+        <li><strong>Audit Logging:</strong> System audit logs store cryptographic hashes and state machine signatures, never raw secret payloads.</li>
+      </ul>
+
+      <h2>Information We Collect</h2>
+      <p>We collect only telemetry required to operate rotation schedules (e.g. connector type, rotation frequency, status codes, and execution timestamps). We do not collect or inspect secret payloads.</p>
+
+      <h2>Your Control &amp; Data Rights</h2>
+      <p>You can disconnect targets, revoke API tokens, or delete your account at any time through the Autorotate control dashboard or local companion apps.</p>
+
+      <h2>Contact Us</h2>
+      <p>For questions or privacy inquiries, contact our security team at <a href="mailto:support@Autorotate.Codes">support@Autorotate.Codes</a>.</p>
+    </div>
+  </body>
+</html>
