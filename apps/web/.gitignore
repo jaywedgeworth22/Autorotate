@@ -20,4 +20,4 @@ coverage/
 .nyc_output/
 # Logs
 *.log
-topspin-files/
+autorotate-files/

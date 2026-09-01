@@ -11,7 +11,7 @@ import {
   Radio,
 } from "lucide-react";
 import { trpc } from "@/providers/trpc";
-import type { RotationRun } from "@contracts/topspin";
+import type { RotationRun } from "@contracts/autorotate";
 import { EmptyState, toastError, toastSuccess } from "@/components/primitives";
 import { cn } from "@/lib/utils";
 import LiveBar from "@/components/runs/LiveBar";
@@ -184,7 +184,7 @@ export default function Runs() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `topspin-runs-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `autorotate-runs-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
     toastSuccess("Export ready", `${filtered.length} runs written to JSON`);

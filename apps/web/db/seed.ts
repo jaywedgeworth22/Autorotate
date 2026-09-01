@@ -8,13 +8,13 @@ import {
   rotationRuns,
   auditLog,
 } from "./schema";
-import { connectorRegistry } from "../api/topspin/connectors";
-import { encryptJson, randomToken } from "../api/topspin/crypto";
-import { computeEntryHash } from "../api/topspin/engine";
-import { fileRoot } from "../api/topspin/files";
-import type { RotationPolicy, RotationStep } from "@contracts/topspin";
+import { connectorRegistry } from "../api/autorotate/connectors";
+import { encryptJson, randomToken } from "../api/autorotate/crypto";
+import { computeEntryHash } from "../api/autorotate/engine";
+import { fileRoot } from "../api/autorotate/files";
+import type { RotationPolicy, RotationStep } from "@contracts/autorotate";
 
-// Idempotent rich demo seed for TopSpin. Safe to re-run: it exits early when
+// Idempotent rich demo seed for Autorotate. Safe to re-run: it exits early when
 // connectors already exist. No plaintext real secrets — only fingerprints and
 // randomly generated demo placeholders.
 
@@ -26,11 +26,11 @@ const hex16 = () => randomToken(16, "0123456789abcdef");
 const DAY = 24 * 3600 * 1000;
 const HOUR = 3600 * 1000;
 
-// ── Demo file targets (real files under TOPSPIN_FILE_ROOT) ──────
+// ── Demo file targets (real files under AUTOROTATE_FILE_ROOT) ──────
 
 const DEMO_FILES: Record<string, string> = {
   "demo-app/.env": [
-    "# demo-app environment — managed by TopSpin",
+    "# demo-app environment — managed by Autorotate",
     "DATABASE_URL=mysql://demo:demo@localhost:3306/demoapp",
     "OPENAI_API_KEY=sk-proj-REPLACE_ME",
     "STRIPE_SECRET_KEY=sk_live_REPLACE_ME",
@@ -40,7 +40,7 @@ const DEMO_FILES: Record<string, string> = {
   "deploy/config.json":
     JSON.stringify(
       {
-        service: "topspin-demo",
+        service: "autorotate-demo",
         replicas: 2,
         credentials: {
           npmToken: "npm_REPLACE_ME",
@@ -52,7 +52,7 @@ const DEMO_FILES: Record<string, string> = {
       2,
     ) + "\n",
   "ci/pipeline.yaml": [
-    "# CI pipeline secrets — managed by TopSpin",
+    "# CI pipeline secrets — managed by Autorotate",
     "aws_access_key_id: AKIA_REPLACE_ME",
     "cloudflare_api_token: cf_REPLACE_ME",
     "slack_bot_token: xoxb-REPLACE_ME",
@@ -155,7 +155,7 @@ const FILE_TARGETS: [string, string, (name: string) => string][] = [
 
 async function seed() {
   const db = getDb();
-  console.log("Seeding TopSpin demo workspace...");
+  console.log("Seeding Autorotate demo workspace...");
 
   const existing = await db.select({ id: connectors.id }).from(connectors).limit(1);
   if (existing.length > 0) {
@@ -255,7 +255,7 @@ async function seed() {
         fingerprint: hex16(),
         notes:
           Math.random() > 0.7
-            ? `Managed by TopSpin — rotates every ${intervalHours}h`
+            ? `Managed by Autorotate — rotates every ${intervalHours}h`
             : null,
         createdAt: new Date(Date.now() - rand(25, 44) * DAY),
       })
@@ -305,14 +305,14 @@ async function seed() {
     }
     if (Math.random() > 0.6) {
       await addTarget("webhook", {
-        url: "https://hooks.example.com/topspin/rotations",
+        url: "https://hooks.example.com/autorotate/rotations",
         method: "POST",
         includeValue: false,
       });
     }
     if (Math.random() > 0.75) {
       await addTarget("keychain", {
-        service: `com.topspin.${s.id}`,
+        service: `com.autorotate.${s.id}`,
         account: s.name,
         synchronizable: Math.random() > 0.5,
       });
@@ -440,7 +440,8 @@ async function seed() {
   };
 
   // Chain audit entries in the same chronological order as the runs.
-  let prevHash = "0000000000000000";
+  // Genesis is 64 zeros — full-width sha256 hashes since AR-07.
+  let prevHash = "0".repeat(64);
   const chain = async (
     ts: Date,
     actor: string,

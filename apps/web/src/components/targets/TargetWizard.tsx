@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Laptop, Search, Smartphone } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
 import { StatusDot, toastError, toastSuccess } from '@/components/primitives'
-import type { TargetKind } from '@contracts/topspin'
+import type { TargetKind } from '@contracts/autorotate'
 import { cn } from '@/lib/utils'
 import { BrandTile, Field, GhostButton, ModalShell, PrimaryButton, VerifyChecklist, inputCls, type ChecklistRowState } from '@/components/connectors/ui'
 import { platformMeta } from '@/components/connectors/data'
@@ -355,7 +355,7 @@ function WizardFlow({ request, onClose }: { request: WizardRequest; onClose: () 
                   />
                 </Field>
                 <p className="rounded-card border border-info/40 bg-info/5 px-3.5 py-2.5 text-[13px] leading-5 text-ink-secondary">
-                  File targets are written by the TopSpin agent or companion on that machine —
+                  File targets are written by the Autorotate agent or companion on that machine —
                   values travel encrypted end-to-end; the web console never sees file contents.
                 </p>
               </>
@@ -460,7 +460,7 @@ function WizardFlow({ request, onClose }: { request: WizardRequest; onClose: () 
                   </div>
                 </Field>
                 <Field label="Service">
-                  <input className={inputCls} value={str('service')} onChange={(e) => set('service', e.target.value)} placeholder="com.topspin.production" />
+                  <input className={inputCls} value={str('service')} onChange={(e) => set('service', e.target.value)} placeholder="com.autorotate.production" />
                 </Field>
                 <Field label="Account (item name)">
                   <input className={inputCls} value={str('account')} onChange={(e) => set('account', e.target.value)} placeholder="prod-stripe-live" />
@@ -603,7 +603,7 @@ function WizardFlow({ request, onClose }: { request: WizardRequest; onClose: () 
             className="space-y-4"
           >
             <p className="text-[13px] leading-5 text-ink-secondary">
-              Sending a <span className="font-mono text-ink-primary">topspin-canary-*</span> value
+              Sending a <span className="font-mono text-ink-primary">autorotate-canary-*</span> value
               through the new target…
             </p>
             <VerifyChecklist

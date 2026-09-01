@@ -1,11 +1,15 @@
 package codes.autorotate
 
 import android.app.Application
-import androidx.work.*
 import codes.autorotate.data.EncryptedStorage
-import codes.autorotate.worker.ScheduledRotationWorker
-import java.util.concurrent.TimeUnit
 
+/**
+ * There is no background rotation job here on purpose (AR-05): the app has
+ * no connectors, no HTTP client, and nothing that could actually rotate a
+ * live credential, so a periodic WorkManager job here would only be able to
+ * fabricate "rotation" records. It previously did exactly that on a 6-hour
+ * PeriodicWorkRequest; that job and its Worker class have been removed.
+ */
 class AutorotateApp : Application() {
     lateinit var storage: EncryptedStorage
         private set
@@ -13,22 +17,5 @@ class AutorotateApp : Application() {
     override fun onCreate() {
         super.onCreate()
         storage = EncryptedStorage(this)
-        schedulePeriodicRotationCheck()
-    }
-
-    private fun schedulePeriodicRotationCheck() {
-        val workRequest = PeriodicWorkRequestBuilder<ScheduledRotationWorker>(6, TimeUnit.HOURS)
-            .setConstraints(
-                Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED)
-                    .build()
-            )
-            .build()
-
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "autorotate_scheduled_check",
-            ExistingPeriodicWorkPolicy.KEEP,
-            workRequest
-        )
     }
 }

@@ -1,5 +1,5 @@
 name: Feature Request
-description: Propose a new capability for TopSpin
+description: Propose a new capability for Autorotate
 title: "[Feature]: "
 labels: [enhancement, triage]
 body:
@@ -16,9 +16,9 @@ body:
       label: Module
       options:
         - Web control center (apps/web)
-        - iOS app (apple/TopSpin-iOS)
-        - macOS app (apple/TopSpin-macOS)
-        - TopSpinCore (apple/TopSpinCore)
+        - iOS app (apple/Autorotate-iOS)
+        - macOS app (apple/Autorotate-macOS)
+        - AutorotateCore (apple/AutorotateCore)
         - Cross-module / new interface
         - Repo tooling / CI
     validations:

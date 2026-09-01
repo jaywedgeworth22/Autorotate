@@ -13,15 +13,15 @@ import { RequestConnectorModal } from '@/components/connectors/RequestConnectorM
 const LEGEND: { cap: PrimitiveCapability; text: string }[] = [
   {
     cap: 'programmatic',
-    text: 'TopSpin mints, verifies, and revokes credentials via the provider API. Fully hands-off.',
+    text: 'Autorotate mints, verifies, and revokes credentials via the provider API. Fully hands-off.',
   },
   {
     cap: 'partial',
-    text: 'Creation is automated; revocation or scoping needs a follow-up step TopSpin schedules for you.',
+    text: 'Creation is automated; revocation or scoping needs a follow-up step Autorotate schedules for you.',
   },
   {
     cap: 'update-only',
-    text: "The provider can't mint keys via API. You supply the new value; TopSpin drives delivery, verification, and audit.",
+    text: "The provider can't mint keys via API. You supply the new value; Autorotate drives delivery, verification, and audit.",
   },
 ]
 

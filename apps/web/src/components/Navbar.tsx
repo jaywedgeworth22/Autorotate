@@ -69,7 +69,7 @@ export default function Navbar() {
           <Link to="/" className="flex items-center gap-3">
             <LogoMark size={28} />
             <span className="font-display text-lg font-semibold tracking-[-0.02em] text-ink-primary">
-              Autorotate
+              Autorotate<span className="text-spin">.Codes</span>
             </span>
           </Link>
 
@@ -127,7 +127,9 @@ export default function Navbar() {
               <div className="mb-8 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <LogoMark size={26} />
-                  <span className="font-display text-lg font-semibold">Autorotate</span>
+                  <span className="font-display text-lg font-semibold">
+                    Autorotate<span className="text-spin">.Codes</span>
+                  </span>
                 </div>
                 <button
                   onClick={() => setOpen(false)}

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import type { AuditEntry } from "@contracts/topspin";
+import type { AuditEntry } from "@contracts/autorotate";
 import { truncateFingerprint } from "@/components/primitives";
 import { describeEntry } from "./audit-utils";
 import { cn } from "@/lib/utils";
@@ -88,7 +88,7 @@ export default function ChainStrip({
         </div>
       </div>
 
-      <p className="text-mono-s mt-3 text-ink-faint">
+      <p className="text-mono-s mt-3 text-ink-muted">
         head block pulses · hover any block for its record summary · click to jump to the event
       </p>
     </motion.section>

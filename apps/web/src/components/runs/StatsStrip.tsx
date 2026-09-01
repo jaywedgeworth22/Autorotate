@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import type { RotationRun } from "@contracts/topspin";
-import { RUN_STEP_NAMES } from "@contracts/topspin";
+import type { RotationRun } from "@contracts/autorotate";
+import { RUN_STEP_NAMES } from "@contracts/autorotate";
 import { Sparkline } from "@/components/primitives";
 import { formatMs, parseSteps, runDurationMs } from "./run-utils";
 

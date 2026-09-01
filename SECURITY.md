@@ -1,16 +1,18 @@
 # Security Policy
 
-TopSpin exists to rotate secrets safely; we hold this repository to the same
+Autorotate exists to rotate secrets safely; we hold this repository to the same
 standard.
 
 ## Reporting a vulnerability
 
 **Do not open a public issue for security reports.**
 
-Email **security@topspin.dev** (placeholder contact) with:
+Use **GitHub's private vulnerability reporting:** https://github.com/jaywedgeworth22/Autorotate/security/advisories/new
+
+Include:
 
 - a description of the vulnerability and affected module(s)
-  (`apps/web`, `apple/TopSpinCore`, `apple/TopSpin-iOS`, `apple/TopSpin-macOS`);
+  (`apps/web`, `apple/AutorotateCore`, `apple/Autorotate-iOS`, `apple/Autorotate-macOS`);
 - steps to reproduce or a proof of concept;
 - any suggested remediation.
 
@@ -22,7 +24,7 @@ disclosure.
 
 Secret material must **never** be persisted in plaintext:
 
-- not in the database (credentials are encrypted with `TOPSPIN_ENC_KEY`
+- not in the database (credentials are encrypted with `AUTOROTATE_ENC_KEY`
   before storage),
 - not on disk (file targets receive secrets only through the rotation
   pipeline, never intermediate dumps),
@@ -40,7 +42,7 @@ other merits.
   untracked `.env` files.
 - Never hard-code tokens, connection strings, or encryption keys in source.
 - On Apple platforms, credentials belong in the Keychain (shared access
-  group `com.topspin.shared`), never in `UserDefaults` or plain files.
+  group `com.autorotate.shared`), never in `UserDefaults` or plain files.
 - Webhook targets must use HTTPS; never disable certificate validation.
 - Rotate any credential immediately if you suspect it entered logs, git
   history, or a ticket.

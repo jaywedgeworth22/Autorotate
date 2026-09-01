@@ -32,7 +32,6 @@ fun DashboardScreen(
     onNavigateToSettings: () -> Unit
 ) {
     val secrets by secretStore.secrets.collectAsState()
-    var isRotatingAll by remember { mutableStateOf(false) }
 
     val activeCount = secrets.count { it.status == SecretStatus.ACTIVE }
     val overdueCount = secrets.count { it.status == SecretStatus.OVERDUE || it.status == SecretStatus.FAILED }
@@ -43,7 +42,7 @@ fun DashboardScreen(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "Autorotate",
+                            "Autorotate.Codes",
                             fontFamily = FontFamily.Default,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
@@ -95,14 +94,14 @@ fun DashboardScreen(
                         .padding(18.dp)
                 ) {
                     Text(
-                        "LIFECYCLE PIPELINE",
+                        "INVENTORY",
                         fontFamily = FontFamily.Monospace,
                         fontSize = 11.sp,
                         color = TextMuted
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "LOCK · ROTATE · PUSH · VERIFY · COMMIT",
+                        "Read-only viewer. Rotation runs from the web console, not this app.",
                         fontFamily = FontFamily.Monospace,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -126,26 +125,6 @@ fun DashboardScreen(
                             Text("Stored Plaintext", fontSize = 12.sp, color = TextSecondary)
                             Text("0", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = SpinAccent)
                         }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = {
-                            isRotatingAll = true
-                            secretStore.rotateAllDue()
-                            isRotatingAll = false
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = SpinAccent,
-                            contentColor = SpinDark
-                        ),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(if (isRotatingAll) "Rotating Secrets..." else "Rotate All Due Secrets", fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -172,10 +151,7 @@ fun DashboardScreen(
             }
 
             items(secrets) { secret ->
-                SecretItemCard(
-                    secret = secret,
-                    onRotate = { secretStore.rotateSecret(secret.id) }
-                )
+                SecretItemCard(secret = secret)
             }
 
             item {
@@ -187,11 +163,8 @@ fun DashboardScreen(
 
 @Composable
 fun SecretItemCard(
-    secret: SecretRecord,
-    onRotate: () -> Unit
+    secret: SecretRecord
 ) {
-    var rotating by remember { mutableStateOf(false) }
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -219,24 +192,6 @@ fun SecretItemCard(
                     fontFamily = FontFamily.Monospace,
                     fontSize = 11.sp,
                     color = TextMuted
-                )
-            }
-
-            IconButton(
-                onClick = {
-                    rotating = true
-                    onRotate()
-                    rotating = false
-                },
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(SurfaceRaised)
-            ) {
-                Icon(
-                    Icons.Default.Sync,
-                    contentDescription = "Rotate",
-                    tint = SpinAccent,
-                    modifier = Modifier.size(18.dp)
                 )
             }
         }
