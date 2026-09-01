@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronDown, FileDown, RotateCw } from 'lucide-react'
-import type { RotationRun, SecretWithRelations } from '@contracts/topspin'
+import type { RotationRun, SecretWithRelations } from '@contracts/autorotate'
 import { trpc } from '@/providers/trpc'
 import {
   ConfirmRotationModal,
@@ -159,7 +159,7 @@ export default function Dashboard() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `topspin-rotation-report-${new Date().toISOString().slice(0, 10)}.json`
+    a.download = `autorotate-rotation-report-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(url)
     toastInfo('Report downloaded', 'rotation-report JSON saved')
@@ -195,7 +195,7 @@ export default function Dashboard() {
       <div className="mx-auto max-w-[1440px] px-8 py-8">
         <EmptyState
           title="No secrets tracked yet"
-          body="Connect a platform and TopSpin will start rotating credentials on schedule — fingerprints only, never plaintext."
+          body="Connect a platform and Autorotate will start rotating credentials on schedule — fingerprints only, never plaintext."
           action={
             <Link
               to="/connectors"

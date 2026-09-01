@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye } from "lucide-react";
-import type { RotationRun } from "@contracts/topspin";
-import { RUN_STEP_NAMES } from "@contracts/topspin";
+import type { RotationRun } from "@contracts/autorotate";
+import { RUN_STEP_NAMES } from "@contracts/autorotate";
 import { ElapsedTicker } from "./MiniStepper";
 import { parseSteps, runLabel } from "./run-utils";
 
@@ -50,7 +50,7 @@ export default function LiveBar({
               <span className="text-ink-faint"> · </span>
               {secretName}
               <span className="text-ink-faint"> · </span>
-              step {currentIdx + 1}/6{" "}
+              step {currentIdx + 1}/{RUN_STEP_NAMES.length}{" "}
               <span className="uppercase text-info">{currentName}…</span>
             </span>
             <ElapsedTicker since={run.startedAt} />

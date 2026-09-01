@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import type { AuditEntry, StatsOverview } from '@contracts/topspin'
+import type { AuditEntry, StatsOverview } from '@contracts/autorotate'
 import { relTime } from './lib'
 
 /**

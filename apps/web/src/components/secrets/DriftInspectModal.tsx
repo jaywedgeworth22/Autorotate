@@ -95,7 +95,7 @@ export function DriftInspectModal({
                 </p>
                 <p className="mt-0.5 text-ink-secondary">
                   {data.hasDrift
-                    ? 'One or more targets have diverged from the TopSpin canonical fingerprint or could not be verified.'
+                    ? 'One or more targets have diverged from the Autorotate canonical fingerprint or could not be verified.'
                     : 'Target read-back verification confirmed hash fingerprints match canonical secrets.'}
                 </p>
               </div>

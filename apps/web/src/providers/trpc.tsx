@@ -5,6 +5,10 @@ import superjson from "superjson";
 import type { AppRouter } from "../../api/router";
 import type { ReactNode } from "react";
 
+// The tRPC client and the provider component belong together — splitting them
+// only to satisfy Fast Refresh's one-export rule would scatter the API client
+// across two files for no runtime benefit.
+// eslint-disable-next-line react-refresh/only-export-components
 export const trpc = createTRPCReact<AppRouter>();
 
 const queryClient = new QueryClient();

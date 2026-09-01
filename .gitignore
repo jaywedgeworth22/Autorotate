@@ -17,8 +17,8 @@ xcuserdata/
 **/*.xcodeproj/project.xcworkspace/
 **/*.xcodeproj/xcuserdata/
 
-# TopSpin local file targets
-topspin-files/
+# Autorotate local file targets
+autorotate-files/
 
 # Logs
 *.log
@@ -27,7 +27,7 @@ topspin-files/
 .DS_Store
 
 # XcodeGen output — regenerate with `xcodegen generate`
-apple/TopSpin.xcodeproj/
+apple/Autorotate.xcodeproj/
 apple/Autorotate.xcodeproj/
 
 # Android build output
@@ -38,4 +38,12 @@ android/local.properties
 local.properties
 .gradle/
 releases/
+
+# Root-level build output (e.g. Apple archives / dSYMs exported to ./build)
+build/
+
+# Android release signing — never commit keystores or credentials
+android/keystore.properties
+*.keystore
+*.jks
 

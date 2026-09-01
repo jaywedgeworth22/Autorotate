@@ -11,9 +11,9 @@ AUDIT), no plaintext persistence, fingerprint-only audit logs.
 apple/
 ├── README.md                    ← this file
 ├── README-macOS.md              ← macOS companion documentation
-└── TopSpinCore/                 ← SwiftPM package (no third-party deps)
+└── AutorotateCore/                 ← SwiftPM package (no third-party deps)
     ├── Package.swift            ← swift-tools 5.9, iOS 17 / macOS 14
-    ├── Sources/TopSpinCore/
+    ├── Sources/AutorotateCore/
     │   ├── Models.swift             SecretRecord, RotationPolicy, RotationRun,
     │   │                            RotationStepResult, AuditEntry, TargetBinding
     │   │                            (+ Infisical/File/Webhook/Keychain configs)
@@ -40,10 +40,10 @@ apple/
     │   │                            platforms, pure-Swift fallback for CI)
     │   └── Fingerprint.swift        sha256(value)[0:8] fingerprints + CSPRNG
     │                                secret generation
-    └── Tests/TopSpinCoreTests/    XCTest suite (27 tests)
+    └── Tests/AutorotateCoreTests/    XCTest suite (27 tests)
 ├── project.yml                  ← XcodeGen spec → Autorotate.xcodeproj
-├── TopSpin-iOS/                 ← iOS 17+ SwiftUI app (bundle codes.autorotate)
-│   ├── TopSpinApp.swift         ← @main App, BGTask registration, dark theme
+├── Autorotate-iOS/                 ← iOS 17+ SwiftUI app (bundle codes.autorotate)
+│   ├── AutorotateApp.swift         ← @main App, BGTask registration, dark theme
 │   ├── ContentView.swift        ← TabView: Dashboard/Secrets/Runs/Settings
 │   ├── AppModel.swift           ← @Observable @MainActor engine wiring
 │   ├── Stores+SwiftData.swift   ← SwiftData SecretStore/AuditStore/
@@ -55,13 +55,13 @@ apple/
 │   ├── BackgroundRotation.swift ← BGAppRefreshTask codes.autorotate.refresh
 │   ├── NotificationManager.swift← local alerts on rotation failure
 │   ├── Theme.swift + Views/     ← security-instrument UI (green #4ECCA3)
-│   ├── TopSpin.entitlements     ← keychain-access-groups codes.autorotate.shared
+│   ├── Autorotate.entitlements     ← keychain-access-groups codes.autorotate.shared
 │   └── Info.plist               ← BGTaskSchedulerPermittedIdentifiers, fetch
-└── TopSpin-macOS/               ← macOS 14+ app (bundle codes.autorotate.macos)
+└── Autorotate-macOS/               ← macOS 14+ app (bundle codes.autorotate.macos)
 ```
 
 The SwiftUI app targets (`Autorotate-iOS`, `Autorotate-macOS`) consume
-`TopSpinCore` and back the store protocols with SwiftData/UserDefaults.
+`AutorotateCore` and back the store protocols with SwiftData/UserDefaults.
 They are generated from the XcodeGen `project.yml`.
 
 ## Building
@@ -69,7 +69,7 @@ They are generated from the XcodeGen `project.yml`.
 ### The core package (no Xcode required)
 
 ```bash
-cd apple/TopSpinCore
+cd apple/AutorotateCore
 swift build        # builds the library
 swift test         # runs the 27 unit tests
 ```
@@ -110,7 +110,7 @@ See `README-macOS.md`.  One `xcodegen generate` produces both schemes.
 
 
 Enable the **Keychain Sharing** capability in Xcode and add
-`$(AppIdentifierPrefix)com.topspin.shared` to every target that must share
+`$(AppIdentifierPrefix)com.autorotate.shared` to every target that must share
 items. `KeychainManager` defaults to this group
 (`KeychainManager.sharedAccessGroup`); pass `accessGroup: nil` for
 app-private items during development.
@@ -127,13 +127,13 @@ Managed-secret targets may set `synchronizable: true`
   turned on. If not, `SecItemAdd` fails and `KeychainManager.save`
   automatically retries as a device-local item.
 - Admin credentials and the Infisical clientSecret are **never** marked
-  synchronizable by TopSpin — they stay on-device.
+  synchronizable by Autorotate — they stay on-device.
 
 ### Background rotation (iOS)
 
 The scheduler (`RotationEngine.rotateDueSecrets`) is driven by
 `BGTaskScheduler` — a `BGAppRefreshTask` registered as
-`com.topspin.refresh` (see `TopSpin-iOS/BackgroundRotation.swift`; a new
+`com.autorotate.refresh` (see `Autorotate-iOS/BackgroundRotation.swift`; a new
 refresh is scheduled every time the app backgrounds). Items use
 `kSecAttrAccessibleAfterFirstUnlock` so background tasks can read admin
 credentials after the device's first unlock.

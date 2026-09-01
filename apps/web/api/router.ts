@@ -1,19 +1,24 @@
 import { createRouter, publicQuery } from "./middleware";
-import { topspinRouters } from "./routers/topspin";
+import { autorotateRouters } from "./routers/autorotate";
+import { authRouter } from "./routers/auth";
 
 export const appRouter = createRouter({
+  // Liveness probe for the deployment itself — carries no workspace data.
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now() })),
 
-  // TopSpin API surface (architecture.md §8)
-  connectors: topspinRouters.connectors,
-  secrets: topspinRouters.secrets,
-  targets: topspinRouters.targets,
-  policies: topspinRouters.policies,
-  runs: topspinRouters.runs,
-  audit: topspinRouters.audit,
-  stats: topspinRouters.stats,
-  workspace: topspinRouters.workspace,
-  pairing: topspinRouters.pairing,
+  // Sign-in surface (auth.session and auth.login are necessarily public).
+  auth: authRouter,
+
+  // Autorotate API surface (architecture.md §8) — all protected (AR-01).
+  connectors: autorotateRouters.connectors,
+  secrets: autorotateRouters.secrets,
+  targets: autorotateRouters.targets,
+  policies: autorotateRouters.policies,
+  runs: autorotateRouters.runs,
+  audit: autorotateRouters.audit,
+  stats: autorotateRouters.stats,
+  workspace: autorotateRouters.workspace,
+  pairing: autorotateRouters.pairing,
 });
 
 export type AppRouter = typeof appRouter;

@@ -7,15 +7,15 @@
 <!-- Which ownership boundary does this touch? See AGENTS.md module map. -->
 
 - [ ] `apps/web` (web control center)
-- [ ] `apple/TopSpinCore` (shared engine)
-- [ ] `apple/TopSpin-iOS`
-- [ ] `apple/TopSpin-macOS`
+- [ ] `apple/AutorotateCore` (shared engine)
+- [ ] `apple/Autorotate-iOS`
+- [ ] `apple/Autorotate-macOS`
 - [ ] repo tooling / CI / docs
 
 ## Checklist
 
 - [ ] Tests pass locally (`npm run test` in `apps/web` and/or `swift test` in
-      `apple/TopSpinCore`)
+      `apple/AutorotateCore`)
 - [ ] **CI green** (web and/or apple jobs as applicable)
 - [ ] **No plaintext secrets persisted** — nothing written to DB, disk, logs,
       or git history unencrypted (see SECURITY.md)

@@ -1,4 +1,4 @@
-import type { AuditEntry } from "@contracts/topspin";
+import type { AuditEntry } from "@contracts/autorotate";
 
 /* ------------------------------------------------------------------ */
 /* Severity & color mapping (derived — the record itself is minimal)    */

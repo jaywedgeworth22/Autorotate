@@ -1,11 +1,11 @@
 # CODEOWNERS — placeholder team handle
 # Default owner for everything
-*                                     @topspin-systems/maintainers
+*                                     @autorotate-systems/maintainers
 
 # Per-module owners
-/apps/web/                            @topspin-systems/maintainers
-/apple/TopSpinCore/                   @topspin-systems/maintainers
-/apple/TopSpin-iOS/                   @topspin-systems/maintainers
-/apple/TopSpin-macOS/                 @topspin-systems/maintainers
-/docs/                                @topspin-systems/maintainers
-/.github/                             @topspin-systems/maintainers
+/apps/web/                            @autorotate-systems/maintainers
+/apple/AutorotateCore/                   @autorotate-systems/maintainers
+/apple/Autorotate-iOS/                   @autorotate-systems/maintainers
+/apple/Autorotate-macOS/                 @autorotate-systems/maintainers
+/docs/                                @autorotate-systems/maintainers
+/.github/                             @autorotate-systems/maintainers

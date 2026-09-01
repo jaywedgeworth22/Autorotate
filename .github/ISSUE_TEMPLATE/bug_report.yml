@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a defect in TopSpin (web, iOS, macOS, or TopSpinCore)
+description: Report a defect in Autorotate (web, iOS, macOS, or AutorotateCore)
 title: "[Bug]: "
 labels: [bug, triage]
 body:
@@ -15,9 +15,9 @@ body:
       label: Affected module
       options:
         - Web control center (apps/web)
-        - iOS app (apple/TopSpin-iOS)
-        - macOS app (apple/TopSpin-macOS)
-        - TopSpinCore (apple/TopSpinCore)
+        - iOS app (apple/Autorotate-iOS)
+        - macOS app (apple/Autorotate-macOS)
+        - AutorotateCore (apple/AutorotateCore)
         - Repo tooling / CI
     validations:
       required: true
@@ -47,7 +47,7 @@ body:
       label: Environment
       description: Version/commit, OS, browser or Xcode version, Node version.
       placeholder: |
-        TopSpin v1.0.0, macOS 15, Xcode 26, Node 20 ...
+        Autorotate v1.0.0, macOS 15, Xcode 26, Node 20 ...
 
   - type: textarea
     id: logs

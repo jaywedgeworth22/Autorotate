@@ -27,16 +27,18 @@ jobs:
       - name: Pin npm 11 (npm 10 exit-handler crash on this lockfile)
         run: npm install -g npm@11.6.2
 
-      - name: Install, typecheck, build
+      - name: Install, typecheck, lint, test, build
         working-directory: apps/web
         run: |
           npm ci --no-audit --no-fund
           npm run check
+          npm run lint
+          npm test
           npm run build
 
   apple:
-    name: Apple (TopSpinCore + iOS + macOS)
-    runs-on: macos-26
+    name: Apple (AutorotateCore + iOS + macOS)
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
 
@@ -52,8 +54,8 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      - name: Build & test TopSpinCore (SwiftPM)
-        working-directory: apple/TopSpinCore
+      - name: Build & test AutorotateCore (SwiftPM)
+        working-directory: apple/AutorotateCore
         run: |
           swift build
           swift test
@@ -81,7 +83,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           java-version: '17'
           distribution: 'temurin'

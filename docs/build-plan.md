@@ -1,7 +1,7 @@
-# TopSpin — Multi-Platform Secret Rotation Suite
+# Autorotate — Multi-Platform Secret Rotation Suite
 
 ## Goal
-Build "TopSpin": a secret-rotation product delivered on three surfaces:
+Build "Autorotate": a secret-rotation product delivered on three surfaces:
 1. **Web app** (React) — dashboard, rotation engine, platform connectors, Infisical sync, file-target updates.
 2. **iOS app** (SwiftUI, Xcode-ready source) — rotation client + Apple Keychain integration.
 3. **macOS app** (SwiftUI, Xcode-ready source) — same shared core as iOS + Keychain.
@@ -39,17 +39,17 @@ Build "TopSpin": a secret-rotation product delivered on three surfaces:
 
 ### Stage 3 — Native apps (iOS + macOS) (skill: vibecoding-general-swarm for orchestration)
 - Coder subagent(s) generate Xcode-ready Swift source:
-  - `TopSpinCore` Swift package: rotation engine, Infisical API client (REST),
+  - `AutorotateCore` Swift package: rotation engine, Infisical API client (REST),
     connector protocols, KeychainManager (Security framework), file-target updaters
     (macOS), crypto (Keychain access groups, kSecAttrAccessibleAfterFirstUnlock).
-  - `TopSpin-iOS` SwiftUI app target (views, rotation triggers, background refresh
+  - `Autorotate-iOS` SwiftUI app target (views, rotation triggers, background refresh
     via BGTaskScheduler, Keychain storage).
-  - `TopSpin-macOS` SwiftUI app target (menu bar + main window, file-target access,
+  - `Autorotate-macOS` SwiftUI app target (menu bar + main window, file-target access,
     Keychain + iCloud Keychain sync notes).
   - XcodeGen `project.yml` so user can `xcodegen generate` and open in Xcode.
 - Output: `native/` folder with complete buildable source tree.
 
 ### Stage 4 — QC, integration, delivery
 - Reviewer subagent checks web build passes, Swift code coherence, spec alignment.
-- Package deliverables under /mnt/agents/output/TopSpin/; save website version.
+- Package deliverables under /mnt/agents/output/Autorotate/; save website version.
 - Final response with file references + setup instructions.

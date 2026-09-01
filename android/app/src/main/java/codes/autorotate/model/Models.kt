@@ -62,11 +62,28 @@ data class RotationRun(
     val detail: String? = null
 )
 
+/**
+ * Shape of the JSON the web console's pairing QR code actually encodes today
+ * (`apps/web/api/routers/autorotate.ts` `pairingRouter.getPayload`):
+ * `{version, appName, baseUrl, environment, timestamp}`.
+ *
+ * Every field is nullable so a partial or malformed scan deserializes to
+ * `null`s instead of Gson silently defeating Kotlin's non-null guarantees
+ * (Gson populates fields via reflection and does not honor Kotlin
+ * null-safety, so a "required" non-null field missing from the JSON would
+ * otherwise become `null` at runtime anyway). [baseUrl] is the field this
+ * app actually needs: the server has no `pairingToken` concept, so `baseUrl`
+ * doubles as the pairing endpoint to connect to. See [QRPairingParser] for
+ * validation and unknown-field tolerance (AR-20).
+ */
 data class QRPairingPayload(
-    val service: String = "Autorotate",
-    val domain: String = "Autorotate.codes",
-    val workspaceId: String,
-    val environment: String,
-    val endpoint: String,
-    val pairingToken: String
-)
+    val version: Int? = null,
+    val appName: String? = null,
+    val baseUrl: String? = null,
+    val environment: String? = null,
+    val timestamp: String? = null
+) {
+    /** The pairing endpoint to connect to. The server names this field `baseUrl`. */
+    val pairingEndpoint: String?
+        get() = baseUrl
+}

@@ -107,7 +107,7 @@ export default function FailureDrawer({
             <div className="space-y-1.5">
               {steps.map((s, i) => (
                 <div key={i} className="flex items-baseline gap-2 font-mono text-[11px] leading-4">
-                  <span className="text-ink-faint">{clockTime(s.startedAt)}</span>
+                  <span className="text-ink-muted">{clockTime(s.startedAt)}</span>
                   <span
                     className={
                       s.status === "failed"
@@ -124,7 +124,7 @@ export default function FailureDrawer({
                 </div>
               ))}
               {steps.length === 0 && (
-                <p className="font-mono text-[11px] text-ink-faint">no steps recorded</p>
+                <p className="font-mono text-[11px] text-ink-muted">no steps recorded</p>
               )}
             </div>
           </motion.div>
