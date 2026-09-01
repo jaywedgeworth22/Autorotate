@@ -26,15 +26,9 @@ enum AppUpdatePrompt {
         string: "https://raw.githubusercontent.com/jaywedgeworth22/ios-app-versions/main/versions.json"
     )!
 
-    /// Numeric Apple IDs for TestFlight / App Store deep links.
-    /// Keep in sync with /Users/jay/apps/ios-fleet/apps.json.
-    static let knownAppleIds: [String: Int] = [
-        "trade.socratic.app": 6_799_238_379,
-        "trade.congress.ios": 6_798_076_688,
-        "services.jays.usage.client.monitor": 6_799_230_435,
-        "services.jays.usage.local.monitor": 6_799_230_729,
-        "online.dealdex": 6_802_474_288,
-    ]
+    /// Numeric Apple IDs for TestFlight / App Store deep links come from
+    /// Info.plist `AppUpdateAppleId`, the public fleet manifest, or iTunes
+    /// Lookup.  Do not hardcode a fleet map here.
 
     private static let skippedVersionKeyPrefix = "appUpdatePrompt.skippedVersion."
 
@@ -53,7 +47,7 @@ enum AppUpdatePrompt {
                 .flatMap(URL.init(string:)) ?? AppUpdatePrompt.defaultManifestURL
             return Config(
                 bundleId: bundleId,
-                appleId: plistAppleId ?? knownAppleIds[bundleId],
+                appleId: plistAppleId,
                 manifestURL: manifest,
                 currentMarketingVersion: (info["CFBundleShortVersionString"] as? String) ?? "0",
                 currentBuild: (info["CFBundleVersion"] as? String) ?? "0"
@@ -73,6 +67,10 @@ enum AppUpdatePrompt {
             self.parts = trimmed.split(separator: ".", omittingEmptySubsequences: true).map { segment in
                 Int(segment.filter(\.isNumber)) ?? 0
             }
+        }
+
+        static func == (lhs: Version, rhs: Version) -> Bool {
+            !(lhs < rhs) && !(rhs < lhs)
         }
 
         static func < (lhs: Version, rhs: Version) -> Bool {
