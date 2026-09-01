@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 # Autorotate Effort Log — cross-agent board
-=======
-# Autorotate Effort Log — GitHub repo still `TopSpin`
->>>>>>> origin/main
 Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this file
 (mirror: docs/EFFORT-LOG.md in the repo). As of 2026-08-25.
 
@@ -14,14 +10,6 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (none)
 
 ## Completed
-<<<<<<< HEAD
-- **Autorotate Rebrand (`Autorotate.codes`), Native Android Companion App & Apple Build Verification** — AG · COMPLETED 2026-08-22.  Rebranded monorepo across Web (`Autorotate.codes`), Apple apps (`codes.autorotate`, `codes.autorotate.macos`, `codes.autorotate.shared`), and added native Android companion app (`android/` with Kotlin + Jetpack Compose Material 3, Biometrics, QR scanner, .env parser).  Apple targets generated via XcodeGen (`Autorotate.xcodeproj`), linked developer team `CC8UTF7ATG` (Jay Wedgeworth, LLC), minimum iOS 17 / macOS 14.  Local `xcodebuild` **BUILD SUCCEEDED** for both iOS and macOS targets; TopSpinCore 27/27 tests pass; web `check` + `build` pass.
-- **Web and iOS utility and power enhancements** — AG · PR [#48](https://github.com/jaywedgeworth22/Autorotate/pull/48) (`ag/utility-power-enhancements`). Interactive .env importer & wizard, multi-select & batch actions, secret drift detection & live read-back inspector, dry-run simulator, workspace alert webhooks (Slack/Discord), QR pairing, Face ID biometrics, SwiftUI .env importer, QR scanner, Siri Shortcuts, and native Swift rotators for Resend, Hugging Face, Neon. Swift tests 27/27, Vitest 16/16, TypeScript check + Vite/esbuild production builds passing.
-- **iOS first-launch update prompt (fleet)** — CURSOR · COMPLETED/MERGED #36 squash `994cc73` 2026-08-21.  On first open, ask to update when a newer version exists.  TestFlight opens TestFlight; App Store opens the App Store.  Manifest: `jaywedgeworth22/ios-app-versions`.  Silent until an ASC/TestFlight record exists.  Same prompt landing in ST / CT / UM / DealDex.
-- **Fleet onboarding — join ai-fleet-coordinator as app `TopSpin` (TS).** KIMI bootstrap + CURSOR closeout 2026-08-21. App PR [#16](https://github.com/jaywedgeworth22/Autorotate/pull/16) merged (`c1f12a5`). Coordinator PR [#57](https://github.com/jaywedgeworth22/ai-fleet-coordinator/pull/57) already merged. Local + CI: iOS/macOS **BUILD SUCCEEDED**, TopSpinCore 22/22, web `npm ci` + check + build + 9/9 after lockfile hosts pinned to npmjs.org (`1baf3cc`). Effort Issues Sync dispatched (run 32458648310 success). Integration tree `~/Code/TopSpin` ff to `c1f12a5`.
-- **Merge Grok App Builder PWA with this monorepo** — GROK · merged as [#38](https://github.com/jaywedgeworth22/Autorotate/pull/38) (`900bd54`). Backups under `backups/`. Live web engine folds Grok rotators + parser + Mac agent.
-- **Apache-2.0 + Kimi dump backup + catalog fold-in** — CURSOR · PR [#42](https://github.com/jaywedgeworth22/Autorotate/pull/42) · branch `cursor/kimi-apache-merge`. Relicensed to Apache 2.0 (© Jay). Kimi dump at `backups/kimi-agent-topspin/`. Secret Rotator nickname (`app/`) at `backups/secret-rotator/` (not a standalone app). Grok extra catalog folded into live web + TopSpinCore.
-
 - **2026-08-27 — CLAUDE — COMPLETED — Full-field security & quality audit remediation (AR-01…AR-35).**  Reviewed all five surfaces (web front/back, AutorotateCore, iOS, macOS, Android) against the zero-plaintext / hash-chained-audit / capability-matrix invariants; documented 35 findings in `docs/AUDIT-2026-08-26.md` (PR [#76](https://github.com/jaywedgeworth22/Autorotate/pull/76)) and remediated every one across eight merged PRs: **#87** (untracked the debug-signed APK, dSYMs & provisioning profile; release builds unsigned-by-default with R8 on — AR-33/34/35/13), **#86** (capability-matrix + SECURITY.md truthing — AR-22/23), **#90** (deleted the fabricated Android rotation + 6h worker, bound the Keystore key to auth, `FLAG_SECURE`, aligned QR payload, first Android tests — AR-05/14/20), **#91** (hash-chained `AuditEntry` in Core, data-protection Keychain with legacy migration, 16-hex fingerprints — AR-08/12/18), **#94** (audit-chain verification surfaced in iOS/macOS UI — AR-08 runtime), **#89** (AA contrast, mobile console layout, dead chrome removed, `docs/design.md`, route code-splitting 1.21 MB→731 kB — AR-24…32), **#93** (session auth in front of tRPC, fail-closed rotation engine, serialized + widened audit chain, SSRF guard, persisted + delivered alerts, post-commit liveness probe, CI runs lint + tests — AR-01…21); status recorded in **#95**.  #93 passed two independent adversarial-review rounds.  AR-30 was resolved upstream by #63.  Four items deferred to owner decisions and filed on THE BOARD: release keystore + GitHub Releases workflow, Android QR CameraX scanning vs. dropping unused deps, encrypting `targets.configJson` at rest, and a trusted-proxy rate-limit key.  Tracking mirrored to GitHub issues (epic + per-finding) and THE BOARD (finding `945db49c…`, completed).
 - **2026-08-26 — ANTIGRAVITY — COMPLETED — Add Vercel free feature optimizations (branch `antigravity/vercel-optimizations`).**  Created `apps/web/vercel.json` with Vite framework preset, 1-year immutable cache headers for build assets (`/assets/(.*)`), stale-while-revalidate headers for static media/fonts, strict security headers (nosniff, sameorigin, referrer-policy, permissions-policy), clean URLs, and trailing slash normalization.
 - **Inline navigation bar title display mode across iOS views** — AG · COMPLETED 2026-08-25.  Applied .navigationBarTitleDisplayMode(.inline) to all NavigationStack root and detail views so centered compact title stays pinned during scroll.
@@ -36,6 +24,7 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - **Apache-2.0 + Kimi dump backup + catalog fold-in** — CURSOR · PR [#42](https://github.com/jaywedgeworth22/Autorotate/pull/42) · branch `cursor/kimi-apache-merge`. Relicensed to Apache 2.0 (© Jay). Kimi dump at `backups/kimi-agent-autorotate/`. Secret Rotator nickname (`app/`) at `backups/secret-rotator/` (not a standalone app). Grok extra catalog folded into live web + AutorotateCore.
 
 ## In Progress
+- **2026-09-01 — GROK — IN PROGRESS — Web Sentry SDK + rotation cron/metrics (board 12ccfa7e, PR #134, worktree `~/apps/autorotate-grok-sentry-adopt` @ `grok/sentry-fleet-adoption`).**  `@sentry/react` client (DSN-gated, sendDefaultPii false, replay 100% error / 0% session, no feedback widget) plus `@sentry/node` for scheduler cron + `rotation.success`/`rotation.fail`.  Android Sentry is iOS-only until Android ships.
 - **2026-08-25 — CURSOR — Pin AppUpdatePrompt.swift from ST fleet, drop knownAppleIds.**  PR [#75](https://github.com/jaywedgeworth22/Autorotate/pull/75), branch `cursor/app-update-prompt-pin-1b43`.  Copy Socratic.Trade `scripts/ios-fleet/AppUpdatePrompt.swift` into `apple/TopSpin-iOS/` (no Swift package).  Removed hardcoded `knownAppleIds` (stale `online.dealdex`).  Apple IDs come from Info.plist / versions.json / lookup.  Live DealDex is `net.dealdex` appleId `6802474288` (not in this Swift file).  No testers.json, no TestFlight ship, no `--force-ship`, no spend.
 - **Owner: Developer portal App IDs for Autorotate** — leftover after Grok #50 closed as duplicate of AG #48.  https://autorotate.codes.  Do not reopen or merge #50.  `com.jay.shellular` stays disabled.
 - **Dependabot leftover radix/react PRs** — CURSOR · after #16. Remaining npm PRs blocked on serial lockfile rebase. Auto-merge not enabled on the repo. PR #17 (`fix/no-target-commit`) is another seat — do not touch.
@@ -44,18 +33,14 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - Owner dashboard items: branch protection on `main` (require PR + checks `web`, `apple`, `gitleaks`); Infisical project for prod secrets; App Store Connect records before TestFlight; `SENTRY_FLEET_DSN` then sentry-ci-report.
 
 ## Changelog of this log
-<<<<<<< HEAD
+- 2026-09-01 — GROK — claimed web Sentry SDK + rotation cron/metrics (board 12ccfa7e).
 - 2026-08-23 — GROK: claimed full internal rename (issue #59). Repo name already Autorotate.
-- 2026-08-22 — CURSOR: Grok #50 closed duplicate.  Portal App IDs still owner.  Do not merge grok/autorotate-ids onto #48.
-- 2026-08-21 — AG implemented full power enhancements across Web, iOS, and TopSpinCore, opening PR [#48](https://github.com/jaywedgeworth22/Autorotate/pull/48).
-=======
 - 2026-08-27 — CLAUDE remediated the full-field audit (AR-01…AR-35) across 8 merged PRs (#86, #87, #89, #90, #91, #93, #94, #95); recorded here and mirrored to GitHub issues (epic + per-finding) and THE BOARD.
 - 2026-08-25 — CURSOR reserved pin of fleet AppUpdatePrompt.swift into the iOS target and moved knownAppleIds off the Swift file (`cursor/app-update-prompt-pin-1b43`).
 - 2026-08-25 — AG added inline navigation bar title display mode across iOS views.
 - 2026-08-22 — CURSOR: Grok leftover = owner App IDs + ASC capabilities cheat sheet.  Branding autorotate.codes.  DealDex mention uses dealdex.net.  PR #50 not to merge.
 - 2026-08-22 — CURSOR closed Grok PR #50 as duplicate of AG #48 (same `codes.autorotate` IDs).  Product/domain: Autorotate / autorotate.codes.  DealDex public host dealdex.net.  Contact+logo product is contactlogo.com when that app is in scope.
 - 2026-08-21 — AG implemented full power enhancements across Web, iOS, and AutorotateCore, opening PR [#48](https://github.com/jaywedgeworth22/Autorotate/pull/48).
->>>>>>> origin/main
 - 2026-08-21 — AG reserved Web and iOS utility and power enhancements (`ag/utility-power-enhancements`).
 - 2026-08-21 — CURSOR completed Apache-2.0 relicensing + Kimi/Secret Rotator backup + extra catalog fold-in (PR #42).
 - 2026-08-21 — CURSOR reserved Apache-2.0 relicensing + Kimi/Secret Rotator backup + extra catalog fold-in (`cursor/kimi-apache-merge`). Closed Grok PWA merge row (PR #38).

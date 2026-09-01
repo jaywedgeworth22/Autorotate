@@ -2,6 +2,12 @@
 
 ## Current Handoff
 
+### 2026-09-01 GROK — Web Sentry SDK (`grok/sentry-fleet-adoption`)
+
+Client `@sentry/react` (DSN-gated, `sendDefaultPii: false`, replay 0% session / 100% error, no feedback widget) plus Node scheduler cron + `rotation.success` / `rotation.fail`.  Rollout: `docs/rollouts/2026-09-01-web-sentry-sdk.md`.  **Android Sentry is iOS-only until Android ships.**
+
+## Current Handoff (Apple IDs)
+
 ### 2026-08-22 CURSOR — Owner App IDs (do not use Grok #50)
 
 Git IDs are on AG PR #48.  Duplicate #50 stays closed.  Need owner: Developer

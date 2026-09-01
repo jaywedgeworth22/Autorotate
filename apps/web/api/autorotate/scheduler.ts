@@ -5,6 +5,7 @@ import {
   countOverdueSecrets,
 } from "./engine";
 import { notifyOverdue } from "./alerts";
+import { captureException, withRotationMonitor } from "../lib/sentry";
 
 // Internal scheduler: every tick, refresh due_soon/overdue statuses and
 // rotate all secrets that are autoRotate && nextDueAt <= now && not rotating.
@@ -15,33 +16,39 @@ let interval: NodeJS.Timeout | null = null;
 export async function tick(): Promise<{ rotated: number; errors: number }> {
   if (ticking) return { rotated: 0, errors: 0 };
   ticking = true;
-  let rotated = 0;
-  let errors = 0;
   try {
-    await refreshDueStatuses();
-    // AR-16: at most one overdue digest per process per 6h (throttled inside
-    // notifyOverdue, which also never throws).
-    await notifyOverdue(await countOverdueSecrets());
-    const due = await findDueSecrets();
-    for (const secret of due) {
+    return await withRotationMonitor(async () => {
+      let rotated = 0;
+      let errors = 0;
       try {
-        await rotateSecret(secret.id, "scheduled", "scheduler");
-        rotated++;
+        await refreshDueStatuses();
+        // AR-16: at most one overdue digest per process per 6h (throttled inside
+        // notifyOverdue, which also never throws).
+        await notifyOverdue(await countOverdueSecrets());
+        const due = await findDueSecrets();
+        for (const secret of due) {
+          try {
+            await rotateSecret(secret.id, "scheduled", "scheduler");
+            rotated++;
+          } catch (err) {
+            errors++;
+            captureException(err);
+            console.error(
+              `[autorotate scheduler] rotation failed for secret ${secret.id}:`,
+              (err as Error).message,
+            );
+          }
+        }
       } catch (err) {
-        errors++;
-        console.error(
-          `[autorotate scheduler] rotation failed for secret ${secret.id}:`,
-          (err as Error).message,
-        );
+        // DB unreachable etc. — log and try again next tick.
+        captureException(err);
+        console.error("[autorotate scheduler] tick error:", (err as Error).message);
       }
-    }
-  } catch (err) {
-    // DB unreachable etc. — log and try again next tick.
-    console.error("[autorotate scheduler] tick error:", (err as Error).message);
+      return { rotated, errors };
+    });
   } finally {
     ticking = false;
   }
-  return { rotated, errors };
 }
 
 /** Start the 60s interval. Non-blocking; safe to call once at server boot. */

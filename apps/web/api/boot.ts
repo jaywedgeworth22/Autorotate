@@ -5,8 +5,11 @@ import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "./router";
 import { createContext } from "./context";
 import { env } from "./lib/env";
+import { initSentryServer } from "./lib/sentry";
 import { adminToken } from "./auth";
 import { startScheduler } from "./autorotate/scheduler";
+
+initSentryServer();
 
 // Mint (and print) the development admin token at boot rather than on the
 // first login attempt, so it is in the same log block as the startup banner.
@@ -35,14 +38,15 @@ const app = new Hono<{ Bindings: HttpBindings }>();
 // system (and framer-motion/gsap) set inline style attributes.  The two
 // Google Fonts hosts are allowed because index.html links a Google Fonts
 // stylesheet, which in turn pulls font files from fonts.gstatic.com — those
-// are the only external origins the frontend uses.
+// are the only external stylesheet/font origins the frontend uses.  Sentry
+// ingest hosts are allowed on connect-src when VITE_SENTRY_DSN is set.
 const CSP = [
   "default-src 'self'",
   "img-src 'self' data:",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "script-src 'self'",
-  "connect-src 'self'",
+  "connect-src 'self' https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.sentry.io",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

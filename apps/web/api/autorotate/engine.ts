@@ -27,6 +27,7 @@ import { hasInfisicalConfig, upsertSecret, readSecret } from "./infisical";
 import { writeFileTarget, readFileTarget } from "./files";
 import { safeFetch } from "./netguard";
 import { notifyRunOutcome } from "./alerts";
+import { recordRotationOutcome } from "../lib/sentry";
 
 // ── Rotation pipeline (architecture.md §2) ──────────────────────
 // LOCK -> ROTATE -> PUSH (per enabled target) -> VERIFY -> COMMIT -> AUDIT.
@@ -884,6 +885,7 @@ export async function rotateSecret(
         // AR-16: fire-and-forget; notifyRunOutcome never throws and never
         // carries a value or fingerprint.
         void notifyRunOutcome({ runId, secretName: secret.name, status: runStatus });
+        recordRotationOutcome(runStatus);
       }
     }
   }
