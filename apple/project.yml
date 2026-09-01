@@ -27,6 +27,9 @@ options:
 packages:
   AutorotateCore:
     path: AutorotateCore
+  Sentry:
+    url: https://github.com/getsentry/sentry-cocoa.git
+    from: "8.44.0"
 
 settings:
   base:
@@ -51,6 +54,8 @@ targets:
     dependencies:
       - package: AutorotateCore
         product: AutorotateCore
+      - package: Sentry
+        product: Sentry
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: codes.autorotate

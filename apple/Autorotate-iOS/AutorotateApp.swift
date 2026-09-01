@@ -22,6 +22,7 @@ struct AutorotateApp: App {
 
     @MainActor
     init() {
+        SentryTelemetry.start()
         let builtContainer: ModelContainer
         do {
             builtContainer = try AutorotateSchema.makeContainer()
