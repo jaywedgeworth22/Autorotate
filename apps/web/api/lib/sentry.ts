@@ -21,7 +21,10 @@ type ScrubbableEvent = {
   request?: {
     url?: string;
     method?: string;
-    [key: string]: unknown;
+    data?: unknown;
+    query_string?: unknown;
+    cookies?: unknown;
+    headers?: unknown;
   };
   breadcrumbs?: Sentry.Breadcrumb[];
 };
@@ -29,10 +32,11 @@ type ScrubbableEvent = {
 export function scrubEvent<T extends ScrubbableEvent>(event: T): T {
   delete event.extra;
   if (event.request) {
-    event.request = {
-      url: stripQuery(event.request.url),
-      method: event.request.method,
-    };
+    event.request.url = stripQuery(event.request.url);
+    delete event.request.data;
+    delete event.request.query_string;
+    delete event.request.cookies;
+    delete event.request.headers;
   }
   if (event.breadcrumbs) {
     event.breadcrumbs = event.breadcrumbs.map((b) => ({
@@ -78,7 +82,8 @@ export function initSentryServer(): void {
       : 0.2,
     enableLogs: true,
     beforeSend(event) {
-      return scrubEvent(event);
+      scrubEvent(event);
+      return event;
     },
     beforeBreadcrumb(breadcrumb) {
       return scrubBreadcrumb(breadcrumb);
