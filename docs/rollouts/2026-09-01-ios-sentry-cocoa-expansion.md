@@ -24,4 +24,5 @@ Integrates native Sentry Cocoa SDK into Autorotate iOS to capture native crashes
 - `xcodebuild -project Autorotate.xcodeproj -scheme Autorotate-iOS -showdestinations` — resolved Sentry Cocoa SPM package cleanly.
 
 ## Next Steps & Blockers
-- None.
+- Android Sentry SDK is **out of scope until Android ships** as a real track.  iOS Cocoa only for native.
+- Web `@sentry/react` is a sibling rollout: `docs/rollouts/2026-09-01-web-sentry-sdk.md`.
