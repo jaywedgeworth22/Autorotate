@@ -12,3 +12,5 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Sentry ships consumer ProGuard rules in the AAR.  No extra -keep needed.

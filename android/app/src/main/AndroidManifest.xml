@@ -17,6 +17,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Autorotate">
 
+        <!-- Manual init in AutorotateApp; empty BuildConfig.SENTRY_DSN stays dark. -->
+        <meta-data
+            android:name="io.sentry.auto-init"
+            android:value="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

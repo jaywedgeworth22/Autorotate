@@ -31,6 +31,12 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Compile-time DSN only.  Empty when SENTRY_DSN is unset so the SDK stays dark in CI.
+        val sentryDsn = (System.getenv("SENTRY_DSN") ?: "")
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+        buildConfigField("String", "SENTRY_DSN", "\"$sentryDsn\"")
     }
 
     signingConfigs {
@@ -67,6 +73,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -92,6 +99,8 @@ dependencies {
     implementation(libs.zxing.core)
     implementation(libs.okhttp)
     implementation(libs.gson)
+    // Crash + ANR only.  Mapping upload plugin skipped; consumer rules ship with the AAR.
+    implementation("io.sentry:sentry-android:8.54.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
