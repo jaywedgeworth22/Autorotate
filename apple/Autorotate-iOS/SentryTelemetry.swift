@@ -2,10 +2,14 @@ import Foundation
 import Sentry
 
 /// Native Sentry crash reporting and telemetry for Autorotate iOS.
+///
+/// DSN is read only from Info.plist (`SENTRY_DSN`).  There is no hardcoded
+/// fallback — missing or empty skips init so a leaked default cannot be
+/// pointed at the wrong project.
 enum SentryTelemetry {
     static func start() {
-        let dsn = Bundle.main.object(forInfoDictionaryKey: "SENTRY_DSN") as? String
-            ?? "https://4512009246736385@o4511650476326912.ingest.us.sentry.io/4512009246736385"
+        let dsn = (Bundle.main.object(forInfoDictionaryKey: "SENTRY_DSN") as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
         guard !dsn.isEmpty else { return }
 
