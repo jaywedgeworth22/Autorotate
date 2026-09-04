@@ -29,7 +29,13 @@ class AutorotateApp : Application() {
                 options.isAttachViewHierarchy = false
                 options.maxRequestBodySize = SentryOptions.RequestSize.NONE
                 options.tracesSampleRate = 0.2
+                options.profilesSampleRate = 0.1
                 options.isAnrEnabled = true
+                // Secrets app: session Replay stays 0%; error Replay 100%, masked.
+                options.sessionReplay.sessionSampleRate = 0.0
+                options.sessionReplay.onErrorSampleRate = 1.0
+                options.sessionReplay.setMaskAllText(true)
+                options.sessionReplay.setMaskAllImages(true)
             }
         }
         storage = EncryptedStorage(this)

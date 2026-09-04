@@ -9,7 +9,7 @@
  * - Session Replay 100% on error, 0% session by default
  * - maskAllText / blockAllMedia
  * - breadcrumbs never carry request bodies, query strings, or console text
- * - no User Feedback widget
+ * - User Feedback on (VITE_SENTRY_FEEDBACK_ENABLED=false to hide)
  */
 
 import * as Sentry from "@sentry/react";
@@ -100,6 +100,12 @@ export function initSentry(): void {
       import.meta.env.VITE_SENTRY_REPLAY_ERROR_SAMPLE_RATE as string | undefined
     )?.trim() ?? "1.0",
   );
+  const feedbackRaw = (
+    import.meta.env.VITE_SENTRY_FEEDBACK_ENABLED as string | undefined
+  )?.trim();
+  const feedbackDisabled = feedbackRaw
+    ? /^(false|0|off|no)$/i.test(feedbackRaw)
+    : false;
 
   Sentry.init({
     dsn,
@@ -126,6 +132,18 @@ export function initSentry(): void {
     },
     integrations: [
       Sentry.browserTracingIntegration(),
+      ...(!feedbackDisabled
+        ? [
+            Sentry.feedbackIntegration({
+              colorScheme: "light",
+              autoInject: true,
+              showBranding: false,
+              buttonLabel: "Report a problem",
+              submitButtonLabel: "Send",
+              formTitle: "Report a problem",
+            }),
+          ]
+        : []),
       ...(!replayDisabled
         ? [
             Sentry.replayIntegration({

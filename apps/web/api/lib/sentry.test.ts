@@ -63,6 +63,40 @@ describe("sentry scrubbers", () => {
   });
 });
 
+describe("Android native Sentry", () => {
+  it("inits DSN-gated Replay (session 0% / error 100%) with profiling", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { dirname, join } = await import("node:path");
+    const { fileURLToPath } = await import("node:url");
+    const app = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        "../../../../android/app/src/main/java/codes/autorotate/AutorotateApp.kt",
+      ),
+      "utf8",
+    );
+    expect(app).toMatch(/SentryAndroid\.init/);
+    expect(app).toMatch(/sessionReplay\.sessionSampleRate = 0\.0/);
+    expect(app).toMatch(/sessionReplay\.onErrorSampleRate = 1\.0/);
+    expect(app).toMatch(/profilesSampleRate = 0\.1/);
+    expect(app).toMatch(/setMaskAllText\(true\)/);
+  });
+});
+
+describe("client Feedback widget", () => {
+  it("ships feedbackIntegration with a kill switch", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { dirname, join } = await import("node:path");
+    const { fileURLToPath } = await import("node:url");
+    const src = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "../../src/lib/sentry.ts"),
+      "utf8",
+    );
+    expect(src).toMatch(/feedbackIntegration\(/);
+    expect(src).toMatch(/VITE_SENTRY_FEEDBACK_ENABLED/);
+  });
+});
+
 describe("rotation metrics", () => {
   it("is inert without a DSN and never throws", () => {
     expect(sentryServerEnabled()).toBe(false);
