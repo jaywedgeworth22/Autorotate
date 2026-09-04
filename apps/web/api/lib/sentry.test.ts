@@ -63,6 +63,20 @@ describe("sentry scrubbers", () => {
   });
 });
 
+describe("client Feedback widget", () => {
+  it("ships feedbackIntegration with a kill switch", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { dirname, join } = await import("node:path");
+    const { fileURLToPath } = await import("node:url");
+    const src = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "../../src/lib/sentry.ts"),
+      "utf8",
+    );
+    expect(src).toMatch(/feedbackIntegration\(/);
+    expect(src).toMatch(/VITE_SENTRY_FEEDBACK_ENABLED/);
+  });
+});
+
 describe("rotation metrics", () => {
   it("is inert without a DSN and never throws", () => {
     expect(sentryServerEnabled()).toBe(false);
