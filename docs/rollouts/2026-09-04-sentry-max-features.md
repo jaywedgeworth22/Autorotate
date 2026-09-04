@@ -8,7 +8,9 @@ Board `af1ab6e9`.  Branch `grok/sentry-max-features`.  Worktree
 - Web User Feedback widget (kill switch `VITE_SENTRY_FEEDBACK_ENABLED=false`).
   Secrets posture unchanged: session Replay 0%, mask-all, scrubbed breadcrumbs.
 - iOS profiling 0.1 + error-only Session Replay (session 0%).
-- Android hold.
+- **Android native Sentry ENABLE** (Designer override of prior hold):
+  crash+ANR plus masked error Replay 100% / session 0% (secrets app) and
+  `profilesSampleRate = 0.1`.
 
 ## Verification
 
