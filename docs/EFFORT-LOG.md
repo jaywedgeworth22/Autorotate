@@ -1,4 +1,5 @@
 # Autorotate Effort Log — cross-agent board
+- **2026-09-03 — GROK — IN PROGRESS — Retarget AppUpdatePrompt off ios-app-versions (board `ca104839`, branch `grok/ios-versions-home`, worktree `~/apps/autorotate-grok-ios-versions`).**  Manifest URL is now ai-fleet-coordinator `site/ios-versions.json`.  Rollout: `docs/rollouts/2026-09-03-ios-versions-home.md`.
 - **2026-09-01 — GROK — IN PROGRESS — Sentry DSN hygiene: no hardcoded iOS fallback (branch `grok/sentry-dsn-hygiene`, worktree `~/apps/autorotate-grok-sentry-dsn`).**  Board `342d13b3177a456080f4ee429b5c6741`.  Cocoa init is plist-only / build-injected; empty DSN = no-op.
 Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this file
 (mirror: docs/EFFORT-LOG.md in the repo). As of 2026-08-25.
