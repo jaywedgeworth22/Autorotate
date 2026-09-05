@@ -15,7 +15,7 @@ jobs:
     name: Web (apps/web)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
 
       - name: Setup Node 22
         uses: actions/setup-node@v7
@@ -40,7 +40,7 @@ jobs:
     name: Apple (AutorotateCore + iOS + macOS)
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
 
       - name: Select Xcode 26
         run: |
@@ -80,7 +80,7 @@ jobs:
     name: Android Companion App (android/)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
 
       - name: Set up JDK 17
         uses: actions/setup-java@v6
