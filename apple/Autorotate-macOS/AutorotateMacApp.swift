@@ -22,6 +22,7 @@ struct AutorotateMacApp: App {
     @State private var appState: AppState
 
     init() {
+        SentryTelemetry.start()
         // AppState (and its @MainActor collaborators) must be constructed on
         // the main actor; App.init is nonisolated on the macOS 14 SDK, so we
         // assert the isolation the runtime guarantees at app launch.

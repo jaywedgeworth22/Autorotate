@@ -40,6 +40,8 @@ settings:
     DEVELOPMENT_TEAM: CC8UTF7ATG
     # Native Sentry. Empty unless xcodebuild/CI passes SENTRY_DSN=...
     # Do not put a live DSN in this file or in Info.plist.
+    # iOS (autorotate): inject Infisical SENTRY_DSN into SENTRY_DSN.
+    # Mac (autorotate-macos): inject Infisical SENTRY_DSN_MACOS into SENTRY_DSN.
     SENTRY_DSN: ""
 
 targets:
@@ -90,9 +92,12 @@ targets:
       - path: Autorotate-macOS
         excludes:
           - "AutorotateMac.entitlements"
+          - "Info.plist"
     dependencies:
       - package: AutorotateCore
         product: AutorotateCore
+      - package: Sentry
+        product: Sentry
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: codes.autorotate.macos
@@ -101,6 +106,10 @@ targets:
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES
         GENERATE_INFOPLIST_FILE: YES
+        # Custom SENTRY_DSN key does not merge from INFOPLIST_KEY_* .
+        # Empty unless xcodebuild/CI passes SENTRY_DSN=... (Infisical
+        # SENTRY_DSN_MACOS).  Do not put a live DSN in git.
+        INFOPLIST_FILE: Autorotate-macOS/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: Autorotate.Codes
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Autorotate macOS Info.plist.
+
+  Custom SENTRY_DSN cannot be expressed as INFOPLIST_KEY_*.
+  project.yml sets GENERATE_INFOPLIST_FILE = YES, so Xcode MERGES this file
+  with INFOPLIST_KEY_* build settings at build time.
+
+  Empty unless xcodebuild/CI passes SENTRY_DSN=... (Infisical SENTRY_DSN_MACOS).
+  Do not put a live DSN in git.
+-->
+<plist version="1.0">
+<dict>
+    <key>SENTRY_DSN</key>
+    <string>$(SENTRY_DSN)</string>
+</dict>
+</plist>
