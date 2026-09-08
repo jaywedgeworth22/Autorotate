@@ -2,6 +2,7 @@
  * Sentry Node observability for Autorotate rotation jobs.
  *
  * Gated on SENTRY_DSN (falls back to VITE_SENTRY_DSN).  Inert when unset.
+ * Infisical: SENTRY_DSN_WEB (and VITE_SENTRY_DSN) → Sentry project autorotate-web.
  * Crash + cron for the 60s scheduler.  Metrics: rotation.success / rotation.fail.
  * Never attach secret material.
  */
