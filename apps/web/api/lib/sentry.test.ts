@@ -84,7 +84,7 @@ describe("Android native Sentry", () => {
 });
 
 describe("client Feedback widget", () => {
-  it("ships feedbackIntegration with a kill switch", async () => {
+  it("ships feedbackIntegration with a kill switch and subtle configuration", async () => {
     const { readFileSync } = await import("node:fs");
     const { dirname, join } = await import("node:path");
     const { fileURLToPath } = await import("node:url");
@@ -94,6 +94,9 @@ describe("client Feedback widget", () => {
     );
     expect(src).toMatch(/feedbackIntegration\(/);
     expect(src).toMatch(/VITE_SENTRY_FEEDBACK_ENABLED/);
+    expect(src).toMatch(/autoInject:\s*false/);
+    expect(src).toMatch(/formTitle:\s*"Report a Problem"/);
+    expect(src).toMatch(/export function openSentryFeedback/);
   });
 });
 

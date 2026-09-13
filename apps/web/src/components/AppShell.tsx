@@ -6,6 +6,7 @@ import {
   ChevronsRight,
   FileKey2,
   LayoutDashboard,
+  LifeBuoy,
   ListChecks,
   Menu,
   Plug,
@@ -19,6 +20,7 @@ import type { LucideIcon } from 'lucide-react'
 import { Command } from 'cmdk'
 import { cn } from '@/lib/utils'
 import { LogoMark } from './Navbar'
+import { openSentryFeedback } from '@/lib/sentry'
 
 interface NavItem {
   label: string
@@ -214,6 +216,18 @@ export default function AppShell() {
         </nav>
 
         <div className="space-y-0.5 border-t border-line-subtle p-3">
+          <button
+            type="button"
+            onClick={() => openSentryFeedback()}
+            className={cn(
+              'flex w-full items-center gap-3 rounded-control px-2 py-2 text-[13px] text-ink-secondary hover:bg-raised/60 hover:text-ink-primary',
+              iconRail && 'justify-center px-0',
+            )}
+            title={iconRail ? 'Report a Problem' : undefined}
+          >
+            <LifeBuoy className="size-4 shrink-0" />
+            {!iconRail && 'Report a Problem'}
+          </button>
           <a
             href="/#docs"
             className={cn(

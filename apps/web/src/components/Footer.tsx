@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { Github, Twitter } from 'lucide-react'
 import { LogoMark } from './Navbar'
+import { openSentryFeedback } from '@/lib/sentry'
 
 const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
@@ -94,6 +95,13 @@ export default function Footer() {
             <span className="text-mono-s text-ink-muted">© 2026 Jay · Apache-2.0</span>
             <Chip>SOC 2 Type II</Chip>
             <Chip>Zero plaintext storage</Chip>
+            <button
+              type="button"
+              onClick={() => openSentryFeedback()}
+              className="text-mono-s text-ink-muted underline decoration-line-subtle underline-offset-2 transition-colors hover:text-ink-primary"
+            >
+              Report a Problem
+            </button>
           </div>
           <div className="flex items-center gap-4">
             <a
