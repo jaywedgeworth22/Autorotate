@@ -6,6 +6,9 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 
 > ⚠️ **AGENT AVAILABILITY NOTICE (2026-08-21):** KIMI is **RETIRED / UNAVAILABLE** long-term (owner directive). All agents MUST NOT assign work or wait on KIMI in-flight work. Reassign any open KIMI effort board lanes or GitHub issues to active seats (AG, GROK, CLAUDE, MONET, etc.).
 
+## In Progress
+- **2026-09-13 — AG — IN PROGRESS — Make Sentry bug reporter subtle (autoInject false + footer/nav trigger) (board `87c80482`, branch `ag/sentry-subtle-feedback`, worktree `~/apps/autorotate-ag-sentry-subtle`).**  Set `autoInject: false` in `apps/web/src/lib/sentry.ts` to eliminate floating action button.  Export `openSentryFeedback()` helper and wire subtle links into AppShell sidebar and landing Footer.
+
 ## Deployed
 - (none)
 
