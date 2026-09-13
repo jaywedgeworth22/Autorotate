@@ -162,29 +162,49 @@ export const SentryErrorBoundary = Sentry.ErrorBoundary;
 export const captureException = Sentry.captureException;
 export const captureMessage = Sentry.captureMessage;
 
+let feedbackOpening = false;
+
 /** Open the Sentry user feedback dialog programmatically. */
 export function openSentryFeedback(): void {
+  if (feedbackOpening) return;
+  feedbackOpening = true;
+  const reset = () => {
+    setTimeout(() => {
+      feedbackOpening = false;
+    }, 1000);
+  };
+
   try {
     const feedback = Sentry.getFeedback?.();
     if (feedback?.createForm) {
-      void feedback.createForm().then((form) => {
-        form.appendToDom();
-        form.open();
-      }).catch(() => {});
+      void feedback
+        .createForm()
+        .then((form) => {
+          form.appendToDom();
+          form.open();
+        })
+        .catch(() => {})
+        .finally(reset);
       return;
     }
 
     if (typeof window !== "undefined") {
       const windowFeedback = (window as unknown as { Sentry?: { getFeedback?: () => { createForm?: () => Promise<{ appendToDom: () => void; open: () => void }> } } }).Sentry?.getFeedback?.();
       if (windowFeedback?.createForm) {
-        void windowFeedback.createForm().then((form) => {
-          form.appendToDom();
-          form.open();
-        }).catch(() => {});
+        void windowFeedback
+          .createForm()
+          .then((form) => {
+            form.appendToDom();
+            form.open();
+          })
+          .catch(() => {})
+          .finally(reset);
+        return;
       }
     }
+    reset();
   } catch {
-    // Safe no-op if feedback is not initialized or fails
+    reset();
   }
 }
 
