@@ -34,6 +34,7 @@ struct AutorotateMacApp: App {
             MainWindowView()
                 .environment(appState)
                 .frame(minWidth: 980, minHeight: 620)
+                .preferredColorScheme(.dark)
         }
         .modelContainer(appState.container)
         .defaultSize(width: 1180, height: 760)
@@ -51,6 +52,7 @@ struct AutorotateMacApp: App {
             MenuBarView()
                 .environment(appState)
                 .modelContainer(appState.container)
+                .preferredColorScheme(.dark)
         }
         .menuBarExtraStyle(.window)
     }

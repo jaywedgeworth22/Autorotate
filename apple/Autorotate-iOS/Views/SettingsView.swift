@@ -43,6 +43,7 @@ struct SettingsView: View {
     @State private var isVerifyingChain = false
 
     @State private var errorMessage: String?
+    @State private var isShowingScanner = false
 
 
     // Dismissable binding for the error alert.
@@ -342,15 +343,38 @@ struct SettingsView: View {
 
     private var companionSection: some View {
         Section {
-            Label("Pair with the Autorotate web app", systemImage: "link")
+            Label("Pair with the Autorotate Mac app", systemImage: "desktopcomputer")
                 .foregroundStyle(Theme.accent)
-            Text("The web dashboard manages the same rotation pipeline server-side.  Point both at the same Infisical workspace (same workspaceId/environment above) and fingerprints will match across platforms.  A signed pairing flow (QR code + shared access group) is planned; for now keep connector admin credentials on-device and let the web app hold its own encrypted copies.")
+            Text("To pair with the Mac app, ensure both devices use the same iCloud account and enable 'Sync via iCloud Keychain' above. Secrets and admin credentials will sync automatically.")
                 .font(.caption)
                 .foregroundStyle(Theme.textSecondary)
+
+            Divider()
+
+            Label("Pair with the Autorotate Web app", systemImage: "link")
+                .foregroundStyle(Theme.accent)
+            Text("To pair with the Web app, scan the QR code from the Web Control Center to import your Infisical workspace configuration automatically.")
+                .font(.caption)
+                .foregroundStyle(Theme.textSecondary)
+
+            Button(action: {
+                isShowingScanner = true
+            }) {
+                Label("Scan Pairing QR Code", systemImage: "qrcode.viewfinder")
+            }
+            .foregroundStyle(Theme.accent)
+            .padding(.top, 4)
+
         } header: {
-            InstrumentSectionHeader(title: "Companion app", systemImage: "laptopcomputer.and.iphone")
+            InstrumentSectionHeader(title: "Companion apps", systemImage: "laptopcomputer.and.iphone")
         }
         .listRowBackground(Theme.surface)
+        .sheet(isPresented: $isShowingScanner) {
+            QRCodeScannerView()
+                .onDisappear {
+                    load() // Reload Infisical fields if they were updated by the scanner
+                }
+        }
     }
 
     // MARK: About
