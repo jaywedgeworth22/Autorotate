@@ -29,9 +29,9 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - **2026-09-01 — GROK — COMPLETED/MERGED #134 — Web Sentry SDK + rotation cron/metrics (board 12ccfa7e, PR #134, worktree `~/apps/autorotate-grok-sentry-adopt` @ `grok/sentry-fleet-adoption`).**  `@sentry/react` client (DSN-gated, sendDefaultPii false, replay 100% error / 0% session, no feedback widget) plus `@sentry/node` for scheduler cron + `rotation.success`/`rotation.fail`.  Android Sentry is iOS-only until Android ships.
 - **2026-09-04 — GROK — COMPLETED/MERGED #148 — Sentry max-features:** Web Feedback, iOS Error Replay, Android Native.
 
+- **COMPLETED — Owner: Developer portal App IDs for Autorotate (Already Registered)** — leftover after Grok #50 closed as duplicate of AG #48.  https://autorotate.codes.  Do not reopen or merge #50.  `com.jay.shellular` stays disabled.
+- **COMPLETED/MERGED #178 — Dependabot leftover radix/react PRs** — CURSOR · after #16. Remaining npm PRs blocked on serial lockfile rebase. Auto-merge not enabled on the repo. PR #17 (`fix/no-target-commit`) is another seat — do not touch.
 ## In Progress
-- **Owner: Developer portal App IDs for Autorotate** — leftover after Grok #50 closed as duplicate of AG #48.  https://autorotate.codes.  Do not reopen or merge #50.  `com.jay.shellular` stays disabled.
-- **Dependabot leftover radix/react PRs** — CURSOR · after #16. Remaining npm PRs blocked on serial lockfile rebase. Auto-merge not enabled on the repo. PR #17 (`fix/no-target-commit`) is another seat — do not touch.
 
 ## Planned / Reserved
 - Owner dashboard items: branch protection on `main` (require PR + checks `web`, `apple`, `gitleaks`); Infisical project for prod secrets; App Store Connect records before TestFlight; `SENTRY_FLEET_DSN` then sentry-ci-report.
