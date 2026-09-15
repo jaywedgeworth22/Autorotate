@@ -7,6 +7,8 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 > ⚠️ **AGENT AVAILABILITY NOTICE (2026-08-21):** KIMI is **RETIRED / UNAVAILABLE** long-term (owner directive). All agents MUST NOT assign work or wait on KIMI in-flight work. Reassign any open KIMI effort board lanes or GitHub issues to active seats (AG, GROK, CLAUDE, MONET, etc.).
 
 ## In Progress
+- **COMPLETED — GitHub Actions CI/CD for TestFlight Publish** — AG · PR #192 merged. Set up `.github/workflows/testflight.yml` to securely codesign and publish the macOS and iOS apps to TestFlight via GitHub runners. Configured repo secrets. Triggered workflow dispatch.
+
 - **2026-09-13 — AG — IN PROGRESS — Make Sentry bug reporter subtle (autoInject false + footer/nav trigger) (board `87c80482`, branch `ag/sentry-subtle-feedback`, worktree `~/apps/autorotate-ag-sentry-subtle`).**  Set `autoInject: false` in `apps/web/src/lib/sentry.ts` to eliminate floating action button.  Export `openSentryFeedback()` helper and wire subtle links into AppShell sidebar and landing Footer.
 
 ## Deployed
@@ -35,6 +37,8 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - **COMPLETED — Owner: Developer portal App IDs for Autorotate (Already Registered)** — leftover after Grok #50 closed as duplicate of AG #48.  https://autorotate.codes.  Do not reopen or merge #50.  `com.jay.shellular` stays disabled.
 - **COMPLETED/MERGED #178 — Dependabot leftover radix/react PRs** — CURSOR · after #16. Remaining npm PRs blocked on serial lockfile rebase. Auto-merge not enabled on the repo. PR #17 (`fix/no-target-commit`) is another seat — do not touch.
 ## In Progress
+- **COMPLETED — GitHub Actions CI/CD for TestFlight Publish** — AG · PR #192 merged. Set up `.github/workflows/testflight.yml` to securely codesign and publish the macOS and iOS apps to TestFlight via GitHub runners. Configured repo secrets. Triggered workflow dispatch.
+
 
 ## Planned / Reserved
 - Owner dashboard items: branch protection on `main` (require PR + checks `web`, `apple`, `gitleaks`); Infisical project for prod secrets; App Store Connect records before TestFlight; `SENTRY_FLEET_DSN` then sentry-ci-report.
