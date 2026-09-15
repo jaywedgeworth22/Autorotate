@@ -117,3 +117,4 @@ Apache License 2.0 — © 2026 Jay.  See [LICENSE](LICENSE) and [NOTICE](NOTICE)
 This project was previously distributed under the MIT License (placeholder
 copyright "Autorotate Systems").  As of 2026-08-21 new copies are Apache-2.0.
 Historical commits remain MIT as originally published.
+ 
