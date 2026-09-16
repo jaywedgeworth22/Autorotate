@@ -278,7 +278,8 @@ async function seed() {
         .values({
           secretId: s.id,
           kind,
-          configJson: config as never,
+          configEnc: encryptJson(config),
+          configJson: null,
           enabled: Math.random() > 0.08,
           lastDeliveredAt: new Date(Date.now() - rand(2, 20) * DAY),
           lastStatus: pick(["ok", "ok", "ok", "pending"]),

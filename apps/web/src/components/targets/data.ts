@@ -1,10 +1,10 @@
 import type {
+  ClientTarget,
   FileFormat,
   FileTargetConfig,
   InfisicalTargetConfig,
   KeychainTargetConfig,
   SecretWithRelations,
-  Target,
   TargetKind,
   WebhookTargetConfig,
 } from '@contracts/autorotate'
@@ -12,7 +12,7 @@ import type {
 export type { TargetKind }
 
 /** A target row joined with its owning secret's display info. */
-export interface BoundTarget extends Target {
+export interface BoundTarget extends ClientTarget {
   secretName: string
   secretStatus: string
   environment: string
@@ -59,16 +59,16 @@ export const FORMAT_LABEL: Record<FileFormat, string> = {
 /* Config accessors (configJson is unknown-shaped from the API)         */
 /* ------------------------------------------------------------------ */
 
-export function fileCfg(t: Target): FileTargetConfig {
+export function fileCfg(t: ClientTarget): FileTargetConfig {
   return (t.configJson ?? {}) as unknown as FileTargetConfig
 }
-export function infisicalCfg(t: Target): InfisicalTargetConfig {
+export function infisicalCfg(t: ClientTarget): InfisicalTargetConfig {
   return (t.configJson ?? {}) as unknown as InfisicalTargetConfig
 }
-export function webhookCfg(t: Target): WebhookTargetConfig {
+export function webhookCfg(t: ClientTarget): WebhookTargetConfig {
   return (t.configJson ?? {}) as unknown as WebhookTargetConfig
 }
-export function keychainCfg(t: Target): KeychainTargetConfig {
+export function keychainCfg(t: ClientTarget): KeychainTargetConfig {
   return (t.configJson ?? {}) as unknown as KeychainTargetConfig
 }
 

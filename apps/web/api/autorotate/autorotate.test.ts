@@ -6,6 +6,7 @@ import {
   infisicalSecretName,
   canaryDeliveryName,
   shouldMintProviderCredential,
+  readTargetConfig,
 } from "./engine";
 import { renderUpdated } from "./files";
 import { parseGlobalApiKeys, serializeGlobalApiKeys } from "./env-parse";
@@ -27,6 +28,30 @@ describe("crypto", () => {
   it("fingerprint is a 16-char sha256 prefix", () => {
     expect(fingerprint("hello")).toBe("2cf24dba5fb0a30e");
     expect(fingerprint("hello")).toHaveLength(16);
+  });
+});
+
+// P1 b052d650: targets.configJson (Infisical clientSecret, webhook auth
+// headers) used to be stored as plaintext JSON. readTargetConfig() is the
+// single accessor every call site now goes through — it must prefer the
+// encrypted column and only fall back to the deprecated plaintext column for
+// a row a prior environment has not backfilled yet (see
+// db/migrate-target-config-encryption.ts).
+describe("readTargetConfig — encryption-at-rest (P1 b052d650)", () => {
+  it("decrypts configEnc when present, ignoring any leftover configJson", () => {
+    const cfg = { clientId: "id", clientSecret: "super-secret", workspaceId: "ws" };
+    const target = { configEnc: encryptJson(cfg), configJson: { stale: true } };
+    expect(readTargetConfig(target)).toEqual(cfg);
+  });
+
+  it("falls back to plaintext configJson when configEnc is unset (pre-migration row)", () => {
+    const cfg = { url: "https://hooks.example.com/x", headers: { Authorization: "Bearer abc" } };
+    const target = { configEnc: null, configJson: cfg };
+    expect(readTargetConfig(target)).toEqual(cfg);
+  });
+
+  it("returns {} when neither column is set", () => {
+    expect(readTargetConfig({ configEnc: null, configJson: null })).toEqual({});
   });
 });
 
