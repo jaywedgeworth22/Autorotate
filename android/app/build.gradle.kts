@@ -46,7 +46,12 @@ android {
     signingConfigs {
         if (hasReleaseSigning) {
             create("release") {
-                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                // Resolve relative to the root project (android/), not this :app
+                // subproject — the release workflow decodes upload-keystore.jks into
+                // android/, matching keystorePropertiesFile above. Plain file() here
+                // would look in android/app/ instead and fail to find it the first
+                // time the signing secrets are actually configured.
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
                 storePassword = keystoreProperties.getProperty("storePassword")
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
