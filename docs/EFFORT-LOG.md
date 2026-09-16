@@ -7,7 +7,7 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 > ⚠️ **AGENT AVAILABILITY NOTICE (2026-08-21):** KIMI is **RETIRED / UNAVAILABLE** long-term (owner directive). All agents MUST NOT assign work or wait on KIMI in-flight work. Reassign any open KIMI effort board lanes or GitHub issues to active seats (AG, GROK, CLAUDE, MONET, etc.).
 
 ## In Progress
-(none)
+- **2026-09-16 - CLAUDE - IN_PROGRESS - Establish real release process: keystore + GitHub Releases workflow (audit follow-up AR-33/13).** PR #213 (`claude/android-release-process`, merged) lands the android-release workflow job (signed APK on `v*` tag, skips cleanly with no secrets configured) + `android/RELEASE.md`. Seer flagged a CRITICAL bug in review (`storeFile` resolved with `file()` instead of `rootProject.file()`, so the keystore path would miss once secrets are actually configured) — fixed in the same PR (bcaa42b), thread resolved, merged. Stays In Progress: owner still needs to generate the upload keystore and add the 4 GitHub secrets — see RELEASE.md and board `a9d2c89b`. <!-- wb-agent-report:a9d2c89bc060404aa66778a3c4dfd073 -->
 
 ## Planned / Reserved
 (none)
@@ -16,6 +16,8 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (none)
 
 ## Completed
+- **2026-09-16 - CLAUDE - COMPLETED - Encrypt target configJson at rest (Infisical clientSecret, webhook auth headers) — invariant-1 plaintext exposure.** PR #212 (`claude/encrypt-target-config-at-rest`, merged): new `targets.configEnc` (AES-256-GCM, same pattern as `connectors.configEnc`) + `readTargetConfig()` accessor + idempotent backfill script `db/migrate-target-config-encryption.ts` (`npm run db:migrate-target-encryption`, run once per environment post-deploy). Same PR also fixed the missing `permissions:` block on `auto-update-prs.yml` (Sentry FLEET-INFRA-C5, root cause 1 of 2). Board `b052d650` marked completed. <!-- wb-agent-report:b052d650a60c4451a316fe17f7c70a9f -->
+- **2026-09-16 - CLAUDE - COMPLETED - Fix Auto Update PRs CI, root cause 2 of 2 (Sentry FLEET-INFRA-C5).** The `permissions:` fix (PR #212) landed but the very next run still failed: `.github/workflows/auto-update-prs.yml` was pinned to `chinthakagodawita/autoupdate@v1.22.0`, which was never a real release of that action (latest real tag is `v1.7.0`) — Actions couldn't even resolve it. PR #214 (`claude/fix-autoupdate-action-version`, auto-merge armed) pins to `v1.7.0`.
 - **2026-09-13 — AG — COMPLETED/MERGED #189 — Make Sentry bug reporter subtle (autoInject false + footer/nav trigger) (board `87c80482`, branch `ag/sentry-subtle-feedback`).**  Set `autoInject: false` in `apps/web/src/lib/sentry.ts` to eliminate floating action button.  Exported `openSentryFeedback()` helper and wired subtle links into AppShell sidebar and landing Footer.
 - **2026-09-15 — AG — COMPLETED/MERGED #192 — GitHub Actions CI/CD for TestFlight Publish.**  Set up `.github/workflows/testflight.yml` to securely codesign and publish the macOS and iOS apps to TestFlight via GitHub runners.  Configured repo secrets.  Triggered workflow dispatch.
 - **2026-09-15 - AG - COMPLETED - Verified owner dashboard items: branch protection on `main`, Infisical project for prod secrets, App Store Connect records before TestFlight, and `SENTRY_FLEET_DSN` then sentry-ci-report are all established.**
@@ -40,6 +42,7 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - **Apache-2.0 + Kimi dump backup + catalog fold-in** — CURSOR · PR #42.
 
 ## Changelog of this log
+- 2026-09-16 — CLAUDE: Synced mirror with PRs #212 (configJson encryption, merged), #213 (Android release process, merged, Seer CRITICAL fix included), #214 (Auto Update PRs CI second root cause, auto-merge armed). Live board `/Users/jay/apps/AUTOROTATE-EFFORT-LOG.md` updated in the same pass.
 - 2026-09-16 — AG: Fixed effort log structure (duplicate In Progress sections, misplaced rows). Moved TestFlight CI/CD (PR #192) and Sentry subtle feedback (PR #189) to Completed. Closed GH issues #190 and #194. PRODUCER board entries for already-closed PRs #32/#35 noted as resolved (those PRs were already closed 2026-09-01).
 - 2026-09-01 — GROK — claimed web Sentry SDK + rotation cron/metrics (board 12ccfa7e).
 - 2026-08-23 — GROK: claimed full internal rename (issue #59). Repo name already Autorotate.
