@@ -16,7 +16,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:seed": "tsx db/seed.ts"
+    "db:seed": "tsx db/seed.ts",
+    "db:migrate-target-encryption": "tsx db/migrate-target-config-encryption.ts"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

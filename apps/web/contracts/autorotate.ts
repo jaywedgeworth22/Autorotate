@@ -91,7 +91,7 @@ export const rotationStepSchema = z.object({
 });
 export type RotationStep = z.infer<typeof rotationStepSchema>;
 
-// ── Target configs (stored in targets.configJson) ─────────────
+// ── Target configs (stored AES-256-GCM encrypted in targets.configEnc) ─
 export const infisicalTargetConfigSchema = z.object({
   baseUrl: z.string().optional(),
   clientId: z.string().optional(),
@@ -311,9 +311,22 @@ export const pairingPayloadSchema = z.object({
 export type PairingPayload = z.infer<typeof pairingPayloadSchema>;
 
 // ── Composite/response types used by the frontend ─────────────
+// The browser never receives a raw Target or Connector row: the API strips
+// configEnc (ciphertext, never useful client-side) and replaces configJson
+// with the decrypted-then-masked config object (see readTargetConfig /
+// maskTargetConfig / sanitizeSecretForClient in api/autorotate). ClientTarget
+// and ClientConnector describe that actual response shape so frontend code
+// isn't typed against fields it will never see.
+export type ClientTarget = Omit<Target, "configEnc" | "configJson"> & {
+  configJson: Record<string, unknown> | null;
+};
+export type ClientConnector = Omit<Connector, "configEnc"> & {
+  hasConfig: boolean;
+};
+
 export type SecretWithRelations = Secret & {
-  connector: Connector | null;
-  targets: Target[];
+  connector: ClientConnector | null;
+  targets: ClientTarget[];
 };
 
 export type StatsOverview = {

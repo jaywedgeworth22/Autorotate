@@ -5,12 +5,20 @@ on:
     branches:
       - main
 
+# FLEET-INFRA-C5: GITHUB_TOKEN defaults to read-only without this block, so
+# chinthakagodawita/autoupdate could never push the merge commit onto open PR
+# branches — every run failed. Grant exactly what it needs: write contents to
+# push, write pull-requests so it can read/update PR state.
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   autoupdate:
     runs-on: ubuntu-latest
     steps:
       - name: Automatically update PRs
-        uses: chinthakagodawita/autoupdate@v1.22.0
+        uses: chinthakagodawita/autoupdate@v1.7.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

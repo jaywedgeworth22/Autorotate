@@ -65,6 +65,7 @@ import {
   infisicalSecretName,
   canaryDeliveryName,
   maskTargetConfig,
+  readTargetConfig,
   RotationLockedError,
   SecretNotFoundError,
 } from "../autorotate/engine";
@@ -73,9 +74,9 @@ const ACTOR = "web-user";
 
 // F9: secrets.list/get eager-load the connector and targets.  The raw connector
 // row carries configEnc (AES-encrypted admin credentials) and each target's
-// configJson carries provider secrets — neither may reach the browser.  Strip
-// configEnc (connectorsRouter.list already does this) and mask secret fields in
-// every target config before returning.
+// configEnc/configJson carries provider secrets — neither may reach the
+// browser.  Strip configEnc (connectorsRouter.list already does this) and mask
+// secret fields in every target config before returning.
 function sanitizeSecretForClient<
   R extends { connector?: Connector | null; targets?: Target[] },
 >(row: R) {
@@ -85,10 +86,14 @@ function sanitizeSecretForClient<
     connector: connector
       ? { ...connector, hasConfig: !!connector.configEnc, configEnc: undefined as never }
       : null,
-    targets: (targetRows ?? []).map((t) => ({
-      ...t,
-      configJson: maskTargetConfig(t.configJson),
-    })),
+    targets: (targetRows ?? []).map((t) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- discard ciphertext, never send it to the browser
+      const { configEnc: _configEnc, ...targetRest } = t;
+      return {
+        ...targetRest,
+        configJson: maskTargetConfig(readTargetConfig(t)),
+      };
+    }),
   };
 }
 
@@ -464,7 +469,8 @@ export const secretsRouter = createRouter({
             await db.insert(targets).values({
               secretId: secretRow.id,
               kind: t.kind,
-              configJson: config as never,
+              configEnc: encryptJson(config),
+              configJson: null,
               enabled: t.enabled,
             });
           }
@@ -588,7 +594,12 @@ export const targetsRouter = createRouter({
         }
         await db
           .update(targets)
-          .set({ kind: input.kind, configJson: config as never, enabled: input.enabled })
+          .set({
+            kind: input.kind,
+            configEnc: encryptJson(config),
+            configJson: null,
+            enabled: input.enabled,
+          })
           .where(eq(targets.id, id));
       } else {
         const [row] = await db
@@ -596,7 +607,8 @@ export const targetsRouter = createRouter({
           .values({
             secretId: input.secretId,
             kind: input.kind,
-            configJson: config as never,
+            configEnc: encryptJson(config),
+            configJson: null,
             enabled: input.enabled,
           })
           .$returningId();
@@ -609,8 +621,12 @@ export const targetsRouter = createRouter({
       const saved = await db.query.targets.findFirst({ where: eq(targets.id, id!) });
       // Mask stored credentials on the way back out — the same redaction
       // secrets.list/get apply — so an updated target never echoes its
-      // clientSecret / auth headers to the browser.
-      return saved ? { ...saved, configJson: maskTargetConfig(saved.configJson) } : null;
+      // clientSecret / auth headers to the browser.  Never echo the raw
+      // ciphertext either.
+      if (!saved) return null;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- discard ciphertext, never send it to the browser
+      const { configEnc: _configEnc, ...savedRest } = saved;
+      return { ...savedRest, configJson: maskTargetConfig(readTargetConfig(saved)) };
     }),
 
   remove: protectedProcedure
@@ -641,7 +657,7 @@ export const targetsRouter = createRouter({
         where: eq(secrets.id, target.secretId),
       });
       const canary = `autorotate-canary-${randomToken(12)}`;
-      const cfg = (target.configJson ?? {}) as Record<string, unknown>;
+      const cfg = readTargetConfig(target);
       let ok = true;
       let message: string;
       try {

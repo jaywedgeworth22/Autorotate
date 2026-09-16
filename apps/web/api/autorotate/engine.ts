@@ -112,14 +112,26 @@ export function infisicalDeliveryMode(
 const INFISICAL_NO_CONFIG = (targetId: number): string =>
   `infisical target ${targetId} has no credentials — configure it or disable it`;
 
+// ── Target config read (encryption-at-rest, P1 b052d650) ─────────
+// targets.configEnc is AES-256-GCM ciphertext (encryptJson), same as
+// connectors.configEnc.  targets.configJson is the deprecated plaintext
+// column kept only for rows a prior environment has not yet backfilled (see
+// db/migrate-target-config-encryption.ts).  Every read goes through this
+// accessor so no call site has to know about the fallback.
+export function readTargetConfig(
+  target: Pick<Target, "configEnc" | "configJson">,
+): Record<string, unknown> {
+  const decrypted = decryptJson<Record<string, unknown>>(target.configEnc);
+  if (decrypted) return decrypted;
+  return (target.configJson ?? {}) as Record<string, unknown>;
+}
+
 // ── Target-config masking for the client (F9) ───────────────────
 // secrets.list/get return targets.configJson to the browser.  Those blobs hold
 // operator secrets (an Infisical machine-identity clientSecret, a file/webhook
 // password or token, custom Authorization headers).  Redact the known-secret
 // fields and every header VALUE while keeping display fields (path, key, url,
 // environment, secretName, service, account) so the UI still renders.
-// (Full encryption-at-rest of target configs is a larger migration — OUT OF
-// SCOPE here; see the PR body.)
 const MASKED_MARKER = "••••••";
 const SECRET_CONFIG_KEYS = new Set(["clientSecret", "password", "token"]);
 
@@ -389,7 +401,7 @@ async function pushToTarget(
   secret: Secret,
   value: string,
 ): Promise<string> {
-  const cfg = (target.configJson ?? {}) as Record<string, unknown>;
+  const cfg = readTargetConfig(target);
   switch (target.kind) {
     case "infisical": {
       const icfg = cfg as InfisicalTargetConfig;
@@ -467,7 +479,7 @@ async function verifyTarget(
   expectedValue: string,
   secret: Secret,
 ): Promise<string> {
-  const cfg = (target.configJson ?? {}) as Record<string, unknown>;
+  const cfg = readTargetConfig(target);
   const expectedFp = fingerprint(expectedValue);
   switch (target.kind) {
     case "infisical": {
@@ -991,7 +1003,7 @@ export async function checkSecretDrift(secretId: number): Promise<{
 
   for (const target of secret.targets) {
     if (!target.enabled) continue;
-    const cfg = (target.configJson ?? {}) as Record<string, unknown>;
+    const cfg = readTargetConfig(target);
     try {
       if (target.kind === "infisical") {
         const icfg = cfg as InfisicalTargetConfig;

@@ -101,6 +101,13 @@ with every Android SDK install — so no additional action recovers
 confidentiality for that artifact; the fix is that release builds are no
 longer signed with it (see AR-13).
 
+Cutting a release is now `git tag vX.Y.Z && git push origin vX.Y.Z`:
+`.github/workflows/release.yml` creates the GitHub Release from
+`CHANGELOG.md`, attaches the zipped `apple/` sources, and — once the
+one-time upload-keystore secrets exist — builds and attaches a signed
+Android release APK. See `android/RELEASE.md` for the one-time keystore
+setup and the full flow.
+
 ## Documentation
 
 - [Architecture & connector capability matrix](docs/architecture.md)

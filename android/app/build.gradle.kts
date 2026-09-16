@@ -27,8 +27,12 @@ android {
         applicationId = "codes.autorotate"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        // The release workflow (.github/workflows/release.yml) derives these from the
+        // pushed git tag (v1.2.3 -> versionName "1.2.3", versionCode major*10000 +
+        // minor*100 + patch) and passes them as env vars. A local/debug build with
+        // neither set keeps the previous hardcoded defaults.
+        versionCode = (System.getenv("ANDROID_VERSION_CODE")?.toIntOrNull()) ?: 1
+        versionName = System.getenv("ANDROID_VERSION_NAME") ?: "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -42,7 +46,12 @@ android {
     signingConfigs {
         if (hasReleaseSigning) {
             create("release") {
-                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                // Resolve relative to the root project (android/), not this :app
+                // subproject — the release workflow decodes upload-keystore.jks into
+                // android/, matching keystorePropertiesFile above. Plain file() here
+                // would look in android/app/ instead and fail to find it the first
+                // time the signing secrets are actually configured.
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
                 storePassword = keystoreProperties.getProperty("storePassword")
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
