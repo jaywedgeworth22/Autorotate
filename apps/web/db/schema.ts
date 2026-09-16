@@ -70,6 +70,20 @@ export const targets = mysqlTable("targets", {
     .notNull()
     .references(() => secrets.id),
   kind: mysqlEnum("kind", ["infisical", "file", "webhook", "keychain"]).notNull(),
+  // AES-256-GCM encrypted JSON (base64 `iv.tag.ciphertext`, via encryptJson) —
+  // holds provider secrets: an Infisical machine-identity clientSecret, a
+  // file/webhook password or token, custom webhook Authorization headers.
+  // Same pattern as connectors.configEnc above. Every write path writes only
+  // this column now (engine.ts readTargetConfig, targetsRouter, secrets.import,
+  // db/seed.ts) and explicitly nulls configJson.
+  configEnc: text("configEnc"),
+  // DEPRECATED plaintext column, kept only so a row from before this migration
+  // keeps working until it is backfilled. readTargetConfig() in engine.ts
+  // reads configEnc first and falls back to this. Run
+  // `npm run db:migrate-target-encryption` once per environment (see
+  // db/migrate-target-config-encryption.ts) to encrypt every remaining row and
+  // null this column out; drop it from the schema in a follow-up once every
+  // environment shows zero rows with configJson IS NOT NULL.
   configJson: json("configJson"),
   enabled: boolean("enabled").notNull().default(true),
   lastDeliveredAt: timestamp("lastDeliveredAt"),
