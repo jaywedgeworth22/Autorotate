@@ -7,7 +7,7 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 > ⚠️ **AGENT AVAILABILITY NOTICE (2026-08-21):** KIMI is **RETIRED / UNAVAILABLE** long-term (owner directive). All agents MUST NOT assign work or wait on KIMI in-flight work. Reassign any open KIMI effort board lanes or GitHub issues to active seats (AG, GROK, CLAUDE, MONET, etc.).
 
 ## In Progress
-(none)
+- **2026-09-16 - CLAUDE - IN_PROGRESS - Establish real release process: keystore + GitHub Releases workflow (audit follow-up AR-33/13).** PR #213 (`claude/android-release-process`, auto-merge armed) lands the android-release workflow job (signed APK on `v*` tag, skips cleanly with no secrets configured) + `android/RELEASE.md`. Stays In Progress: owner still needs to generate the upload keystore and add the 4 GitHub secrets — see RELEASE.md and board `a9d2c89b`. <!-- wb-agent-report:a9d2c89bc060404aa66778a3c4dfd073 -->
 
 ## Planned / Reserved
 (none)
@@ -16,6 +16,7 @@ Protocol: /Users/jay/apps/EFFORT-LOG-PROTOCOL.md (canonical). Live board: this f
 - (none)
 
 ## Completed
+- **2026-09-16 - CLAUDE - COMPLETED - Encrypt target configJson at rest (Infisical clientSecret, webhook auth headers) — invariant-1 plaintext exposure.** PR #212 (`claude/encrypt-target-config-at-rest`, auto-merge armed): new `targets.configEnc` (AES-256-GCM, same pattern as `connectors.configEnc`) + `readTargetConfig()` accessor + idempotent backfill script `db/migrate-target-config-encryption.ts` (`npm run db:migrate-target-encryption`, run once per environment post-deploy). Same PR also fixes Sentry FLEET-INFRA-C5 (Auto Update PRs CI failing 36x/14d — missing `permissions:` block on `auto-update-prs.yml`). Board `b052d650` marked completed. <!-- wb-agent-report:b052d650a60c4451a316fe17f7c70a9f -->
 - **2026-09-13 — AG — COMPLETED/MERGED #189 — Make Sentry bug reporter subtle (autoInject false + footer/nav trigger) (board `87c80482`, branch `ag/sentry-subtle-feedback`).**  Set `autoInject: false` in `apps/web/src/lib/sentry.ts` to eliminate floating action button.  Exported `openSentryFeedback()` helper and wired subtle links into AppShell sidebar and landing Footer.
 - **2026-09-15 — AG — COMPLETED/MERGED #192 — GitHub Actions CI/CD for TestFlight Publish.**  Set up `.github/workflows/testflight.yml` to securely codesign and publish the macOS and iOS apps to TestFlight via GitHub runners.  Configured repo secrets.  Triggered workflow dispatch.
 - **2026-09-15 - AG - COMPLETED - Verified owner dashboard items: branch protection on `main`, Infisical project for prod secrets, App Store Connect records before TestFlight, and `SENTRY_FLEET_DSN` then sentry-ci-report are all established.**
