@@ -7,6 +7,8 @@ import {
   verifyChainLink,
   infisicalDeliveryMode,
   maskTargetConfig,
+  mergePreservedTargetSecrets,
+  TARGET_SECRET_MASK,
   NO_TARGET_REFUSAL,
 } from "./engine";
 import {
@@ -467,5 +469,65 @@ describe("F9 — maskTargetConfig redacts secrets, keeps display fields", () => 
   it("returns null for a null/undefined config", () => {
     expect(maskTargetConfig(null)).toBeNull();
     expect(maskTargetConfig(undefined)).toBeNull();
+  });
+});
+
+describe("mergePreservedTargetSecrets — edit must not wipe stored creds", () => {
+  it("restores clientSecret when the wizard omits it", () => {
+    const existing = {
+      clientId: "id",
+      clientSecret: "super-secret",
+      workspaceId: "ws",
+      environment: "prod",
+      secretPath: "/",
+    };
+    const incoming = {
+      clientId: "id",
+      workspaceId: "ws",
+      environment: "prod",
+      secretPath: "/apps",
+    };
+    expect(mergePreservedTargetSecrets(existing, incoming)).toEqual({
+      ...incoming,
+      clientSecret: "super-secret",
+    });
+  });
+
+  it("does not persist the mask as the live clientSecret", () => {
+    const existing = { clientId: "id", clientSecret: "super-secret", workspaceId: "ws" };
+    const incoming = { clientId: "id", clientSecret: TARGET_SECRET_MASK, workspaceId: "ws" };
+    expect(mergePreservedTargetSecrets(existing, incoming).clientSecret).toBe("super-secret");
+  });
+
+  it("lets an explicit replacement overwrite the stored secret", () => {
+    const existing = { clientSecret: "old-secret" };
+    const incoming = { clientSecret: "new-secret" };
+    expect(mergePreservedTargetSecrets(existing, incoming).clientSecret).toBe("new-secret");
+  });
+
+  it("keeps webhook Authorization headers when the form omits them", () => {
+    const existing = {
+      url: "https://hooks.example.com/x",
+      method: "POST",
+      headers: { Authorization: "Bearer live-token" },
+      includeValue: false,
+    };
+    const incoming = {
+      url: "https://hooks.example.com/y",
+      method: "PUT",
+      includeValue: true,
+    };
+    expect(mergePreservedTargetSecrets(existing, incoming)).toEqual({
+      ...incoming,
+      headers: { Authorization: "Bearer live-token" },
+    });
+  });
+
+  it("keeps headers when every incoming value is the mask", () => {
+    const existing = { headers: { Authorization: "Bearer live-token" } };
+    const incoming = { headers: { Authorization: TARGET_SECRET_MASK } };
+    expect(mergePreservedTargetSecrets(existing, incoming).headers).toEqual({
+      Authorization: "Bearer live-token",
+    });
   });
 });

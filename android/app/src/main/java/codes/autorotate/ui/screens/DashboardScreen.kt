@@ -42,7 +42,7 @@ fun DashboardScreen(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "Autorotate.Codes",
+                            "Autorotate",
                             fontFamily = FontFamily.Default,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary

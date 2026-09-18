@@ -132,8 +132,43 @@ export function readTargetConfig(
 // password or token, custom Authorization headers).  Redact the known-secret
 // fields and every header VALUE while keeping display fields (path, key, url,
 // environment, secretName, service, account) so the UI still renders.
-const MASKED_MARKER = "••••••";
-const SECRET_CONFIG_KEYS = new Set(["clientSecret", "password", "token"]);
+export const TARGET_SECRET_MASK = "••••••";
+const SECRET_CONFIG_KEYS = ["clientSecret", "password", "token"] as const;
+
+function isAbsentOrMaskedSecret(value: unknown): boolean {
+  return value === undefined || value === null || value === "" || value === TARGET_SECRET_MASK;
+}
+
+function headersAreAbsentOrMasked(headers: unknown): boolean {
+  if (headers === undefined || headers === null) return true;
+  if (typeof headers !== "object") return false;
+  const values = Object.values(headers as Record<string, unknown>);
+  if (values.length === 0) return true;
+  return values.every((value) => isAbsentOrMaskedSecret(value));
+}
+
+/**
+ * Keep stored target credentials when the client omits them or echoes the
+ * mask.  TargetWizard edit clears clientSecret and never re-sends webhook
+ * headers, and targets.upsert used to encrypt that partial object as the
+ * whole configEnc — the next rotation then F4-rejected Infisical or dropped
+ * Authorization headers.
+ */
+export function mergePreservedTargetSecrets(
+  existing: Record<string, unknown>,
+  incoming: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...incoming };
+  for (const key of SECRET_CONFIG_KEYS) {
+    if (isAbsentOrMaskedSecret(out[key]) && !isAbsentOrMaskedSecret(existing[key])) {
+      out[key] = existing[key];
+    }
+  }
+  if (headersAreAbsentOrMasked(out.headers) && existing.headers && typeof existing.headers === "object") {
+    out.headers = existing.headers;
+  }
+  return out;
+}
 
 export function maskTargetConfig(config: unknown): Record<string, unknown> | null {
   if (config === null || config === undefined || typeof config !== "object") {
@@ -141,13 +176,13 @@ export function maskTargetConfig(config: unknown): Record<string, unknown> | nul
   }
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(config as Record<string, unknown>)) {
-    if (SECRET_CONFIG_KEYS.has(key)) {
+    if ((SECRET_CONFIG_KEYS as readonly string[]).includes(key)) {
       // Redact a set value; leave an empty/unset one so the UI shows "not set".
-      out[key] = value ? MASKED_MARKER : value;
+      out[key] = value ? TARGET_SECRET_MASK : value;
     } else if (key === "headers" && value && typeof value === "object") {
       const headers = value as Record<string, unknown>;
       out[key] = Object.fromEntries(
-        Object.keys(headers).map((name) => [name, MASKED_MARKER]),
+        Object.keys(headers).map((name) => [name, TARGET_SECRET_MASK]),
       );
     } else {
       out[key] = value;

@@ -159,7 +159,7 @@ export default function AppShell() {
             <LogoMark size={26} />
             {!iconRail && (
               <span className="font-display text-base font-semibold">
-                Autorotate<span className="text-spin">.Codes</span>
+                Autorotate
               </span>
             )}
           </Link>
