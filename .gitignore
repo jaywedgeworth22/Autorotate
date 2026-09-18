@@ -20,6 +20,9 @@ xcuserdata/
 # Autorotate local file targets
 autorotate-files/
 
+# Archived integration-tree orphans (untracked files removed from /Users/jay/Code/Autorotate on 2026-09-18; kept locally for the record)
+_archived_untracked_from_integration_tree/
+
 # Logs
 *.log
 
