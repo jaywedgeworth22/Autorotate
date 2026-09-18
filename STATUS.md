@@ -2,6 +2,10 @@
 
 ## Current Handoff
 
+### 2026-09-18 CURSOR — Effort Issues Sync Crons margin (FLEET-INFRA-CD)
+
+Daily `41 5 * * *` board mirror always succeeds; GitHub starts it 3.6-5.3h late so the 15-minute Sentry margin pages at 05:56Z.  Same override as ST #3194 / #3387 / #3389: `CHECKIN_MARGIN_OVERRIDES["Effort Issues Sync"] = 600`.  Cron unchanged.  Extra-ship no.  No Coolify.  Do not resolve CD on merge — wait for the next scheduled upsert of `ci-autorotate-effort-issues-sync`.  Rollout: `docs/rollouts/2026-09-18-effort-issues-sync-monitor-margin.md`.
+
 ### 2026-09-01 GROK — Web Sentry SDK (`grok/sentry-fleet-adoption`)
 
 Client `@sentry/react` (DSN-gated, `sendDefaultPii: false`, replay 0% session / 100% error, no feedback widget) plus Node scheduler cron + `rotation.success` / `rotation.fail`.  Rollout: `docs/rollouts/2026-09-01-web-sentry-sdk.md`.  **Android Sentry is iOS-only until Android ships.**
