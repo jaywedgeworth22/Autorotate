@@ -52,6 +52,10 @@ button:focus-visible {
 }
 
 header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
   padding: 24px 20px;
   border-bottom: 1px solid var(--color-border);
 }
@@ -60,6 +64,12 @@ header {
   font-weight: 700;
   font-size: 1.1rem;
   letter-spacing: 0.01em;
+}
+
+/* The site's own address, shown the way its owner writes it. */
+.domain {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
 }
 
 main {
