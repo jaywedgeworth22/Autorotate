@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autorotate</title>
+  <meta name="description" content="Autorotate is a multi-platform, zero-plaintext secret-rotation lifecycle engine for Infisical, files, the Apple Keychain, the Android Keystore, and HTTPS webhooks.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <span class="wordmark">Autorotate</span>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1>Secret Rotation That Never Persists Plaintext</h1>
+      <p class="lede">
+        Autorotate is a multi-platform, zero-plaintext secret-rotation lifecycle engine: a web control center plus native iOS, macOS, and Android companion apps that keep credentials fresh across Infisical, files, the Apple Keychain, the Android Keystore, and generic HTTPS webhooks.  Secret material exists only in memory during a rotation and is never written to disk, logs, or the database unencrypted.
+      </p>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://github.com/jaywedgeworth22/Autorotate">View On GitHub</a>
+        <a class="btn btn-secondary" href="https://github.com/jaywedgeworth22/Autorotate/blob/main/docs/architecture.md">Read The Architecture</a>
+      </div>
+      <p class="note">The companion apps are built from source today; packaged releases are not published yet.</p>
+    </section>
+
+    <section class="pipeline">
+      <h2>How A Rotation Works</h2>
+      <p>Every rotation runs the same strict state machine, in order.</p>
+      <ol class="stages">
+        <li>
+          <span class="stage-name">Lock</span>
+          <span class="stage-desc">Acquire a per-secret lock so no other run starts while one is already in progress.</span>
+        </li>
+        <li>
+          <span class="stage-name">Rotate</span>
+          <span class="stage-desc">The connector produces a new value for the credential.</span>
+        </li>
+        <li>
+          <span class="stage-name">Push</span>
+          <span class="stage-desc">The new value is written to every enabled target — Infisical, a file, the Apple Keychain, the Android Keystore, or a webhook.</span>
+        </li>
+        <li>
+          <span class="stage-name">Verify</span>
+          <span class="stage-desc">An optional read-back confirms the new value landed correctly.</span>
+        </li>
+        <li>
+          <span class="stage-name">Commit</span>
+          <span class="stage-desc">Once every required target succeeds, the secret record updates to the new version.</span>
+        </li>
+        <li>
+          <span class="stage-name">Audit</span>
+          <span class="stage-desc">A hash-chained record is appended, so the rotation history stays tamper-evident.</span>
+        </li>
+      </ol>
+      <p class="note">Any failure aborts and rolls back before new material is committed.</p>
+    </section>
+
+    <section class="targets">
+      <h2>What It Rotates</h2>
+      <p>Autorotate keeps credentials fresh across five kinds of targets.</p>
+      <ul class="target-list">
+        <li>Infisical projects</li>
+        <li>Local and remote files</li>
+        <li>Apple Keychain</li>
+        <li>Android Keystore</li>
+        <li>Generic HTTPS webhooks</li>
+      </ul>
+    </section>
+
+    <section class="zero-plaintext">
+      <h2>Zero Plaintext</h2>
+      <p>
+        Secret material exists only in memory for the duration of a rotation run — it is never written to disk, logs, or the database unencrypted.  Every run also appends a hash-chained audit record, so the rotation history is tamper-evident.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <p class="wordmark-foot">Autorotate</p>
+    <p>
+      Open source under the <a href="https://github.com/jaywedgeworth22/Autorotate/blob/main/LICENSE">Apache License 2.0</a>, version 1.0.0.  See the <a href="https://github.com/jaywedgeworth22/Autorotate/blob/main/SECURITY.md">security policy</a> for the zero-plaintext and audit-chain design.
+    </p>
+    <p><a href="https://github.com/jaywedgeworth22/Autorotate">github.com/jaywedgeworth22/Autorotate</a></p>
+  </footer>
+</body>
+</html>
