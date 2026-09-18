@@ -1,6 +1,6 @@
 # Autorotate — Architecture & Rotation Engine Spec
 
-Autorotate (`Autorotate.codes`) rotates secrets across as many platforms as possible and propagates the new
+Autorotate (`autorotate.codes`) rotates secrets across as many platforms as possible and propagates the new
 values to every configured target: **Infisical**, **local secret files** (`.env`, JSON,
 YAML, TOML, INI like `~/.aws/credentials`), **Apple Keychain** (native iOS & macOS apps),
 **Android Keystore** (native Android app), and **HTTPS Webhooks**.

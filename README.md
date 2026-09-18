@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](CHANGELOG.md)
 
-**Autorotate is a multi-platform zero-plaintext secret-rotation lifecycle engine**: a web control center (`Autorotate.codes`) plus native iOS, macOS, and Android companion apps that keep credentials fresh across Infisical, files, Apple Keychain, Android Keystore, and generic webhooks — without ever persisting plaintext secrets.
+**Autorotate is a multi-platform zero-plaintext secret-rotation lifecycle engine**: a web control center (`autorotate.codes`) plus native iOS, macOS, and Android companion apps that keep credentials fresh across Infisical, files, Apple Keychain, Android Keystore, and generic webhooks — without ever persisting plaintext secrets.
 
 ## What it does
 
@@ -47,7 +47,7 @@ Autorotate/
 
 ## Quickstart
 
-### Web control center (`Autorotate.codes`)
+### Web control center (`autorotate.codes`)
 
 ```bash
 cd apps/web
