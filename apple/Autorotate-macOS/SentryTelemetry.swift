@@ -20,6 +20,7 @@ enum SentryTelemetry {
         SentrySDK.start { options in
             options.dsn = dsn
             options.environment = "production"
+            options.releaseName = releaseName()
             options.tracesSampleRate = 0.2
             options.profilesSampleRate = 0.1
             options.enableAppHangTracking = true
@@ -42,5 +43,17 @@ enum SentryTelemetry {
                 return event
             }
         }
+    }
+
+    /// `<bundle-id>@<CFBundleShortVersionString>+<CFBundleVersion>`, e.g.
+    /// `codes.autorotate.macos@1.0+3` — matches Sentry's own default Cocoa
+    /// release format, set explicitly here so it never depends on
+    /// SDK-version defaulting behavior.
+    private static func releaseName() -> String {
+        let info = Bundle.main.infoDictionary
+        let version = (info?["CFBundleShortVersionString"] as? String) ?? "0.0"
+        let build = (info?["CFBundleVersion"] as? String) ?? "0"
+        let bundleId = Bundle.main.bundleIdentifier ?? "codes.autorotate.macos"
+        return "\(bundleId)@\(version)+\(build)"
     }
 }
