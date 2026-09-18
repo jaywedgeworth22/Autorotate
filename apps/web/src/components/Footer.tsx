@@ -59,7 +59,7 @@ export default function Footer() {
             <Link to="/" className="flex items-center gap-3">
               <LogoMark size={28} />
               <span className="font-display text-lg font-semibold tracking-[-0.02em]">
-                Autorotate<span className="text-spin">.Codes</span>
+                Autorotate
               </span>
             </Link>
             <p className="text-mono-s mt-4 text-ink-muted">
@@ -67,7 +67,13 @@ export default function Footer() {
               <br />
               store nothing.
               <br />
-              <span className="text-spin font-medium">Autorotate.codes</span>
+              <a
+                href="https://autorotate.codes"
+                className="text-spin font-medium underline-offset-2 hover:underline"
+                rel="noopener"
+              >
+                autorotate.codes
+              </a>
             </p>
 
           </div>
