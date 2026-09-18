@@ -71,7 +71,7 @@ git -C /Users/jay/Code/Autorotate worktree add -b <prefix>/<slug> ~/apps/autorot
 
 ## Mission
 
-Autorotate (`Autorotate.codes`) rotates secrets across platforms without ever persisting plaintext.
+Autorotate (`autorotate.codes`) rotates secrets across platforms without ever persisting plaintext.
 Agents working here extend the web control center, the Apple companion apps, the Android companion app,
 and the shared AutorotateCore engine **without weakening the security
 invariants**. When a task and an invariant conflict, the invariant wins —
