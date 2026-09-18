@@ -54,7 +54,7 @@ fun QRPairingScannerScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Text(
-                "Point your camera at the QR code displayed on the Autorotate.codes Web Control Center (Pairing Modal) to securely link workspaces.",
+                "Point your camera at the QR code displayed on the autorotate.codes Web Control Center (Pairing Modal) to securely link workspaces.",
                 fontSize = 13.sp,
                 color = TextSecondary,
                 modifier = Modifier.fillMaxWidth()
