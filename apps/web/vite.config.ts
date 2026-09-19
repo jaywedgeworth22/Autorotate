@@ -51,7 +51,6 @@ const sentryRelease = resolveSentryRelease();
 // setting it here (before Vite reads env) needs no extra `define` wiring.
 // `??=` never overrides an operator-set value.
 process.env.VITE_SENTRY_RELEASE ??= sentryRelease;
->>>>>>> 7b0c950 (feat(autorotate): tag every Sentry event with a release name across web + iOS + macOS + Android)
 
 // https://vite.dev/config/
 export default defineConfig({
