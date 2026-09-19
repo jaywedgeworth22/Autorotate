@@ -13,7 +13,7 @@ jobs:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
 
       - name: Extract release notes for this tag from CHANGELOG.md
         id: notes
@@ -51,7 +51,7 @@ jobs:
     # background).
     needs: release
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
 
       - name: Set up JDK 17
         uses: actions/setup-java@v6
