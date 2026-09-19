@@ -87,6 +87,37 @@ To produce a signed release build locally, create `android/keystore.properties`
 that file the release build type is left unsigned rather than falling back to
 the debug key.
 
+## Sentry
+
+Every surface (web client, web/Node server, iOS, macOS, Android) carries a
+DSN-gated Sentry init that is a complete no-op when its DSN is unset — see
+each platform's `.env.example` / Info.plist / `BuildConfig` for the DSN name.
+Session Replay stays at 0% session-sample for the web and Android surfaces
+(this is a secrets app); error-sample stays at 100% everywhere it's
+supported.
+
+Every event is tagged with a `release` derived from the deploying commit
+(`VERCEL_GIT_COMMIT_SHA` / `SOURCE_COMMIT` / `GITHUB_SHA` for `apps/web`,
+`CFBundleShortVersionString`+`CFBundleVersion` for iOS/macOS,
+`versionName`+`versionCode` for Android) so a regression can be bisected to
+the build that shipped it.
+
+Source-map upload for `apps/web`'s client bundle is opt-in and requires
+three env vars, none of which are set in CI today (so `npm run build` is
+unchanged unless you set them locally or in a deploy environment):
+
+| Var | Meaning | Default |
+|---|---|---|
+| `SENTRY_AUTH_TOKEN` | Project-scoped Sentry auth token — never a DSN.  Presence is the on/off switch for the whole upload step (`@sentry/vite-plugin`). | unset (upload off) |
+| `SENTRY_ORG` | Sentry organization slug. | `jays-services` |
+| `SENTRY_PROJECT` | Sentry project slug the maps are uploaded to — must match the project the corresponding DSN reports events into, or the maps deobfuscate nothing. | `autorotate-web` |
+
+There is no Apple TestFlight/archive ship script in this repo yet (`apple/`
+only builds for the Simulator in CI and ships as zipped source via
+`release.yml`), so there is nowhere to hook a `sentry-cli debug-files
+upload` step for dSYMs today — add it to that script gated on
+`SENTRY_AUTH_TOKEN` the same way when one exists.
+
 ## Releases
 
 Distributable artifacts (APK, IPA, `.pkg`) are published through
