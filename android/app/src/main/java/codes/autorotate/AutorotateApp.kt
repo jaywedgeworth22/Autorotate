@@ -24,6 +24,11 @@ class AutorotateApp : Application() {
         if (dsn.isNotBlank()) {
             SentryAndroid.init(this) { options ->
                 options.dsn = dsn
+                // <applicationId>@<versionName>+<versionCode>, e.g.
+                // codes.autorotate@1.0+1 — matches the release format used
+                // by the iOS/macOS Cocoa init sites.
+                options.release =
+                    "${BuildConfig.APPLICATION_ID}@${BuildConfig.VERSION_NAME}+${BuildConfig.VERSION_CODE}"
                 options.isSendDefaultPii = false
                 options.isAttachScreenshot = false
                 options.isAttachViewHierarchy = false
