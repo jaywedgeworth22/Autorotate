@@ -1,8 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import {
   scrubBreadcrumb,
   scrubEvent,
   recordRotationOutcome,
+  resolveServerRelease,
   sentryServerEnabled,
 } from "./sentry";
 
@@ -106,5 +107,120 @@ describe("rotation metrics", () => {
     expect(() => recordRotationOutcome("committed")).not.toThrow();
     expect(() => recordRotationOutcome("failed")).not.toThrow();
     expect(() => recordRotationOutcome("partial")).not.toThrow();
+  });
+});
+
+describe("resolveServerRelease", () => {
+  const keys = [
+    "SENTRY_RELEASE",
+    "VERCEL_GIT_COMMIT_SHA",
+    "SOURCE_COMMIT",
+    "GITHUB_SHA",
+  ] as const;
+  const saved: Record<string, string | undefined> = {};
+
+  afterEach(() => {
+    for (const key of keys) {
+      if (saved[key] === undefined) delete process.env[key];
+      else process.env[key] = saved[key];
+      delete saved[key];
+    }
+  });
+
+  function set(key: (typeof keys)[number], value: string | undefined) {
+    saved[key] = process.env[key];
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+
+  it("is undefined when no commit SHA source is set", () => {
+    for (const key of keys) set(key, undefined);
+    expect(resolveServerRelease()).toBeUndefined();
+  });
+
+  it("prefers an explicit SENTRY_RELEASE override", () => {
+    for (const key of keys) set(key, undefined);
+    set("SENTRY_RELEASE", "abcdef1234567890");
+    set("VERCEL_GIT_COMMIT_SHA", "ffffffffffffffffffffffffffffffffffffffff");
+    expect(resolveServerRelease()).toBe("autorotate-web@abcdef123456");
+  });
+
+  it("falls back to VERCEL_GIT_COMMIT_SHA, then SOURCE_COMMIT, then GITHUB_SHA", () => {
+    for (const key of keys) set(key, undefined);
+    set("VERCEL_GIT_COMMIT_SHA", "1111111111111111111111111111111111111111");
+    expect(resolveServerRelease()).toBe("autorotate-web@111111111111");
+
+    set("VERCEL_GIT_COMMIT_SHA", undefined);
+    set("SOURCE_COMMIT", "2222222222222222222222222222222222222222");
+    expect(resolveServerRelease()).toBe("autorotate-web@222222222222");
+
+    set("SOURCE_COMMIT", undefined);
+    set("GITHUB_SHA", "3333333333333333333333333333333333333333");
+    expect(resolveServerRelease()).toBe("autorotate-web@333333333333");
+  });
+});
+
+describe("F12 — Auto Update PRs workflow permissions", () => {
+  it("declares a top-level permissions block that can push and update PRs", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { dirname, join } = await import("node:path");
+    const { fileURLToPath } = await import("node:url");
+    const workflow = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        "../../../../.github/workflows/auto-update-prs.yml",
+      ),
+      "utf8",
+    );
+    const beforeJobs = workflow.split(/^jobs:/m)[0];
+    expect(beforeJobs).toMatch(/^permissions:/m);
+    expect(beforeJobs).toMatch(/contents:\s*write/);
+    expect(beforeJobs).toMatch(/pull-requests:\s*write/);
+  });
+});
+
+describe("F13 — release tagging on the other SDK init sites", () => {
+  async function readSibling(relativePath: string): Promise<string> {
+    const { readFileSync } = await import("node:fs");
+    const { dirname, join } = await import("node:path");
+    const { fileURLToPath } = await import("node:url");
+    return readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), relativePath),
+      "utf8",
+    );
+  }
+
+  it("iOS sets releaseName from CFBundleShortVersionString + CFBundleVersion", async () => {
+    const src = await readSibling(
+      "../../../../apple/Autorotate-iOS/SentryTelemetry.swift",
+    );
+    expect(src).toMatch(/options\.releaseName\s*=/);
+    expect(src).toMatch(/CFBundleShortVersionString/);
+    expect(src).toMatch(/CFBundleVersion/);
+  });
+
+  it("macOS sets releaseName from CFBundleShortVersionString + CFBundleVersion", async () => {
+    const src = await readSibling(
+      "../../../../apple/Autorotate-macOS/SentryTelemetry.swift",
+    );
+    expect(src).toMatch(/options\.releaseName\s*=/);
+    expect(src).toMatch(/CFBundleShortVersionString/);
+    expect(src).toMatch(/CFBundleVersion/);
+  });
+
+  it("Android sets options.release from BuildConfig version fields", async () => {
+    const src = await readSibling(
+      "../../../../android/app/src/main/java/codes/autorotate/AutorotateApp.kt",
+    );
+    expect(src).toMatch(/options\.release\s*=/);
+    expect(src).toMatch(/BuildConfig\.VERSION_NAME/);
+    expect(src).toMatch(/BuildConfig\.VERSION_CODE/);
+  });
+
+  it("vite.config.ts wires the source-map upload gated on SENTRY_AUTH_TOKEN", async () => {
+    const src = await readSibling("../../vite.config.ts");
+    expect(src).toMatch(/sentryVitePlugin/);
+    expect(src).toMatch(/SENTRY_AUTH_TOKEN/);
+    expect(src).toMatch(/sentryAuthToken\s*\?/);
   });
 });

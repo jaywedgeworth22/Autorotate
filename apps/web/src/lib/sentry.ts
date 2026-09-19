@@ -79,6 +79,13 @@ export function initSentry(): void {
     (import.meta.env.MODE as string | undefined) ||
     "production";
 
+  // Set by vite.config.ts at build time (VERCEL_GIT_COMMIT_SHA / SOURCE_COMMIT /
+  // GITHUB_SHA / local git SHA / package version, in that order) so issues are
+  // tagged to the commit that shipped them.  Untagged (undefined) only when
+  // none of those were available, e.g. a bare `vite build` outside git.
+  const release =
+    (import.meta.env.VITE_SENTRY_RELEASE as string | undefined)?.trim() || undefined;
+
   const tracesSampleRate = Number(
     (import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE as string | undefined)?.trim() ??
       "0.2",
@@ -110,6 +117,7 @@ export function initSentry(): void {
   Sentry.init({
     dsn,
     environment: env,
+    release,
     sendDefaultPii: false,
     tracesSampleRate: Number.isFinite(tracesSampleRate)
       ? Math.min(Math.max(tracesSampleRate, 0), 1)

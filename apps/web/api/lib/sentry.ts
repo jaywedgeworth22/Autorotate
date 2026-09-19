@@ -5,6 +5,11 @@
  * Infisical: SENTRY_DSN_WEB (and VITE_SENTRY_DSN) → Sentry project autorotate-web.
  * Crash + cron for the 60s scheduler.  Metrics: rotation.success / rotation.fail.
  * Never attach secret material.
+ *
+ * Release: tagged from VERCEL_GIT_COMMIT_SHA / SOURCE_COMMIT / GITHUB_SHA, see
+ * resolveServerRelease() below — same project (autorotate-web) and the same
+ * commit-SHA scheme vite.config.ts uses for the browser bundle, so a single
+ * deploy's client and server events line up under one release in Sentry.
  */
 
 import * as Sentry from "@sentry/node";
@@ -50,6 +55,24 @@ export function scrubEvent<T extends ScrubbableEvent>(event: T): T {
   return event;
 }
 
+/**
+ * Resolve a Sentry release for the running server process.  Precedence: an
+ * explicit SENTRY_RELEASE override -> Vercel's VERCEL_GIT_COMMIT_SHA (a
+ * System Environment Variable, present at both build and runtime) ->
+ * Coolify-style SOURCE_COMMIT -> GitHub Actions' GITHUB_SHA.  Returns
+ * undefined (no release tag) when none are set, e.g. plain local dev — the
+ * production/CI-deployed paths above always set one of these.  Exported for
+ * unit tests; never throws.
+ */
+export function resolveServerRelease(): string | undefined {
+  const sha =
+    process.env.SENTRY_RELEASE ||
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    process.env.SOURCE_COMMIT ||
+    process.env.GITHUB_SHA;
+  return sha ? `autorotate-web@${sha.slice(0, 12)}` : undefined;
+}
+
 export function scrubBreadcrumb(
   breadcrumb: Sentry.Breadcrumb,
 ): Sentry.Breadcrumb {
@@ -77,6 +100,7 @@ export function initSentryServer(): void {
   Sentry.init({
     dsn,
     environment: env,
+    release: resolveServerRelease(),
     sendDefaultPii: false,
     tracesSampleRate: Number.isFinite(tracesSampleRate)
       ? Math.min(Math.max(tracesSampleRate, 0), 1)
