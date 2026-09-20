@@ -59,22 +59,30 @@ final class FileTargetsTests: XCTestCase {
     }
 
     func testTempFileCleanedUpOnWriteFailure() throws {
-        // AR31-07: when the rename fails the temp dotfile must NOT remain
-        // on disk — it would carry the plaintext in clear until the
-        // operator notices.
-        let path = tmpDir.appendingPathComponent("fail-env").path
-        try "old=value".write(toFile: path, atomically: true, encoding: .utf8)
-
-        // Force a collision by creating an unwriteable directory at the
-        // intended target path.
-        let blocker = tmpDir.appendingPathComponent("block-dir")
-        try FileManager.default.createDirectory(at: blocker,
+        // AR31-07: when the write OR rename fails, the temp dotfile must
+        // NOT remain on disk — it would carry the plaintext in clear
+        // until the operator notices.  Set up a destination whose parent
+        // directory is read-only so the rename refuses.  chflags hidden
+        // + chmod 0500 is the most portable way to make POSIX rename fail
+        // without involving mount(8).
+        let readonlyDir = tmpDir.appendingPathComponent("readonly-dir")
+        try FileManager.default.createDirectory(at: readonlyDir,
                                                withIntermediateDirectories: true)
+        // Make the directory read-only so atomicWrite cannot create a
+        // temp file inside it.  Use 0500 (r-x) — no write bit for owner.
+        try FileManager.default.setAttributes(
+            [.posixPermissions: NSNumber(value: Int16(0o500))],
+            ofItemAtPath: readonlyDir.path)
 
-        let collidingPath = blocker.appendingPathComponent("fail-env").path
+        let target = readonlyDir.appendingPathComponent("secret.env").path
         XCTAssertThrowsError(
-            try target.atomicWrite(contents: "new=value", to: collidingPath)
+            try target.atomicWrite(contents: "new=value", to: target)
         )
+
+        // Restore permissions so tearDown can clean up.
+        try FileManager.default.setAttributes(
+            [.posixPermissions: NSNumber(value: Int16(0o700))],
+            ofItemAtPath: readonlyDir.path)
 
         // No leftover dotfiles in the parent directory.
         let remaining = (try? FileManager.default.contentsOfDirectory(atPath: tmpDir.path)) ?? []

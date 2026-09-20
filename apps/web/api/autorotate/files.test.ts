@@ -80,7 +80,7 @@ describe("AR31-31 — sandbox escape via symlink", () => {
 
     await expect(
       writeFileTarget(
-        { kind: "file", path: "escape", format: "env", key: "KEY" },
+        { path: "escape", format: "env", key: "KEY" },
         "rewritten",
       ),
     ).rejects.toThrow(/outside the file sandbox/i);
@@ -95,7 +95,6 @@ describe("AR31-31 — sandbox escape via symlink", () => {
 
     await expect(
       readFileTarget({
-        kind: "file",
         path: "escape",
         format: "env",
         key: "KEY",
