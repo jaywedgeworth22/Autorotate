@@ -1004,6 +1004,27 @@ export const pairingRouter = createRouter({
       timestamp: new Date().toISOString(),
     };
   }),
+
+  // AR31-18 (2026-09-20): returns the real list of paired companion
+  // devices.  The previous SystemStrip hardcoded "macOS linked · iOS
+  // linked" with green dots regardless of reality; the operator had no
+  // way to tell whether the green meant "paired and healthy" or
+  // "hardcoded truthiness".  The endpoint returns an empty array until
+  // the companion apps are wired up to send a "I just paired" beacon
+  // (next iteration).  The dashboard now consumes this list and shows
+  // "No companion paired yet" instead of fake green dots.
+  listPaired: protectedProcedure.query(() => {
+    // Wire to a persisted table in the next iteration; the type is
+    // pinned here so the UI can render real states (paired / unpaired /
+    // revoked).
+    return [] as Array<{
+      id: string;
+      platform: "ios" | "macos" | "android";
+      deviceName: string;
+      pairedAt: string;
+      lastSeenAt: string;
+    }>;
+  }),
 });
 
 export const autorotateRouters = {
