@@ -47,8 +47,16 @@ class SecretStore(private val storage: SecretStorage) {
     }
 
     private fun sha256Prefix(input: String): String {
+        // AR31-11 (2026-09-20): the prefix was 8 hex chars.  With 8 hex
+        // chars (32 bits) the search space is small enough that an
+        // accidentally-leaked fingerprint could be brute-forced to find the
+        // matching plaintext from a short, low-entropy secret.  16 hex
+        // chars (64 bits) matches the web and Apple implementation and is
+        // the right collision-resistance / bandwidth trade-off for a UI
+        // fingerprint.  Keep it `substring`-only so the digest math itself
+        // stays untouched.
         val md = MessageDigest.getInstance("SHA-256")
         val digest = md.digest(input.toByteArray())
-        return digest.joinToString("") { "%02x".format(it) }.substring(0, 8)
+        return digest.joinToString("") { "%02x".format(it) }.substring(0, 16)
     }
 }
