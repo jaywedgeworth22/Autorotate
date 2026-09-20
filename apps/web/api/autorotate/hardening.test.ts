@@ -8,9 +8,11 @@ import {
   infisicalDeliveryMode,
   maskTargetConfig,
   mergePreservedTargetSecrets,
+  sanitizeStepMessage,
   assertPushWebhooksReady,
   TARGET_SECRET_MASK,
   NO_TARGET_REFUSAL,
+  RUN_STEP_MESSAGE_CAP,
 } from "./engine";
 import {
   isForbiddenAddress,
@@ -687,5 +689,70 @@ describe("AR31-30 — webhook target push in real mode", () => {
     expect(() =>
       assertPushWebhooksReady([{ enabled: true, url: "" }]),
     ).not.toThrow();
+  });
+});
+
+// ── AR31-06 — sanitizeStepMessage (run history / verify detail) ──
+describe("AR31-06 — sanitizeStepMessage", () => {
+  it("caps messages at RUN_STEP_MESSAGE_CAP characters", () => {
+    const long = "x".repeat(RUN_STEP_MESSAGE_CAP * 3);
+    const out = sanitizeStepMessage(long);
+    expect(out.length).toBeLessThanOrEqual(RUN_STEP_MESSAGE_CAP + 1); // +1 for "…"
+    expect(out.endsWith("…")).toBe(true);
+  });
+
+  it("redacts Stripe live keys", () => {
+    const out = sanitizeStepMessage("Stripe said: sk_live_abcdef1234567890XYZ");
+    expect(out).not.toContain("sk_live_");
+    expect(out).toContain("[REDACTED]");
+  });
+
+  it("redacts GitHub tokens", () => {
+    const out = sanitizeStepMessage("GitHub response: ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    expect(out).not.toContain("ghp_");
+  });
+
+  it("redacts AWS access keys", () => {
+    const out = sanitizeStepMessage("AWS error: AKIAIOSFODNN7EXAMPLE leaked");
+    expect(out).not.toContain("AKIAIOSFODNN7EXAMPLE");
+  });
+
+  it("redacts Authorization Bearer headers", () => {
+    const out = sanitizeStepMessage(
+      `Failed with HTTP 401\nauthorization: Bearer ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`,
+    );
+    expect(out).not.toContain("ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    expect(out).toMatch(/authorization:\s*\[REDACTED\]/i);
+  });
+
+  it("redacts x-api-key headers", () => {
+    const out = sanitizeStepMessage("x-api-key: sk-live-aaaaaaaaaaaaaaaaaaaaaaaa failed");
+    expect(out).not.toContain("sk-live-aaaaaaaaaaaaaaaaaaaaaaaa");
+    expect(out).toMatch(/x-api-key:\s*\[REDACTED\]/i);
+  });
+
+  it("redacts Anthropic and OpenAI keys", () => {
+    const out = sanitizeStepMessage(
+      "Got sk-ant-api03-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa response",
+    );
+    expect(out).not.toContain("sk-ant-api03-aaaa");
+  });
+
+  it("accepts an Error instance", () => {
+    const err = new Error("remote threw: connection refused");
+    const out = sanitizeStepMessage(err);
+    expect(out).toBe("remote threw: connection refused");
+  });
+
+  it("accepts non-string inputs", () => {
+    expect(sanitizeStepMessage(undefined)).toBe("");
+    expect(sanitizeStepMessage(42)).toBe("42");
+    expect(sanitizeStepMessage(null)).toBe("");
+  });
+
+  it("leaves benign messages untouched", () => {
+    const benign =
+      "credential delivered but failed liveness probe (HTTP 401)";
+    expect(sanitizeStepMessage(benign)).toBe(benign);
   });
 });

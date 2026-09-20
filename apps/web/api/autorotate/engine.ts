@@ -220,6 +220,50 @@ export const NO_TARGET_REFUSAL =
   "No enabled target to receive the new value; refusing to rotate.";
 
 /**
+ * AR31-06 (2026-09-20): the previous `record()` helper persisted
+ * `(err as Error).message` verbatim into `rotationRuns.stepsJson`.  The
+ * raw message from a connector `ConnectorError` already includes a
+ * truncated body excerpt (`body.slice(0, 160)` from `apiFetch`); a
+ * generic `Error` from a JSON parse path can include the raw provider
+ * payload, which has historically echoed `Authorization: Bearer ...`
+ * headers or even the new credential on a 5xx-with-body failure.  Cap
+ * the message to 300 chars (matches the Apple Core `sanitize` rule for
+ * parity) and strip anything that looks like a secret-shaped string.
+ */
+export const RUN_STEP_MESSAGE_CAP = 300;
+// Matches anything that could be a credential token: sk_live_, ghp_, AKIA,
+// xoxb-, gsk-, hf_, AIza, npm_, hvs., ops_, xai-, glpat-, rnd_, FlyV1, etc.
+// We strip the WHOLE substring to err on the side of the operator not
+// seeing the secret in run history.
+const SECRET_SHAPE_RE =
+  /(?:sk_(?:live|test)_|sk-ant-|sk-proj-|ghp_|gho_|ghu_|ghs_|xoxb-|xoxp-|xapp-|xoxa-|gsk_|hf_|AIza[A-Za-z0-9_-]{30,}|npm_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|hvs\.[A-Za-z0-9]{20,}|ops_[A-Za-z0-9]{20,}|xai-[A-Za-z0-9]{40,}|glpat-[A-Za-z0-9_-]{18,}|rnd_[A-Za-z0-9]{30,}|FlyV1 [A-Za-z0-9]{30,}|dop_v1_[A-Za-z0-9]{30,}|Bearer\s+[A-Za-z0-9._-]{16,})/g;
+const HEADER_LINE_RE = /(?:authorization|x-api-key|x-auth-token|api[-_]?key|token|secret|password|client[_-]?secret)\s*[:=]\s*[^\s,;}"']{6,}/gi;
+
+export function sanitizeStepMessage(raw: unknown): string {
+  let text: string;
+  if (raw instanceof Error) {
+    text = raw.message;
+  } else if (typeof raw === "string") {
+    text = raw;
+  } else {
+    text = String(raw ?? "");
+  }
+  // 1. Strip secret-shaped tokens.
+  text = text.replace(SECRET_SHAPE_RE, "[REDACTED]");
+  // 2. Strip `Header: value` lines whose header name looks sensitive.
+  text = text.replace(HEADER_LINE_RE, (match) => {
+    const sep = match.indexOf(":") >= 0 ? ":" : "=";
+    const [name] = match.split(sep);
+    return `${name}${sep} [REDACTED]`;
+  });
+  // 3. Truncate.
+  if (text.length > RUN_STEP_MESSAGE_CAP) {
+    text = text.slice(0, RUN_STEP_MESSAGE_CAP) + "…";
+  }
+  return text;
+}
+
+/**
  * AR-06 + AR31-01 — port of the AutorotateCore guard, extended for the web.
  *
  * A programmatic connector mints (and usually deactivates) the provider
@@ -638,7 +682,11 @@ export async function rotateSecret(
         status: "failed",
         startedAt: startedAt.toISOString(),
         durationMs: Date.now() - startedAt.getTime(),
-        message: (err as Error).message,
+        // AR31-06: never persist the raw error message — it can echo
+        // upstream error bodies that contain credential-shaped tokens or
+        // `Authorization: Bearer ...` headers.  sanitizeStepMessage
+        // strips both before capping the result at 300 chars.
+        message: sanitizeStepMessage(err),
         ...extra,
       });
       return false;
@@ -884,9 +932,13 @@ export async function rotateSecret(
       if (runStatus === "partial") {
         runError = !livenessOk
           ? "credential delivered but failed liveness probe"
-          : steps.find((s) => s.status === "failed")?.message ?? "partial delivery";
+          : (steps.find((s) => s.status === "failed")?.message
+              ? sanitizeStepMessage(steps.find((s) => s.status === "failed")?.message)
+              : "partial delivery");
       } else if (runStatus === "failed" && !dryRun) {
-        runError = steps.find((s) => s.status === "failed")?.message ?? null;
+        runError = steps.find((s) => s.status === "failed")?.message
+          ? sanitizeStepMessage(steps.find((s) => s.status === "failed")?.message)
+          : null;
         // A mint succeeded (we are inside the rotateOk && newValue block) but
         // every delivery failed.  Advance nextDueAt by the policy interval so
         // the 60s scheduler does not immediately re-select this secret and mint
@@ -901,7 +953,9 @@ export async function rotateSecret(
       }
     } else {
       runStatus = "failed";
-      runError = steps.find((s) => s.status === "failed")?.message ?? "rotate step failed";
+      runError = steps.find((s) => s.status === "failed")?.message
+        ? sanitizeStepMessage(steps.find((s) => s.status === "failed")?.message)
+        : "rotate step failed";
       await record("push", async () => {
         throw new Error("skipped — rotation produced no value");
       });
@@ -1187,7 +1241,8 @@ export async function checkSecretDrift(secretId: number): Promise<{
         targetId: target.id,
         kind: target.kind,
         status: "error",
-        detail: (err as Error).message,
+        // AR31-06: same redaction policy as run-history steps.
+        detail: sanitizeStepMessage(err),
         expectedFingerprint: secret.fingerprint,
         actualFingerprint: null,
       });

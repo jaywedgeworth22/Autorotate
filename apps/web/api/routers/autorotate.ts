@@ -984,10 +984,22 @@ export const workspaceRouter = createRouter({
 export const pairingRouter = createRouter({
   getPayload: protectedProcedure.query(({ ctx }) => {
     // AR-20: derived from the request, never a hardcoded fleet hostname.
+    // AR31-23 (2026-09-20): the prior version always trusted X-Forwarded-
+    // Host / -Proto first-hop, which is correct only when the request
+    // actually arrived via the configured trusted reverse proxy.  A
+    // direct-to-port request — or a request from a deployment without a
+    // proxy — would surface a spoofable or wrong origin into the pairing
+    // payload, which then lands in a QR code that any nearby phone can
+    // scan.  Prefer AUTOROTATE_PUBLIC_BASE_URL when set; fall back to the
+    // XFF-derived value for self-hosted deployments that already
+    // document the trust boundary.
+    const baseUrl =
+      process.env.AUTOROTATE_PUBLIC_BASE_URL?.replace(/\/+$/, "") ||
+      requestBaseUrl(ctx.req);
     return {
       version: 1,
       appName: "Autorotate",
-      baseUrl: requestBaseUrl(ctx.req),
+      baseUrl,
       environment: env.isProduction ? "production" : "development",
       timestamp: new Date().toISOString(),
     };
