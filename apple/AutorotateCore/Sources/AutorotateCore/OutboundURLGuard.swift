@@ -83,8 +83,13 @@ public enum OutboundURLGuard {
         if (w0 & 0xfe00_0000) == 0xfc00_0000 { return true }
         // ff00::/8 — multicast.
         if (w0 & 0xff00_0000) == 0xff00_0000 { return true }
-        // ::ffff:0:0/96 — IPv4-mapped.  Strip the prefix and re-check as v4.
-        if w0 == 0 && w1 == 0 && w2 == 0xffff_0000 {
+        // ::ffff:0:0/96 — IPv4-mapped.  After `.bigEndian` on a little-endian
+        // host, the `::ffff:` prefix reads as 0x0000ffff in the third word
+        // (the kernel writes the address in network byte order, so the
+        // raw native-UInt32 is byte-swapped by `.bigEndian` into the
+        // canonical big-endian form).  Strip the prefix and re-check as
+        // v4 against the same forbidden-v4 list.
+        if w0 == 0 && w1 == 0 && w2 == 0x0000_ffff {
             var v4 = in_addr()
             v4.s_addr = w3
             return isForbiddenIPv4(v4)
