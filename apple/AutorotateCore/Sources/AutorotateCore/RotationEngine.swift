@@ -395,6 +395,12 @@ public actor RotationEngine {
             let valueRef = "autorotate://secret/\(record.id.uuidString.lowercased())/versions/\(version)"
             var headers = config.headers
             headers["Accept"] = "application/json"
+            // AR31-28 (2026-09-20): webhooks are operator-supplied URLs —
+            // refuse http:// and RFC1918 / loopback / link-local / CGNAT
+            // destinations up front, before any plaintext leaves the
+            // process.  Parity with apps/web `netguard.ts` so a connector
+            // added on one platform has the same defaults on the other.
+            try OutboundURLGuard.assertSafeOutboundURL(config.url.absoluteString)
             let request = try HTTPClient.makeRequest(
                 method: "POST",
                 url: config.url,
