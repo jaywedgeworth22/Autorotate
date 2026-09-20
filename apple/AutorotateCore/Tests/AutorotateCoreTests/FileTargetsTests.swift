@@ -74,9 +74,9 @@ final class FileTargetsTests: XCTestCase {
             [.posixPermissions: NSNumber(value: Int16(0o500))],
             ofItemAtPath: readonlyDir.path)
 
-        let target = readonlyDir.appendingPathComponent("secret.env").path
+        let targetPath = readonlyDir.appendingPathComponent("secret.env").path
         XCTAssertThrowsError(
-            try target.atomicWrite(contents: "new=value", to: target)
+            try target.atomicWrite(contents: "new=value", to: targetPath)
         )
 
         // Restore permissions so tearDown can clean up.
