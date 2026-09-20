@@ -7,10 +7,18 @@
 //  secrets"). Lists item ATTRIBUTES only — service, account, timestamps,
 //  sync status. Values are never read or displayed here.
 //
-//  Item namespaces (KeychainManager.swift):
-//    com.autorotate.<secretId>                      managed secret values
-//    com.autorotate.credential.<connector>.<id>     connector admin credentials
-//    com.autorotate.infisical.<workspaceId>         Infisical clientSecret
+//  Item namespaces (KeychainManager.swift — see line 178 / 187 / 193):
+//    codes.autorotate.<secretId>                        managed secret values
+//    codes.autorotate.credential.<connector>.<id>       connector admin credentials
+//    codes.autorotate.infisical.<workspaceId>           Infisical clientSecret
+//
+//  AR31-25 (2026-09-20): this file previously filtered `com.autorotate.*`
+//  while the writer uses `codes.autorotate.*`.  The mismatch meant every
+//  rotation left zero rows in Settings → Keychain (the most common
+//  troubleshooting surface for "I just rotated, where did it go?").  Now
+//  aligned with the writer namespace, with the old prefix kept as a
+//  legacy-fallback for any in-flight item that still carries it from a
+//  pre-rename build.
 //
 
 import Foundation
@@ -41,11 +49,16 @@ struct KeychainItemInfo: Identifiable, Sendable {
         self.createdAt = createdAt
         self.modifiedAt = modifiedAt
         self.synchronizable = synchronizable
-        if service.hasPrefix("com.autorotate.credential.") {
+        // AR31-25: writer uses `codes.autorotate.*`; legacy `com.autorotate.*`
+        // items still surface here so a pre-rename build's inventory is not
+        // invisible — categorized as "Managed secret" (legacy) so the UI can
+        // tell them apart from canonical rows if it wants to.
+        if service.hasPrefix("codes.autorotate.credential.") {
             self.category = .adminCredential
-        } else if service.hasPrefix("com.autorotate.infisical.") {
+        } else if service.hasPrefix("codes.autorotate.infisical.") {
             self.category = .infisicalClientSecret
-        } else if service.hasPrefix("com.autorotate.") {
+        } else if service.hasPrefix("codes.autorotate.")
+                  || service.hasPrefix("com.autorotate.") {
             self.category = .managedSecret
         } else {
             self.category = .other
@@ -53,7 +66,8 @@ struct KeychainItemInfo: Identifiable, Sendable {
     }
 }
 
-/// Queries the Keychain for items in the `com.autorotate.*` service namespace.
+/// Queries the Keychain for items in the `codes.autorotate.*` service
+/// namespace (the writer-side prefix from `KeychainManager.swift`).
 enum KeychainInventory {
 
     /// Returns all Autorotate-managed items visible to this app, sorted by
