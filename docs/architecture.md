@@ -56,7 +56,7 @@ rotate(secretId):
 | npm | ✅ (granular) / ⚠️ | Granular access tokens via API where enabled |
 | Docker Hub | ✅ | Personal access tokens create/delete |
 | Doppler / generic REST | ✅ | Generic connector: configurable request template |
-| Kubernetes secrets | ✅ | kubectl/REST apply as target |
+| Kubernetes secrets | ⚠️ partial | `rotateKubernetes` POSTs a real ServiceAccount create then returned a fabricated `randomBytes(48)` credential; reclassified `update_only` 2026-09-20 (AR31-02) until a real cluster token is returned (or operator-imported) |
 | `.env` / JSON / YAML / TOML / INI files | ✅ | File target engine |
 | `global-api-keys` | ✅ | Env-style parser (`export`, comments) — Mac agent support not implemented |
 | Mac agent (`mac.jays.services`) | ⛔ not implemented (stub) | Placeholder only; no implementation exists. |

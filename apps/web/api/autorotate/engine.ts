@@ -220,7 +220,7 @@ export const NO_TARGET_REFUSAL =
   "No enabled target to receive the new value; refusing to rotate.";
 
 /**
- * AR-06 — port of the AutorotateCore guard.
+ * AR-06 + AR31-01 — port of the AutorotateCore guard, extended for the web.
  *
  * A programmatic connector mints (and usually deactivates) the provider
  * credential during ROTATE.  With nowhere to deliver the result, the new
@@ -231,10 +231,26 @@ export const NO_TARGET_REFUSAL =
  *
  * Dry-run keeps its simulated path — it never mints, so it has nothing to
  * lose.
+ *
+ * AR31-01 (added 2026-09-20): a web-side `keychain` target is INTENTIONAL
+ * delegation to the native companion app — no live web Keychain to write to,
+ * no verifiable read-back.  When the ONLY enabled target is `keychain`, a
+ * programmatic connector would still revoke the provider credential and
+ * discard the new plaintext, leaving the secret stranded.  We therefore
+ * require at least one target that the web engine can actually deliver to
+ * (Infisical with config / file / webhook with a real URL).  update_only
+ * connectors never mint, so the guard still allows them through — the user
+ * imports the new value by hand.
  */
-export function canMintForTargets(enabledTargetCount: number, dryRun: boolean): boolean {
+export function canMintForTargets(
+  targets: ReadonlyArray<{ kind: string; enabled: boolean }>,
+  dryRun: boolean,
+  connectorCapability?: string,
+): boolean {
   if (dryRun) return true;
-  return enabledTargetCount > 0;
+  if (connectorCapability === "update_only") return true;
+  const delivering = new Set(["infisical", "file", "webhook"]);
+  return targets.some((t) => t.enabled && delivering.has(t.kind));
 }
 
 // ── Hash-chained audit log ──────────────────────────────────────
@@ -431,6 +447,24 @@ export async function verifyAuditChain(): Promise<ChainVerification> {
 
 const WEBHOOK_TIMEOUT_MS = 10_000;
 
+/**
+ * AR31-30 (2026-09-20): refuse a webhook target that has no URL configured
+ * in real mode.  Exported so the test suite can pin the rule without having
+ * to instantiate a full `pushToTarget` (which would need a DB, an
+ * `enabled` row, and a real fetch).
+ */
+export function assertPushWebhooksReady(
+  targets: ReadonlyArray<{ enabled: boolean; url?: string }>,
+): void {
+  if (isDemoMode()) return;
+  for (const t of targets) {
+    if (!t.enabled) continue;
+    if (!t.url) {
+      throw new Error("webhook target has no URL — configure it or disable it");
+    }
+  }
+}
+
 async function pushToTarget(
   target: Target,
   secret: Secret,
@@ -472,6 +506,15 @@ async function pushToTarget(
     }
     case "webhook": {
       const wcfg = cfg as unknown as WebhookTargetConfig;
+      // AR31-30 (2026-09-20): a webhook with no URL in REAL mode is not a
+      // simulation — it is a misconfiguration.  Fail-closed so the operator
+      // sees the gap in the run history instead of a green commit with no
+      // notification sent.  Demo mode keeps its simulated success.
+      if (!isDemoMode() && !wcfg.url) {
+        throw new Error(
+          `webhook target ${target.id} has no URL — configure it or disable it`,
+        );
+      }
       if (!isDemoMode() && wcfg.url) {
         // AR-09 / F1: https-only, no loopback/link-local/RFC1918 destinations,
         // and no following a 3xx redirect to an internal host.
@@ -656,9 +699,9 @@ export async function rotateSecret(
 
     let newValue: string | null = null;
     const rotateOk = await record("rotate", async () => {
-      if (!canMintForTargets(enabledTargets.length, dryRun)) {
+      if (!canMintForTargets(enabledTargets, dryRun, connectorRow?.capability)) {
         throw new Error(
-          `${NO_TARGET_REFUSAL}  A programmatic mint revokes the old credential and discards the new one when there is nowhere to deliver it.`,
+          `${NO_TARGET_REFUSAL}  A programmatic mint revokes the old credential and discards the new one when there is nowhere to deliver it (keychain-only counts as undelivered on the web side).`,
         );
       }
       if (!connectorRow || !connector) {

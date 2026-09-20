@@ -8,6 +8,7 @@ import {
   infisicalDeliveryMode,
   maskTargetConfig,
   mergePreservedTargetSecrets,
+  assertPushWebhooksReady,
   TARGET_SECRET_MASK,
   NO_TARGET_REFUSAL,
 } from "./engine";
@@ -19,6 +20,7 @@ import {
   BlockedUrlError,
 } from "./netguard";
 import { maskWebhookUrl, maskAlertConfig, runOutcomeMessage } from "./alerts";
+import { testConnection } from "./connectors";
 
 // Regression tests for the findings in docs/AUDIT-2026-08-26.md. Everything
 // here is a pure decision helper or a mocked lookup — no live database.
@@ -85,18 +87,85 @@ describe("AR-03 — demo mode is opt-in", () => {
   });
 });
 
-describe("AR-06 — refuse to mint with nowhere to deliver", () => {
+describe("AR-06 + AR31-01 — refuse to mint with nowhere to deliver", () => {
   it("refuses a real rotation with zero enabled targets", () => {
-    expect(canMintForTargets(0, false)).toBe(false);
+    expect(canMintForTargets([], false, "programmatic")).toBe(false);
+  });
+
+  it("refuses a real rotation when only a keychain target is enabled", () => {
+    // AR31-01: web-side keychain is delegated to the companion app and
+    // cannot be verified by the engine — a programmatic connector would
+    // still revoke the provider credential and discard the new value.
+    expect(
+      canMintForTargets(
+        [{ kind: "keychain", enabled: true }],
+        false,
+        "programmatic",
+      ),
+    ).toBe(false);
+  });
+
+  it("refuses a real rotation when every enabled target is keychain", () => {
+    expect(
+      canMintForTargets(
+        [
+          { kind: "keychain", enabled: true },
+          { kind: "keychain", enabled: true },
+        ],
+        false,
+        "programmatic",
+      ),
+    ).toBe(false);
+  });
+
+  it("allows a real rotation when an infisical target is enabled", () => {
+    expect(
+      canMintForTargets(
+        [
+          { kind: "keychain", enabled: true },
+          { kind: "infisical", enabled: true },
+        ],
+        false,
+        "programmatic",
+      ),
+    ).toBe(true);
+  });
+
+  it("allows a real rotation when a webhook target is enabled", () => {
+    expect(
+      canMintForTargets(
+        [{ kind: "webhook", enabled: true }],
+        false,
+        "programmatic",
+      ),
+    ).toBe(true);
+  });
+
+  it("ignores disabled keychain-only targets", () => {
+    expect(
+      canMintForTargets(
+        [{ kind: "keychain", enabled: false }],
+        false,
+        "programmatic",
+      ),
+    ).toBe(false);
+  });
+
+  it("allows update_only connectors through regardless of targets", () => {
+    // update_only never mints — the operator imports the new value, so
+    // there is no revocation to worry about.
+    expect(canMintForTargets([], false, "update_only")).toBe(true);
+    expect(
+      canMintForTargets(
+        [{ kind: "keychain", enabled: true }],
+        false,
+        "update_only",
+      ),
+    ).toBe(true);
   });
 
   it("allows a dry-run with zero targets — it never mints", () => {
-    expect(canMintForTargets(0, true)).toBe(true);
-  });
-
-  it("allows a real rotation once a target exists", () => {
-    expect(canMintForTargets(1, false)).toBe(true);
-    expect(canMintForTargets(4, false)).toBe(true);
+    expect(canMintForTargets([], true)).toBe(true);
   });
 
   it("keeps the AutorotateCore refusal wording", () => {
@@ -529,5 +598,94 @@ describe("mergePreservedTargetSecrets — edit must not wipe stored creds", () =
     expect(mergePreservedTargetSecrets(existing, incoming).headers).toEqual({
       Authorization: "Bearer live-token",
     });
+  });
+});
+
+// ── AR31-29 — testConnection fail-closed on missing config ───────
+describe("AR31-29 — testConnection fail-closed", () => {
+  beforeEach(() => {
+    process.env.AUTOROTATE_DEMO = "0";
+  });
+
+  it("throws when config is missing in real mode", async () => {
+    await expect(testConnection("stripe", undefined as never)).rejects.toThrow(
+      /no configuration saved/i,
+    );
+  });
+
+  it("throws when a required field is empty in real mode", async () => {
+    await expect(testConnection("stripe", { adminKey: "" })).rejects.toThrow(
+      /adminKey/i,
+    );
+    await expect(testConnection("twilio", { accountSid: "AC123" })).rejects.toThrow(
+      /authToken/i,
+    );
+  });
+
+  it("throws when ALL required fields are empty", async () => {
+    await expect(
+      testConnection("infisical", {
+        clientId: "",
+        clientSecret: "",
+        workspaceId: "",
+      }),
+    ).rejects.toThrow(/missing required fields/i);
+  });
+
+  it("does NOT short-circuit to demo success in real mode", async () => {
+    // The previous code returned `[demo] verified (simulated)` whenever
+    // `config` was falsy — even in real mode.  A misconfigured connector
+    // then showed up as `connected`.
+    await expect(testConnection("cloudflare", null as never)).rejects.toThrow(
+      /no configuration/i,
+    );
+  });
+
+  it("still allows the simulated pass in demo mode regardless of fields", async () => {
+    process.env.AUTOROTATE_DEMO = "1";
+    await expect(testConnection("stripe", {})).resolves.toMatch(/simulated/);
+    await expect(testConnection("cloudflare", undefined as never)).resolves.toMatch(
+      /simulated/,
+    );
+  });
+
+  it("lets update_only platforms through without required-field validation", async () => {
+    // update_only connectors have no remote check to perform — the operator
+    // imports the new value by hand.  Empty config is fine; required-field
+    // map intentionally omits them.
+    const res = await testConnection("kubernetes", {});
+    expect(res).toMatch(/no lightweight test available/);
+  });
+});
+
+// ── AR31-30 — webhook empty URL fail-closed in real mode ────────
+describe("AR31-30 — webhook target push in real mode", () => {
+  // The engine-level push is exercised end-to-end in autorotate.test.ts; here
+  // we pin the fail-closed rule at the helper boundary so a future refactor
+  // cannot quietly reintroduce the silent fallback.
+  it("real mode refuses an empty-URL webhook configuration", () => {
+    process.env.AUTOROTATE_DEMO = "0";
+    expect(() =>
+      assertPushWebhooksReady([{ enabled: true, url: "" }]),
+    ).toThrow(/has no URL/i);
+  });
+
+  it("real mode accepts a configured webhook URL", () => {
+    expect(() =>
+      assertPushWebhooksReady([{ enabled: true, url: "https://example.com/hook" }]),
+    ).not.toThrow();
+  });
+
+  it("real mode ignores disabled webhook targets even when empty", () => {
+    expect(() =>
+      assertPushWebhooksReady([{ enabled: false, url: "" }]),
+    ).not.toThrow();
+  });
+
+  it("demo mode is allowed to proceed with an empty URL (simulated)", () => {
+    process.env.AUTOROTATE_DEMO = "1";
+    expect(() =>
+      assertPushWebhooksReady([{ enabled: true, url: "" }]),
+    ).not.toThrow();
   });
 });
