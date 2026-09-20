@@ -41,7 +41,7 @@ struct DashboardView: View {
                 .padding()
             }
             .autoRotateScreenBackground()
-            .navigationTitle("Autorotate.Codes")
+            .navigationTitle("Autorotate")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

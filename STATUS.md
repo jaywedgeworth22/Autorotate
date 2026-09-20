@@ -2,6 +2,10 @@
 
 ## Current Handoff
 
+### 2026-09-18 CURSOR — Effort Issues Sync Crons margin (FLEET-INFRA-CD)
+
+Daily `41 5 * * *` board mirror always succeeds; GitHub starts it 3.6-5.3h late so the 15-minute Sentry margin pages at 05:56Z.  Same override as ST #3194 / #3387 / #3389: `CHECKIN_MARGIN_OVERRIDES["Effort Issues Sync"] = 600`.  Cron unchanged.  Extra-ship no.  No Coolify.  Do not resolve CD on merge — wait for the next scheduled upsert of `ci-autorotate-effort-issues-sync`.  Rollout: `docs/rollouts/2026-09-18-effort-issues-sync-monitor-margin.md`.
+
 ### 2026-09-01 GROK — Web Sentry SDK (`grok/sentry-fleet-adoption`)
 
 Client `@sentry/react` (DSN-gated, `sendDefaultPii: false`, replay 0% session / 100% error, no feedback widget) plus Node scheduler cron + `rotation.success` / `rotation.fail`.  Rollout: `docs/rollouts/2026-09-01-web-sentry-sdk.md`.  **Android Sentry is iOS-only until Android ships.**
@@ -17,9 +21,9 @@ Site https://autorotate.codes.  Cheat sheet
 `docs/rollouts/2026-08-22-autorotate-apple-ids.md`.  #48 is still CONFLICTING
 with `main` — rebase is AG/land, not a merge of `grok/autorotate-ids`.
 
-### 2026-08-22 ANTIGRAVITY — Autorotate Rebrand (`Autorotate.codes`), Android Companion App & Bidirectional Board Sync
+### 2026-08-22 ANTIGRAVITY — Autorotate Rebrand (`autorotate.codes`), Android Companion App & Bidirectional Board Sync
 
-1. **Rebranding**: Rebranded app to **Autorotate** across all platforms with domain `Autorotate.codes`. Configured Apple bundle IDs `codes.autorotate`, `codes.autorotate.macos`, and `codes.autorotate.shared`. Linked developer account (Jay Wedgeworth, LLC, `CC8UTF7ATG`), set minimum iOS 17.0 / macOS 14.0, Xcode document format 26ish, category `public.app-category.developer-tools`.
+1. **Rebranding**: Rebranded app to **Autorotate** across all platforms with domain `autorotate.codes`. Configured Apple bundle IDs `codes.autorotate`, `codes.autorotate.macos`, and `codes.autorotate.shared`. Linked developer account (Jay Wedgeworth, LLC, `CC8UTF7ATG`), set minimum iOS 17.0 / macOS 14.0, Xcode document format 26ish, category `public.app-category.developer-tools`.
 2. **Android Companion App**: Created native Android companion app (`android/`) with Kotlin + Jetpack Compose (Material 3), BiometricPrompt security gating, live QR code pairing scanner, .env batch importer, and periodic WorkManager sync.
 3. **Apple Apps**: Verified `Autorotate.xcodeproj` builds cleanly with `xcodebuild` for both `Autorotate-iOS` and `Autorotate-macOS`. AutorotateCore package tests (27/27) pass with zero failures.
 4. **Web Control Center**: Rebranded web console (`apps/web`), updated index.html metadata, package name `autorotate-web`, pairing modal, and navigation headers.
@@ -29,7 +33,7 @@ with `main` — rebase is AG/land, not a merge of `grok/autorotate-ids`.
 
 | Component | State |
 |---|---|
-| Web control center (`apps/web/`) | Rebranded to Autorotate (`Autorotate.codes`), `check` + `build` + unit tests passing. |
+| Web control center (`apps/web/`) | Rebranded to Autorotate (`autorotate.codes`), `check` + `build` + unit tests passing. |
 | AutorotateCore (`apple/AutorotateCore/`) | `swift test` — 27/27 passing locally. |
 | iOS app (`apple/Autorotate-iOS/`) | Local `xcodebuild` **BUILD SUCCEEDED** for `Autorotate-iOS` (bundle `codes.autorotate`, iOS 17+). |
 | macOS app (`apple/Autorotate-macOS/`) | Local `xcodebuild` **BUILD SUCCEEDED** for `Autorotate-macOS` (bundle `codes.autorotate.macos`, macOS 14+). |

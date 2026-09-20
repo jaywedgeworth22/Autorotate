@@ -84,6 +84,19 @@ CRON_SCHEDULES = {
 #      (a real issue in fleet-infra), not just to the job log.
 _CRON_SCHEDULES_FOLDED = {name.casefold(): expr for name, expr in CRON_SCHEDULES.items()}
 
+DEFAULT_CHECKIN_MARGIN = 15
+# GitHub `schedule` delivery is best-effort.  This daily monitor always
+# eventually runs, but the start is hours late, so a 15-minute margin
+# false-pages a healthy job.  600 min matches Socratic.Trade #3194
+# (FLEET-INFRA-C1), #3387 (FLEET-INFRA-C3), and #3389 (FLEET-INFRA-BY).
+# Effort Issues Sync typically starts 3.6-5.3h after 05:41Z (worst
+# retained 2026-09-14 10:57Z, ~5h 16m).  Do not copy this onto 30-min
+# macos ship crons (FLEET-INFRA-CC / DA / CX): those drop ticks entirely.
+CHECKIN_MARGIN_OVERRIDES = {
+    "Effort Issues Sync": 600,
+}
+_CHECKIN_MARGINS_FOLDED = {name.casefold(): margin for name, margin in CHECKIN_MARGIN_OVERRIDES.items()}
+
 # Where the observed workflows live, resolved from this file rather than the
 # process CWD so the guard works regardless of how the script is invoked.
 WORKFLOWS_DIR = Path(__file__).resolve().parent.parent / ".github" / "workflows"
@@ -101,6 +114,11 @@ def slugify(name: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
     slug = re.sub(r"-+", "-", slug)
     return slug
+
+
+def checkin_margin_for(workflow_name: str) -> int:
+    """Per-workflow Crons margin, case-folded.  Default 15 unless overridden."""
+    return _CHECKIN_MARGINS_FOLDED.get(workflow_name.casefold(), DEFAULT_CHECKIN_MARGIN)
 
 
 def discover_workflow_names(workflows_dir: Path = WORKFLOWS_DIR) -> set[str] | None:
@@ -306,7 +324,7 @@ def main() -> int:
                 "status": checkin_status,
                 "monitor_config": {
                     "schedule": {"type": "crontab", "value": cron_expr},
-                    "checkin_margin": 15,
+                    "checkin_margin": checkin_margin_for(workflow_name),
                     "max_runtime": 60,
                     "timezone": "UTC",
                 },

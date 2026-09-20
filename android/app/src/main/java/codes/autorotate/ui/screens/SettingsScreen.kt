@@ -142,7 +142,7 @@ fun SettingsScreen(
             ) {
                 Text("ABOUT", fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = TextMuted)
                 Text("Autorotate Mobile Companion (Android)", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
-                Text("Live Domain: Autorotate.codes", fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = SpinAccent)
+                Text("Live Domain: autorotate.codes", fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = SpinAccent)
                 Text("Zero-Plaintext: Memory-only execution, Android Keystore encryption.", fontSize = 11.sp, color = TextSecondary)
             }
         }

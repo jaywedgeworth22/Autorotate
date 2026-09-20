@@ -1,6 +1,6 @@
 # Autorotate — Native Apple Apps (iOS / macOS)
 
-This folder contains the Apple-platform deliverables for Autorotate (`Autorotate.codes`), the
+This folder contains the Apple-platform deliverables for Autorotate (`autorotate.codes`), the
 zero-plaintext secret-rotation product. Everything follows `../docs/architecture.md`:
 the six-step rotation pipeline (LOCK → ROTATE → PUSH → VERIFY → COMMIT →
 AUDIT), no plaintext persistence, fingerprint-only audit logs.

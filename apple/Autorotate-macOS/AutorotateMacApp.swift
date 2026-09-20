@@ -118,7 +118,7 @@ struct MainWindowView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(AutorotateTheme.background)
         }
-        .navigationTitle("Autorotate.Codes")
+        .navigationTitle("Autorotate")
         .onAppear { consumeRequestedSection() }
         .onChange(of: appState.requestedSection) { _, _ in consumeRequestedSection() }
     }

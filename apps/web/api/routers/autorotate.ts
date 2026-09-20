@@ -65,6 +65,7 @@ import {
   infisicalSecretName,
   canaryDeliveryName,
   maskTargetConfig,
+  mergePreservedTargetSecrets,
   readTargetConfig,
   RotationLockedError,
   SecretNotFoundError,
@@ -583,7 +584,7 @@ export const targetsRouter = createRouter({
         where: eq(secrets.id, input.secretId),
       });
       if (!secret) throw new TRPCError({ code: "NOT_FOUND", message: "secret not found" });
-      const config = validateTargetConfig(input.kind, input.config);
+      const incoming = validateTargetConfig(input.kind, input.config);
       let id = input.id;
       if (id) {
         const existing = await db.query.targets.findFirst({
@@ -592,6 +593,17 @@ export const targetsRouter = createRouter({
         if (!existing) {
           throw new TRPCError({ code: "NOT_FOUND", message: "target not found" });
         }
+        // Same-kind edit: keep stored clientSecret / token / webhook headers
+        // when the form omitted them or sent the mask.  A kind change starts
+        // from the incoming config only so Infisical creds do not leak onto
+        // a file or webhook row.
+        const config =
+          existing.kind === input.kind
+            ? validateTargetConfig(
+                input.kind,
+                mergePreservedTargetSecrets(readTargetConfig(existing), incoming),
+              )
+            : incoming;
         await db
           .update(targets)
           .set({
@@ -607,7 +619,7 @@ export const targetsRouter = createRouter({
           .values({
             secretId: input.secretId,
             kind: input.kind,
-            configEnc: encryptJson(config),
+            configEnc: encryptJson(incoming),
             configJson: null,
             enabled: input.enabled,
           })
