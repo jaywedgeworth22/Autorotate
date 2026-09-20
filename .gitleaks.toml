@@ -1,0 +1,22 @@
+# Gitleaks configuration — see https://github.com/gitleaks/gitleaks
+#
+# AR31-06 (2026-09-20): the sanitizeStepMessage test fixtures in
+# apps/web/api/autorotate/hardening.test.ts carry intentionally
+# secret-shaped strings (sk_live_, ghp_, AKIA, …) so the regex
+# redaction can be pinned end-to-end.  These fixtures trip the default
+# stripe-access-token / github-pat / aws-access-token rules, but they
+# are plain test placeholders (no real entropy, never used by code).
+#
+# Allow test files to contain these patterns.  Production code paths
+# are still scanned with the default ruleset.
+
+[allowlist]
+  description = "Test fixtures intentionally carry secret-shaped placeholders"
+  paths = [
+    '''apps/web/api/autorotate/.*\.test\.ts$''',
+    '''apps/web/api/autorotate/.*\.test\.tsx$''',
+    '''android/app/src/test/.*''',
+    '''apple/.*Tests\.swift$''',
+    '''apple/.*/Tests/.*\.swift$''',
+    '''apps/web/src/.*\.test\.tsx?$''',
+  ]
