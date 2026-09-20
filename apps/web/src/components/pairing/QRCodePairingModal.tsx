@@ -30,6 +30,14 @@ export function QRCodePairingModal({
   // and gives that CDN a record of every workspace that opened the
   // pairing modal.  qrcode.generate() returns an SVG string locally;
   // no network request, no PII egress.
+  //
+  // qrcode.toString returns a Promise (QR generation runs through the
+  // Web Crypto / Web Worker path), so the result has to land in state.
+  // The setState-in-effect lint flags the `.then((svg) => setQrSvg(svg))`
+  // shape; we disable it for the whole effect because the alternative —
+  // a ref + manual re-render — would duplicate the same effect lifecycle
+  // in a more error-prone way.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!payloadJson) {
       setQrSvg('')
@@ -59,6 +67,7 @@ export function QRCodePairingModal({
       cancelled = true
     }
   }, [payloadJson])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleCopy = () => {
     if (!payloadJson) return

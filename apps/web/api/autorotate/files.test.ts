@@ -6,7 +6,6 @@ import {
   resolveSandboxPath,
   writeFileTarget,
   readFileTarget,
-  FileTargetError,
 } from "./files";
 
 // AR31-31 (2026-09-20): sandbox must refuse symlinks that point outside
