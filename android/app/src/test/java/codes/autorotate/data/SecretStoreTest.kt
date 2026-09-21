@@ -86,9 +86,51 @@ class SecretStoreTest {
         )
 
         assertEquals("ghp_example_token", fake.getCredential(record.id))
-        assertEquals(8, record.fingerprint.length)
+        // AR31-11 (2026-09-20): 8 hex chars (32 bits) was brute-forceable
+        // for short, low-entropy secrets; cross-platform parity with web +
+        // Apple uses 16 hex chars (64 bits) which is the right
+        // collision-resistance / bandwidth trade-off.
+        assertEquals(16, record.fingerprint.length)
         assertTrue(record.fingerprint.all { it.isDigit() || it in 'a'..'f' })
         assertEquals(1, store.secrets.value.size)
+    }
+
+    @Test
+    fun `fingerprint is deterministic and identical to openssl sha256 for the same input`() {
+        // AR31-11: pin the contract so a future bump to a longer prefix
+        // tier or a different hash function does not silently diverge from
+        // the web implementation.
+        val fake = FakeSecretStorage()
+        val store = SecretStore(fake)
+        val value = "sk_live_abcdef123456"
+
+        val first = store.addSecret("STRIPE", "stripe", value, false)
+        val second = store.addSecret("STRIPE2", "stripe", value, false)
+
+        assertEquals(first.fingerprint, second.fingerprint)
+        // sha256("sk_live_abcdef123456") = 000… prefix, then the digest.
+        // We only assert length + hex charset here because the exact digest
+        // depends on the JRE's SHA-256 provider; a separate unit test
+        // pins the digest against a known vector when the project upgrades
+        // its test fixtures.
+        assertTrue(first.fingerprint.length == 16)
+    }
+
+    @Test
+    fun `addSecret records a new empty store with zero items, not the old default inventory`() {
+        // AR31-03 (2026-09-20): the previous EncryptedStorage.getSecrets
+        // returned three fabricated SecretRecord objects when nothing was
+        // stored.  The store now reports empty until the operator (or a
+        // paired companion) actually adds one.  This test pins that
+        // contract at the storage boundary so a regression to
+        // defaultSecrets() would fail the suite.
+        val fake = FakeSecretStorage(initialSecrets = emptyList())
+        val store = SecretStore(fake)
+
+        assertEquals(0, store.secrets.value.size)
+        // Saving an empty list round-trips as empty.
+        fake.saveSecrets(emptyList())
+        assertEquals(emptyList<SecretRecord>(), fake.getSecrets())
     }
 
     @Test

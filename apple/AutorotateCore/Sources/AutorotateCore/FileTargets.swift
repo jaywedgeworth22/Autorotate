@@ -128,22 +128,36 @@ public struct FileTargetEngine: Sendable {
 
     /// Atomically replaces the file at `path`: writes a temp file in the
     /// same directory, then renames over the original (POSIX rename is
-    /// atomic on the same volume). Original file permissions are preserved.
+    /// atomic on the same volume). Original file permissions are preserved
+    /// when they already exist; new files are created with 0600 (owner
+    /// read+write only) so a permissive process umask cannot leak the
+    /// plaintext to other users on a shared host.
     func atomicWrite(contents: String, to path: String) throws {
         let url = URL(fileURLWithPath: path)
         let directory = url.deletingLastPathComponent()
         let tempURL = directory.appendingPathComponent(".\(url.lastPathComponent).autorotate-\(UUID().uuidString).tmp")
+        // AR31-07 (2026-09-20): write+chmod+rename must be performed even
+        // when the temp file write fails part-way, otherwise the dotfile
+        // can sit on disk with the secret plaintext visible to anyone
+        // who can list the directory until the operator notices.  Track
+        // the temp URL outside the do/catch and always attempt the unlink
+        // on the error path.
+        var wroteTemp = false
         do {
-            // Preserve existing permissions when the file already exists.
+            // Preserve existing permissions when the file already exists,
+            // otherwise enforce 0600 — the default umask on macOS is 022,
+            // which would otherwise yield 0644 (world-readable) for a
+            // freshly-created secret file.
             var attributes: [FileAttributeKey: Any] = [:]
             if let existing = try? fileManager.attributesOfItem(atPath: path),
                let permissions = existing[.posixPermissions] as? NSNumber {
                 attributes[.posixPermissions] = permissions
+            } else {
+                attributes[.posixPermissions] = NSNumber(value: Int16(0o600))
             }
             try contents.write(to: tempURL, atomically: false, encoding: .utf8)
-            if !attributes.isEmpty {
-                try? fileManager.setAttributes(attributes, ofItemAtPath: tempURL.path)
-            }
+            wroteTemp = true
+            try fileManager.setAttributes(attributes, ofItemAtPath: tempURL.path)
             // POSIX rename(2): atomically replaces the destination on the
             // same volume — the temp file and target always share a parent
             // directory, so this never crosses filesystems.
@@ -151,8 +165,11 @@ public struct FileTargetEngine: Sendable {
                 throw FileTargetError.writeFailed(
                     "rename failed for \(path): errno \(errno)")
             }
+            wroteTemp = false   // rename succeeded, temp is consumed
         } catch {
-            try? fileManager.removeItem(at: tempURL)
+            if wroteTemp {
+                try? fileManager.removeItem(at: tempURL)
+            }
             throw FileTargetError.writeFailed("\(path): \(error.localizedDescription)")
         }
     }

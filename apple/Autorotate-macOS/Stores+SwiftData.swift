@@ -515,10 +515,24 @@ actor FileTargetRepository {
     }
 
     /// Persists a refreshed bookmark after a stale resolution.
-    func updateBookmark(path: String, bookmark: Data) throws {
+    ///
+    /// AR31-27 (2026-09-20): when a bookmark resolves to a NEW path
+    /// (file moved or the user picked a new folder) the match-by-displayPath
+    /// would either fail (no entity has the new path yet) or persist the
+    /// refreshed blob against the wrong row.  Match by the existing
+    /// `displayPath` argument — which the caller passes as
+    /// `entity.displayPath` — and ALSO update `displayPath` to the
+    /// resolved URL's path when it changed, so Settings → File Targets
+    /// shows the new location instead of a stale "missing" badge.
+    func updateBookmark(path: String,
+                        bookmark: Data,
+                        newPath: String? = nil) throws {
         let entities = try modelContext.fetch(FetchDescriptor<FileTargetEntity>())
         for entity in entities where entity.displayPath == path {
             entity.bookmarkData = bookmark
+            if let newPath, newPath != path {
+                entity.displayPath = newPath
+            }
         }
         try modelContext.save()
     }

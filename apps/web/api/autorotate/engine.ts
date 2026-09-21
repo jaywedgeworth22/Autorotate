@@ -220,7 +220,51 @@ export const NO_TARGET_REFUSAL =
   "No enabled target to receive the new value; refusing to rotate.";
 
 /**
- * AR-06 — port of the AutorotateCore guard.
+ * AR31-06 (2026-09-20): the previous `record()` helper persisted
+ * `(err as Error).message` verbatim into `rotationRuns.stepsJson`.  The
+ * raw message from a connector `ConnectorError` already includes a
+ * truncated body excerpt (`body.slice(0, 160)` from `apiFetch`); a
+ * generic `Error` from a JSON parse path can include the raw provider
+ * payload, which has historically echoed `Authorization: Bearer ...`
+ * headers or even the new credential on a 5xx-with-body failure.  Cap
+ * the message to 300 chars (matches the Apple Core `sanitize` rule for
+ * parity) and strip anything that looks like a secret-shaped string.
+ */
+export const RUN_STEP_MESSAGE_CAP = 300;
+// Matches anything that could be a credential token: sk_live_, ghp_, AKIA,
+// xoxb-, gsk-, hf_, AIza, npm_, hvs., ops_, xai-, glpat-, rnd_, FlyV1, etc.
+// We strip the WHOLE substring to err on the side of the operator not
+// seeing the secret in run history.
+const SECRET_SHAPE_RE =
+  /(?:sk_(?:live|test)_|sk-ant-|sk-proj-|ghp_|gho_|ghu_|ghs_|xoxb-|xoxp-|xapp-|xoxa-|gsk_|hf_|AIza[A-Za-z0-9_-]{30,}|npm_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|hvs\.[A-Za-z0-9]{20,}|ops_[A-Za-z0-9]{20,}|xai-[A-Za-z0-9]{40,}|glpat-[A-Za-z0-9_-]{18,}|rnd_[A-Za-z0-9]{30,}|FlyV1 [A-Za-z0-9]{30,}|dop_v1_[A-Za-z0-9]{30,}|Bearer\s+[A-Za-z0-9._-]{16,})/g;
+const HEADER_LINE_RE = /(?:authorization|x-api-key|x-auth-token|api[-_]?key|token|secret|password|client[_-]?secret)\s*[:=]\s*[^\s,;}"']{6,}/gi;
+
+export function sanitizeStepMessage(raw: unknown): string {
+  let text: string;
+  if (raw instanceof Error) {
+    text = raw.message;
+  } else if (typeof raw === "string") {
+    text = raw;
+  } else {
+    text = String(raw ?? "");
+  }
+  // 1. Strip secret-shaped tokens.
+  text = text.replace(SECRET_SHAPE_RE, "[REDACTED]");
+  // 2. Strip `Header: value` lines whose header name looks sensitive.
+  text = text.replace(HEADER_LINE_RE, (match) => {
+    const sep = match.indexOf(":") >= 0 ? ":" : "=";
+    const [name] = match.split(sep);
+    return `${name}${sep} [REDACTED]`;
+  });
+  // 3. Truncate.
+  if (text.length > RUN_STEP_MESSAGE_CAP) {
+    text = text.slice(0, RUN_STEP_MESSAGE_CAP) + "…";
+  }
+  return text;
+}
+
+/**
+ * AR-06 + AR31-01 — port of the AutorotateCore guard, extended for the web.
  *
  * A programmatic connector mints (and usually deactivates) the provider
  * credential during ROTATE.  With nowhere to deliver the result, the new
@@ -231,10 +275,26 @@ export const NO_TARGET_REFUSAL =
  *
  * Dry-run keeps its simulated path — it never mints, so it has nothing to
  * lose.
+ *
+ * AR31-01 (added 2026-09-20): a web-side `keychain` target is INTENTIONAL
+ * delegation to the native companion app — no live web Keychain to write to,
+ * no verifiable read-back.  When the ONLY enabled target is `keychain`, a
+ * programmatic connector would still revoke the provider credential and
+ * discard the new plaintext, leaving the secret stranded.  We therefore
+ * require at least one target that the web engine can actually deliver to
+ * (Infisical with config / file / webhook with a real URL).  update_only
+ * connectors never mint, so the guard still allows them through — the user
+ * imports the new value by hand.
  */
-export function canMintForTargets(enabledTargetCount: number, dryRun: boolean): boolean {
+export function canMintForTargets(
+  targets: ReadonlyArray<{ kind: string; enabled: boolean }>,
+  dryRun: boolean,
+  connectorCapability?: string,
+): boolean {
   if (dryRun) return true;
-  return enabledTargetCount > 0;
+  if (connectorCapability === "update_only") return true;
+  const delivering = new Set(["infisical", "file", "webhook"]);
+  return targets.some((t) => t.enabled && delivering.has(t.kind));
 }
 
 // ── Hash-chained audit log ──────────────────────────────────────
@@ -431,6 +491,24 @@ export async function verifyAuditChain(): Promise<ChainVerification> {
 
 const WEBHOOK_TIMEOUT_MS = 10_000;
 
+/**
+ * AR31-30 (2026-09-20): refuse a webhook target that has no URL configured
+ * in real mode.  Exported so the test suite can pin the rule without having
+ * to instantiate a full `pushToTarget` (which would need a DB, an
+ * `enabled` row, and a real fetch).
+ */
+export function assertPushWebhooksReady(
+  targets: ReadonlyArray<{ enabled: boolean; url?: string }>,
+): void {
+  if (isDemoMode()) return;
+  for (const t of targets) {
+    if (!t.enabled) continue;
+    if (!t.url) {
+      throw new Error("webhook target has no URL — configure it or disable it");
+    }
+  }
+}
+
 async function pushToTarget(
   target: Target,
   secret: Secret,
@@ -472,6 +550,15 @@ async function pushToTarget(
     }
     case "webhook": {
       const wcfg = cfg as unknown as WebhookTargetConfig;
+      // AR31-30 (2026-09-20): a webhook with no URL in REAL mode is not a
+      // simulation — it is a misconfiguration.  Fail-closed so the operator
+      // sees the gap in the run history instead of a green commit with no
+      // notification sent.  Demo mode keeps its simulated success.
+      if (!isDemoMode() && !wcfg.url) {
+        throw new Error(
+          `webhook target ${target.id} has no URL — configure it or disable it`,
+        );
+      }
       if (!isDemoMode() && wcfg.url) {
         // AR-09 / F1: https-only, no loopback/link-local/RFC1918 destinations,
         // and no following a 3xx redirect to an internal host.
@@ -595,7 +682,11 @@ export async function rotateSecret(
         status: "failed",
         startedAt: startedAt.toISOString(),
         durationMs: Date.now() - startedAt.getTime(),
-        message: (err as Error).message,
+        // AR31-06: never persist the raw error message — it can echo
+        // upstream error bodies that contain credential-shaped tokens or
+        // `Authorization: Bearer ...` headers.  sanitizeStepMessage
+        // strips both before capping the result at 300 chars.
+        message: sanitizeStepMessage(err),
         ...extra,
       });
       return false;
@@ -656,9 +747,9 @@ export async function rotateSecret(
 
     let newValue: string | null = null;
     const rotateOk = await record("rotate", async () => {
-      if (!canMintForTargets(enabledTargets.length, dryRun)) {
+      if (!canMintForTargets(enabledTargets, dryRun, connectorRow?.capability)) {
         throw new Error(
-          `${NO_TARGET_REFUSAL}  A programmatic mint revokes the old credential and discards the new one when there is nowhere to deliver it.`,
+          `${NO_TARGET_REFUSAL}  A programmatic mint revokes the old credential and discards the new one when there is nowhere to deliver it (keychain-only counts as undelivered on the web side).`,
         );
       }
       if (!connectorRow || !connector) {
@@ -841,9 +932,13 @@ export async function rotateSecret(
       if (runStatus === "partial") {
         runError = !livenessOk
           ? "credential delivered but failed liveness probe"
-          : steps.find((s) => s.status === "failed")?.message ?? "partial delivery";
+          : (steps.find((s) => s.status === "failed")?.message
+              ? sanitizeStepMessage(steps.find((s) => s.status === "failed")?.message)
+              : "partial delivery");
       } else if (runStatus === "failed" && !dryRun) {
-        runError = steps.find((s) => s.status === "failed")?.message ?? null;
+        runError = steps.find((s) => s.status === "failed")?.message
+          ? sanitizeStepMessage(steps.find((s) => s.status === "failed")?.message)
+          : null;
         // A mint succeeded (we are inside the rotateOk && newValue block) but
         // every delivery failed.  Advance nextDueAt by the policy interval so
         // the 60s scheduler does not immediately re-select this secret and mint
@@ -858,7 +953,9 @@ export async function rotateSecret(
       }
     } else {
       runStatus = "failed";
-      runError = steps.find((s) => s.status === "failed")?.message ?? "rotate step failed";
+      runError = steps.find((s) => s.status === "failed")?.message
+        ? sanitizeStepMessage(steps.find((s) => s.status === "failed")?.message)
+        : "rotate step failed";
       await record("push", async () => {
         throw new Error("skipped — rotation produced no value");
       });
@@ -1144,7 +1241,8 @@ export async function checkSecretDrift(secretId: number): Promise<{
         targetId: target.id,
         kind: target.kind,
         status: "error",
-        detail: (err as Error).message,
+        // AR31-06: same redaction policy as run-history steps.
+        detail: sanitizeStepMessage(err),
         expectedFingerprint: secret.fingerprint,
         actualFingerprint: null,
       });

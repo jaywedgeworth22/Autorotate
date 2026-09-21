@@ -21,16 +21,90 @@ export function fileRoot(): string {
   return path.join(home || process.cwd(), "app-engine", "autorotate-files");
 }
 
-/** Resolve a user path inside the sandbox; throws on escape attempts. */
-export function resolveSandboxPath(relPath: string): string {
-  const root = path.resolve(fileRoot());
-  const abs = path.resolve(root, relPath);
-  if (abs !== root && !abs.startsWith(root + path.sep)) {
+/**
+ * Resolve a user path inside the sandbox; throws on escape attempts.
+ *
+ * AR31-31 (2026-09-20): the previous synchronous `path.resolve` only
+ * checked the LEXICAL path — a symlink inside the sandbox that pointed
+ * outside (e.g. `sandbox/escape -> /etc`) would still pass the lexical
+ * check, then the subsequent `fs.readFile` / `fs.writeFile` would follow
+ * the link and let the rotation read or overwrite an arbitrary file on
+ * the host.  Now resolves to the REAL path (following symlinks) and
+ * re-checks containment.  For a write target that does not exist yet,
+ * realpath is taken on the closest existing ancestor (the sandbox root
+ * is required to exist, so this is always reachable).
+ */
+export async function resolveSandboxPath(relPath: string): Promise<string> {
+  if (!relPath || relPath.length === 0) {
+    throw new FileTargetError("resolveSandboxPath: empty path");
+  }
+  const lexicalRoot = path.resolve(fileRoot());
+  const abs = path.resolve(lexicalRoot, relPath);
+  // 1. Cheap lexical check first — catches `../` traversal and absolute
+  //    paths before we touch the filesystem.
+  if (abs !== lexicalRoot && !abs.startsWith(lexicalRoot + path.sep)) {
     throw new FileTargetError(
-      `Path "${relPath}" escapes the file sandbox (${root})`,
+      `Path "${relPath}" escapes the file sandbox (${lexicalRoot})`,
     );
   }
+  // 2. Symlink-aware check.  We compare realpath vs realpath of the
+  //    SANDBOX ROOT (not its lexical location) because macOS resolves
+  //    /var/folders → /private/var/folders, and Linux can do the same
+  //    with /tmp → /private/tmp.  Comparing a realpath against the
+  //    lexical root would always fail on those hosts.
+  let realRoot: string;
+  try {
+    realRoot = await fs.realpath(lexicalRoot);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new FileTargetError(
+        `File sandbox root ${lexicalRoot} does not exist`,
+      );
+    }
+    throw err;
+  }
+  let real: string;
+  try {
+    real = await fs.realpath(abs);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    // Target does not exist yet (write path).  Walk up until we find an
+    // existing ancestor and realpath it.
+    real = await realpathClosestExistingAncestor(abs);
+  }
+  if (real !== realRoot && !real.startsWith(realRoot + path.sep)) {
+    throw new FileTargetError(
+      `Path "${relPath}" resolves to "${real}" which is outside the file sandbox (${lexicalRoot})`,
+    );
+  }
+  // Return the LEXICAL abs so subsequent write/read addresses the path
+  // the operator actually configured; the symlink check was for safety,
+  // not normalization.
   return abs;
+}
+
+/** Realpath the closest existing ancestor of `abs`. */
+async function realpathClosestExistingAncestor(abs: string): Promise<string> {
+  let cur = abs;
+  // Walk up at most a few dozen levels — pathological inputs (e.g. the
+  // sandbox root itself missing) surface as ENOENT and re-throw with
+  // the sandbox-root-missing message above.
+  while (cur !== path.dirname(cur)) {
+    try {
+      const realCur = await fs.realpath(cur);
+      // Reconstruct the tail (basename) on top of the realpathed ancestor.
+      const tail = abs.slice(cur.length);
+      return realCur + tail;
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+      cur = path.dirname(cur);
+    }
+  }
+  // If we walked up to the filesystem root, give up — the caller will
+  // surface ENOENT.
+  throw Object.assign(new Error(`realpath: no existing ancestor of ${abs}`), {
+    code: "ENOENT",
+  });
 }
 
 async function readIfExists(abs: string): Promise<string> {
@@ -182,7 +256,7 @@ export async function writeFileTarget(
   cfg: FileTargetConfig,
   value: string,
 ): Promise<string> {
-  const abs = resolveSandboxPath(cfg.path);
+  const abs = await resolveSandboxPath(cfg.path);
   const content = await readIfExists(abs);
   const updated = renderUpdated(cfg, content, value);
   await fs.mkdir(path.dirname(abs), { recursive: true });
@@ -196,7 +270,7 @@ export async function writeFileTarget(
 export async function readFileTarget(
   cfg: FileTargetConfig,
 ): Promise<string | null> {
-  const abs = resolveSandboxPath(cfg.path);
+  const abs = await resolveSandboxPath(cfg.path);
   let content: string;
   try {
     content = await fs.readFile(abs, "utf8");

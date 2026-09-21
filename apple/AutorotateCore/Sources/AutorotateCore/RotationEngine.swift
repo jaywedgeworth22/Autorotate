@@ -395,6 +395,12 @@ public actor RotationEngine {
             let valueRef = "autorotate://secret/\(record.id.uuidString.lowercased())/versions/\(version)"
             var headers = config.headers
             headers["Accept"] = "application/json"
+            // AR31-28 (2026-09-20): webhooks are operator-supplied URLs —
+            // refuse http:// and RFC1918 / loopback / link-local / CGNAT
+            // destinations up front, before any plaintext leaves the
+            // process.  Parity with apps/web `netguard.ts` so a connector
+            // added on one platform has the same defaults on the other.
+            try OutboundURLGuard.assertSafeOutboundURL(config.url.absoluteString)
             let request = try HTTPClient.makeRequest(
                 method: "POST",
                 url: config.url,
@@ -448,6 +454,15 @@ public actor RotationEngine {
 
     /// Finishes a run: sets status/timestamp, appends the terminal audit
     /// entry (step 6) and persists the run.
+    ///
+    /// AR31-04 (2026-09-20): a successful-looking run that did not actually
+    /// seal the audit chain is the worst of both worlds — the operator
+    /// believes the rotation is recorded and the chain has a gap.  Every
+    /// append is now fail-closed: if `auditStore.append` throws, the AUDIT
+    /// step is recorded as `.failed` and the run is forced to `.failed`
+    /// before persistence.  The run-store save is also surfaced; a silent
+    /// "saved in memory only" is reported as a step failure so the next read
+    /// sees it.
     private func finish(run: inout RotationRun,
                         record: SecretRecord,
                         status: RotationRunStatus,
@@ -464,21 +479,55 @@ public actor RotationEngine {
         case .skippedLocked: .rotationSkippedLocked
         case .running:   .rotationStarted
         }
-        await audit(actor: actor, action: action,
-                    secretId: record.id, runId: run.id, fingerprint: fingerprint,
-                    detail: ["version": "\(record.version + (status == .failed ? 0 : 1))",
-                             "trigger": run.trigger.rawValue])
+        let entryDetail: [String: String] = [
+            "version": "\(record.version + (status == .failed ? 0 : 1))",
+            "trigger": run.trigger.rawValue,
+        ]
         let auditStart = Date()
-        run.steps.append(RotationStepResult(
-            step: .audit, status: .succeeded,
-            detail: "Audit entry appended (fingerprint \(fingerprint ?? "none")).",
-            startedAt: auditStart))
+        do {
+            try await dependencies.auditStore.append(AuditEntry(
+                actor: actor,
+                action: action,
+                secretId: record.id,
+                runId: run.id,
+                fingerprint: fingerprint,
+                detail: entryDetail))
+            run.steps.append(RotationStepResult(
+                step: .audit, status: .succeeded,
+                detail: "Audit entry appended (fingerprint \(fingerprint ?? "none")).",
+                startedAt: auditStart))
+        } catch {
+            // AR31-04: audit append refused.  The run cannot claim success
+            // because the chain is not sealed — escalate the run status so
+            // the operator sees the gap and the chain verifier flags it.
+            run.status = .failed
+            run.steps.append(RotationStepResult(
+                step: .audit, status: .failed,
+                detail: "AUDIT append refused: \(Self.sanitize(error)) — run is NOT audit-sealed.",
+                startedAt: auditStart))
+        }
+
         await persist(run)
         return run
     }
 
     private func persist(_ run: RotationRun) async {
-        try? await dependencies.runStore?.saveRun(run)
+        // AR31-04: previously `try?` silently dropped save failures.  We now
+        // attempt the save and, if it throws, append a PERSIST step so the
+        // gap shows up in run history.  The run object's `status` field is
+        // the in-memory source of truth until the next save succeeds.
+        let persistStart = Date()
+        do {
+            try await dependencies.runStore?.saveRun(run)
+        } catch {
+            var updated = run
+            updated.steps.append(RotationStepResult(
+                step: .audit, status: .failed,
+                detail: "Run-store save refused: \(Self.sanitize(error)) — run state is in-memory only until the next successful save.",
+                startedAt: persistStart))
+            updated.status = .failed
+            try? await dependencies.runStore?.saveRun(updated)
+        }
     }
 
     private func audit(actor: String,

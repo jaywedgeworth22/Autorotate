@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Check, Copy, QrCode, ShieldCheck, Smartphone } from 'lucide-react'
+import QRCode from 'qrcode'
 import { trpc } from '@/providers/trpc'
 import { Modal, toastSuccess } from '@/components/primitives'
 
@@ -11,6 +12,8 @@ export function QRCodePairingModal({
   onClose: () => void
 }) {
   const [copied, setCopied] = useState(false)
+  const [qrSvg, setQrSvg] = useState<string>('')
+
   const pairingQuery = trpc.pairing.getPayload.useQuery(undefined, {
     enabled: open,
     refetchOnWindowFocus: false,
@@ -19,6 +22,53 @@ export function QRCodePairingModal({
   const payload = pairingQuery.data
   const payloadJson = payload ? JSON.stringify(payload) : ''
 
+  // AR31-05 + AR31-23 (2026-09-20): generate the QR client-side so the
+  // pairing payload (which contains the workspace baseUrl, environment,
+  // and timestamp) never leaves the operator's browser.  The previous
+  // implementation POSTed the payload to api.qrserver.com as a query
+  // parameter, which leaks the deployment topology to a third-party CDN
+  // and gives that CDN a record of every workspace that opened the
+  // pairing modal.  qrcode.generate() returns an SVG string locally;
+  // no network request, no PII egress.
+  //
+  // qrcode.toString returns a Promise (QR generation runs through the
+  // Web Crypto / Web Worker path), so the result has to land in state.
+  // The setState-in-effect lint flags the `.then((svg) => setQrSvg(svg))`
+  // shape; we disable it for the whole effect because the alternative —
+  // a ref + manual re-render — would duplicate the same effect lifecycle
+  // in a more error-prone way.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (!payloadJson) {
+      setQrSvg('')
+      return
+    }
+    let cancelled = false
+    QRCode.toString(payloadJson, {
+      type: 'svg',
+      errorCorrectionLevel: 'M',
+      margin: 2,
+      color: {
+        dark: '#4ECCA3',
+        light: '#141816',
+      },
+      width: 240,
+    })
+      .then((svg) => {
+        if (!cancelled) setQrSvg(svg)
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          console.error('QR generation failed:', err)
+          setQrSvg('')
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [payloadJson])
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   const handleCopy = () => {
     if (!payloadJson) return
     navigator.clipboard.writeText(payloadJson)
@@ -26,13 +76,6 @@ export function QRCodePairingModal({
     toastSuccess('Copied', 'Pairing configuration copied to clipboard')
     setTimeout(() => setCopied(false), 2000)
   }
-
-  // Generate SVG QR Code URL using standard public QR generator or SVG matrix
-  const qrSvgUrl = payloadJson
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
-        payloadJson,
-      )}&bgcolor=141816&color=4ECCA3&margin=10`
-    : ''
 
   return (
     <Modal
@@ -56,13 +99,18 @@ export function QRCodePairingModal({
 
         {/* QR container */}
         <div className="mx-auto flex w-fit flex-col items-center justify-center rounded-2xl border border-line-subtle bg-inset p-5 shadow-inner">
-          {qrSvgUrl ? (
-            <img
-              src={qrSvgUrl}
-              alt="Autorotate Mobile Pairing QR Code"
-              className="size-52 rounded-lg border border-line-subtle"
+          {qrSvg ? (
+            // AR31-05: the SVG is generated client-side and rendered via
+            // dangerouslySetInnerHTML.  The library produces a static SVG
+            // matrix with no script tags or external refs, so this is
+            // equivalent to rendering an <img> from a data: URL but avoids
+            // a base64 round-trip.
+            <div
+              className="size-52 [&_svg]:size-full [&_svg]:rounded-lg [&_svg]:border [&_svg]:border-line-subtle"
+              role="img"
+              aria-label="Autorotate Mobile Pairing QR Code"
+              dangerouslySetInnerHTML={{ __html: qrSvg }}
             />
-
           ) : (
             <div className="flex size-52 items-center justify-center text-ink-muted">
               <QrCode className="size-12 animate-pulse text-spin" />
