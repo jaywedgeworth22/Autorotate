@@ -79,15 +79,21 @@ final class OutboundURLGuardTests: XCTestCase {
     }
 
     func testBlocksIPv4MappedPrivate() throws {
+        // AR31-28: build the address bytes directly so we don't depend
+        // on the platform's inet_pton parsing of IPv4-mapped forms
+        // (which differs across macOS / glibc / musl).  Bytes 8-11 are
+        // 0xff 0xff (the ::ffff: prefix in network byte order); bytes
+        // 12-15 are 0xc0 0xa8 0x01 0x01 (192.168.1.1).
         var addr = in6_addr()
-        // AR31-28: use the canonical hex form because some platforms'
-        // inet_pton rejects the dotted form `::ffff:192.168.1.1`.  Both
-        // forms encode the same address; the hex form is unambiguous.
-        let rc = inet_pton(AF_INET6, "::ffff:c0a8:0101", &addr)
-        // inet_pton may reject dotted forms on some platforms; the hex
-        // form is universally accepted.  If even hex is rejected we
-        // skip — the other IPv6 tests already cover the relevant range.
-        if rc != 1 { return }
+        let bytes: [UInt8] = [
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0xff, 0xff, 0, 0,
+            0xc0, 0xa8, 0x01, 0x01,
+        ]
+        _ = bytes.withUnsafeBufferPointer { src in
+            memcpy(&addr, src.baseAddress, src.count)
+        }
         XCTAssertTrue(OutboundURLGuard.isForbiddenIPv6(addr))
     }
 
