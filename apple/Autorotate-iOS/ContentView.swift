@@ -78,18 +78,18 @@ private struct LockedOverlay: View {
                     .foregroundStyle(Theme.accent)
                 Text("Autorotate is locked")
                     .font(.title2.weight(.semibold))
-                    .foregroundStyle(Theme.onSurface)
+                    .foregroundStyle(.primary)
                 Text("Authenticate to view your zero-plaintext secret inventory.")
                     .font(.callout)
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(Theme.onSurface.opacity(0.7))
+                    .foregroundStyle(.secondary)
                     .padding(.horizontal, 32)
                 Button(action: onUnlock) {
                     Label("Unlock with Face ID", systemImage: "faceid")
                         .frame(maxWidth: 280)
                         .padding(.vertical, 12)
                         .background(Theme.accent)
-                        .foregroundStyle(Theme.onAccent)
+                        .foregroundStyle(.black)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
