@@ -82,13 +82,14 @@ final class OutboundURLGuardTests: XCTestCase {
         // AR31-28: build the address bytes directly so we don't depend
         // on the platform's inet_pton parsing of IPv4-mapped forms
         // (which differs across macOS / glibc / musl).  Bytes 8-11 are
-        // 0xff 0xff (the ::ffff: prefix in network byte order); bytes
-        // 12-15 are 0xc0 0xa8 0x01 0x01 (192.168.1.1).
+        // 0x00 0x00 0xff 0xff (the ::ffff: prefix in network byte
+        // order — big-endian on the wire); bytes 12-15 are 0xc0 0xa8
+        // 0x01 0x01 (192.168.1.1).
         var addr = in6_addr()
         let bytes: [UInt8] = [
             0, 0, 0, 0,
             0, 0, 0, 0,
-            0xff, 0xff, 0, 0,
+            0x00, 0x00, 0xff, 0xff,
             0xc0, 0xa8, 0x01, 0x01,
         ]
         _ = bytes.withUnsafeBufferPointer { src in
