@@ -6,9 +6,29 @@ on:
 jobs:
   testflight:
     name: Build & Push to TestFlight
-    runs-on: macos-14
+    # Runner must ship an Xcode that can read the XcodeGen project:
+    # `apple/project.yml` pins `xcodeVersion: "16.0"`, so xcodegen emits
+    # `objectVersion = 77`, which Xcode 15 and older cannot open.  `macos-14`
+    # defaults to Xcode 15.4 and fails immediately with
+    # "xcodebuild: error: Unable to read project 'Autorotate.xcodeproj'."
+    # Keep this on a current image and select the newest Xcode below.
+    runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
+
+      - name: Select newest available Xcode
+        run: |
+          set -euo pipefail
+          echo "Installed Xcodes:"
+          ls -d /Applications/Xcode*.app 2>/dev/null || true
+
+          latest="$(find /Applications -maxdepth 1 -name 'Xcode*.app' 2>/dev/null | sort -V | tail -1)"
+          if [ -n "$latest" ] && [ -d "$latest/Contents/Developer" ]; then
+            sudo xcode-select -s "$latest/Contents/Developer"
+          fi
+
+          xcode-select -p
+          xcodebuild -version
 
       - name: Install XcodeGen
         run: brew install xcodegen
