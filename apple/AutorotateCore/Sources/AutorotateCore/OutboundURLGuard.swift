@@ -116,8 +116,12 @@ public enum OutboundURLGuard {
             && b4 == 0 && b5 == 0 && b6 == 0 && b7 == 0
             && b8 == 0 && b9 == 0 && b10 == 0xff && b11 == 0xff {
             var v4 = in_addr()
-            // bytes 12..15 already in NBO — write them to s_addr.
-            v4.s_addr = (b12 << 24) | (b13 << 16) | (b14 << 8) | b15
+            // bytes 12..15 are already in network byte order; build a
+            // UInt32 from the explicit big-endian initializer so the
+            // bit pattern lands in memory in the order `in_addr.s_addr`
+            // expects (NBO on every platform).
+            let v4Bits = (b12 << 24) | (b13 << 16) | (b14 << 8) | b15
+            v4.s_addr = UInt32(bigEndian: v4Bits)
             return isForbiddenIPv4(v4)
         }
         return false
