@@ -88,6 +88,15 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      # AR31-34 (2026-09-20): the previous job only ran `assembleDebug`,
+      # which compiles but never runs the unit tests.  A regression in
+      # SecretStore / QRPairingParser / etc. could ship undetected.  Add
+      # the JUnit suite as a required CI step so a broken assertion blocks
+      # the PR.
+      - name: Run Android unit tests
+        working-directory: android
+        run: ./gradlew testDebugUnitTest --no-daemon
+
       - name: Build Android App (Assemble Debug)
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon

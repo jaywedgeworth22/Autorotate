@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  AR31-33 (2026-09-20): keep the Autorotate-macOS menu-bar app resident
+  so RotationScheduler's in-process Timer keeps firing, even when the
+  user closes the last window. launchd auto-restarts on crash, and
+  the menu bar (NSStatusItem) survives the last-window-close.
+
+  INSTALLATION (one-time, per fleet Mac that should run unattended):
+    1. Build a Release .app and copy it under /Applications:
+         cp -R ~/Library/Developer/Xcode/DerivedData/.../Autorotate.app \
+               /Applications/Autorotate.app
+    2. Edit the ProgramArguments below to match the absolute path of the
+       app you actually installed (defaults to /Applications/Autorotate.app).
+    3. cp scripts/launchagents/com.jays.autorotate.scheduler.plist \
+          ~/Library/LaunchAgents/
+    4. launchctl load -w ~/Library/LaunchAgents/com.jays.autorotate.scheduler.plist
+       (use `unload` then `load` to pick up a path edit).
+
+  Removal:
+    launchctl unload ~/Library/LaunchAgents/com.jays.autorotate.scheduler.plist
+    rm ~/Library/LaunchAgents/com.jays.autorotate.scheduler.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.jays.autorotate.scheduler</string>
+
+  <!-- Open the .app via launchctl's RunAtLoad + KeepAlive semantics.
+       launchd will reopen it automatically on crash, logout/login, and
+       every reboot as long as KeepAlive is true. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/open</string>
+    <string>-W</string>
+    <string>-n</string>
+    <string>/Applications/Autorotate.app</string>
+  </array>
+
+  <!-- Wait until the network is up before launching the app, so the
+       first rotation tick doesn't race DNS for Infisical / provider
+       hosts. -->
+  <key>LaunchEvents</key>
+  <dict>
+    <key>com.apple.network.up</key>
+    <dict/>
+  </dict>
+
+  <!-- Auto-launch on login + reboot. Without these, the app only opens
+       when the user finds it in Finder. -->
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <!-- Restart only on actual crash, not when the user signs out. -->
+    <key>SuccessfulExit</key>
+    <false/>
+    <key>Crashed</key>
+    <true/>
+  </dict>
+
+  <!-- Throttle restarts so a truly broken app does not pin launchd. -->
+  <key>ThrottleInterval</key>
+  <integer>30</integer>
+
+  <!-- Standard streams go to /tmp so a Sentry capture sees them and the
+       console still works when run from a headless login session. -->
+  <key>StandardOutPath</key>
+  <string>/tmp/com.jays.autorotate.scheduler.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/com.jays.autorotate.scheduler.err.log</string>
+
+  <!-- macOS sandbox: launchd runs the agent as the user who owns
+       ~/Library/LaunchAgents; the .app retains its own sandbox. -->
+  <key>ProcessType</key>
+  <string>Interactive</string>
+</dict>
+</plist>

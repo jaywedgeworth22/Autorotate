@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LifeBuoy,
   ListChecks,
+  LogOut,
   Menu,
   Plug,
   RotateCw,
@@ -21,6 +22,7 @@ import { Command } from 'cmdk'
 import { cn } from '@/lib/utils'
 import { LogoMark } from './Navbar'
 import { openSentryFeedback } from '@/lib/sentry'
+import { trpc } from '@/providers/trpc'
 
 interface NavItem {
   label: string
@@ -55,6 +57,40 @@ const PALETTE_ITEMS = [
   { label: 'Secrets inventory', href: '/secrets', icon: FileKey2 },
   { label: 'Audit log export', href: '/audit', icon: ScrollText },
 ]
+
+/**
+ * AR31-16 (2026-09-20): the sidebar had no Sign out affordance.  This
+ * button calls `auth.logout` (which clears the session cookie), resets
+ * the tRPC cache so the next signed-in session starts clean, and routes
+ * the operator back to /login.  Render collapsed or as a wide row to
+ * match the existing "Report a Problem" / "Docs" entries.
+ */
+function SignOutButton({ iconRail }: { iconRail: boolean }) {
+  const navigate = useNavigate()
+  const utils = trpc.useUtils()
+  const logout = trpc.auth.logout.useMutation({
+    onSuccess: async () => {
+      await utils.invalidate()
+      navigate('/login', { replace: true })
+    },
+  })
+  return (
+    <button
+      type="button"
+      onClick={() => logout.mutate()}
+      disabled={logout.isPending}
+      className={cn(
+        'flex w-full items-center gap-3 rounded-control px-2 py-2 text-[13px] text-ink-secondary hover:bg-raised/60 hover:text-ink-primary',
+        iconRail && 'justify-center px-0',
+        logout.isPending && 'opacity-60',
+      )}
+      title={iconRail ? 'Sign out' : undefined}
+    >
+      <LogOut className="size-4 shrink-0" />
+      {!iconRail && (logout.isPending ? 'Signing out…' : 'Sign out')}
+    </button>
+  )
+}
 
 function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate()
@@ -248,6 +284,14 @@ export default function AppShell() {
           >
             {collapsed ? <ChevronsRight className="size-4" /> : <ChevronsLeft className="size-4" />}
           </button>
+
+          {/* AR31-16 (2026-09-20): the sidebar previously had no Sign out
+              affordance — the only way to end a session was to clear the
+              cookie in DevTools.  Add a real logout button that calls
+              auth.logout (which clears the 12h session cookie), navigates
+              to /login, and resets the tRPC query cache so the next
+              sign-in starts from a clean state. */}
+          <SignOutButton iconRail={iconRail} />
         </div>
       </aside>
 

@@ -138,13 +138,25 @@ final class RotationService {
     /// Builds a security scope over every registered file target.
     private func makeScope() async -> SecurityScope {
         let bookmarks = (try? await fileTargets.allBookmarks()) ?? []
+        // AR31-27: pair every bookmark with its CURRENT displayPath so we
+        // can pass it to `updateBookmark` — when a stale bookmark resolves
+        // to a new path the store now updates `displayPath` too, instead
+        // of persisting a refreshed bookmark against the wrong row.
+        let existingRows = (try? await fileTargets.allTargets()) ?? []
+        let oldPathByBookmark: [Data: String] = Dictionary(
+            uniqueKeysWithValues: zip(bookmarks, existingRows.map(\.path))
+        )
         var urls: [URL] = []
         for data in bookmarks {
             guard let resolved = try? bookmarkStore.resolve(data) else { continue }
             urls.append(resolved.url)
             if let refreshed = resolved.refreshedBookmark {
-                // Best effort: persist refreshed bookmark for a stale one.
-                try? await fileTargets.updateBookmark(path: resolved.url.path, bookmark: refreshed)
+                let oldPath = oldPathByBookmark[data] ?? resolved.url.path
+                let newPath = resolved.url.path
+                try? await fileTargets.updateBookmark(
+                    path: oldPath,
+                    bookmark: refreshed,
+                    newPath: newPath == oldPath ? nil : newPath)
             }
         }
         return SecurityScope(urls: urls)

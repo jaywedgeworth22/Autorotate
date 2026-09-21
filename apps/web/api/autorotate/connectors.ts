@@ -255,30 +255,7 @@ async function rotateNpm(cfg: ConnectorConfig): Promise<string> {
   return data.token;
 }
 
-async function rotateKubernetes(cfg: ConnectorConfig): Promise<string> {
-  const apiServer = str(cfg?.apiServer);
-  const token = str(cfg?.token);
-  const namespace = str(cfg?.namespace) ?? "default";
-  if (!apiServer || !token) {
-    throw new ConnectorError("Kubernetes: apiServer/token required");
-  }
-  // Real shape: POST /api/v1/namespaces/{ns}/secrets (service-account token)
-  const res = await apiFetch(
-    `${apiServer.replace(/\/+$/, "")}/api/v1/namespaces/${namespace}/serviceaccounts`,
-    {
-      method: "POST",
-      headers: bearer(token),
-      body: JSON.stringify({
-        metadata: { generateName: "autorotate-" },
-      }),
-    },
-    "Kubernetes create service account",
-    { guardUrl: true }, // F10: apiServer is operator-supplied
-  );
-  const data = (await res.json()) as { metadata?: { name?: string } };
-  if (!data.metadata?.name) throw new ConnectorError("Kubernetes: no SA in response");
-  return randomBytes(48).toString("base64url");
-}
+
 
 async function rotateInfisicalSource(cfg: ConnectorConfig): Promise<string> {
   const clientId = str(cfg?.clientId);
@@ -422,6 +399,28 @@ async function rotateVercel(cfg: ConnectorConfig): Promise<string> {
 const BASE62 =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
+// AR31-29 (2026-09-20): required field map for `testConnection`.  Keys are
+// connector platforms; values are the config keys that must be non-empty
+// before a real-mode connection test is allowed to proceed.  Platforms not
+// in this map (update_only entries, local generators like jwt/database)
+// are validated by their platform-specific branch or have no remote check
+// to make; they still get the demo-mode short-circuit above.
+const REQUIRED_FIELDS: Record<string, readonly string[]> = {
+  stripe: ["adminKey"],
+  openai: ["adminKey"],
+  cloudflare: ["apiToken"],
+  sendgrid: ["adminKey"],
+  npm: ["token"],
+  vercel: ["token"],
+  resend: ["adminKey"],
+  huggingface: ["token"],
+  neon: ["token"],
+  slack: ["botToken"],
+  twilio: ["accountSid", "authToken"],
+  infisical: ["clientId", "clientSecret", "workspaceId"],
+  github: ["token"],
+};
+
 const demoValues: Record<string, () => string> = {
   infisical: () => `st.${randomBytes(4).toString("hex")}.${randomBytes(16).toString("hex")}.${randomBytes(12).toString("hex")}`,
   aws_iam: () => `AKIA${randomToken(16, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")}`,
@@ -544,7 +543,12 @@ export const connectorRegistry: ServerConnector[] = [
   define("slack", "Slack", "partial", rotateSlackLive),
   define("npm", "npm", "programmatic", rotateNpm),
   define("dockerhub", "Docker Hub", "programmatic", rotateDockerHub),
-  define("kubernetes", "Kubernetes", "programmatic", rotateKubernetes),
+  // AR31-02 (2026-09-20): rotateKubernetes POSTs a real ServiceAccount
+  // create then returns `randomBytes(48)` — an invented credential.  Until
+  // it returns a real cluster token (or an operator-imported value), it
+  // belongs in the update_only bucket like AWS.  docs/architecture.md §3
+  // reclassified in the same commit.
+  define("kubernetes", "Kubernetes", "update_only", null),
   define("generic_rest", "Generic REST", "programmatic", rotateGenericRest),
   define("resend", "Resend", "programmatic", rotateResend),
   define("huggingface", "Hugging Face", "programmatic", rotateHuggingFace),
@@ -674,9 +678,35 @@ export async function testConnection(
 ): Promise<string> {
   const connector = getConnector(platform);
   const name = connector?.displayName ?? platform;
-  if (isDemoMode() || !config) {
+  // AR31-29 (2026-09-20): the previous short-circuit also returned success
+  // when `config` was missing in REAL mode — a misconfigured connector then
+  // showed up as `connected` and the next rotation failed with no
+  // explanation.  Demo mode keeps the simulated pass (with the demo tag so
+  // it never reads as a real verification).  Real mode with no config now
+  // fails with the field names the operator actually has to fill in.
+  if (isDemoMode()) {
     const ms = await demoLatency();
     return `[demo] connection to ${name} verified (simulated, ${ms}ms)`;
+  }
+  if (!config || typeof config !== "object") {
+    throw new ConnectorError(
+      `${name}: connector has no configuration saved — open the connector and fill in the required fields before testing`,
+    );
+  }
+  // Reject empty required fields up front.  Platform-specific branches below
+  // would otherwise make a real upstream call with empty credentials and
+  // surface the provider's 401/403 as a "success" — or, for local generators,
+  // return "ready" without ever looking at the config.
+  const requiredFields = REQUIRED_FIELDS[platform];
+  if (requiredFields) {
+    const missing = requiredFields.filter(
+      (field) => !str((config as Record<string, unknown>)[field]),
+    );
+    if (missing.length > 0) {
+      throw new ConnectorError(
+        `${name}: missing required field${missing.length === 1 ? "" : "s"}: ${missing.join(", ")}`,
+      );
+    }
   }
   switch (platform) {
     case "stripe":
