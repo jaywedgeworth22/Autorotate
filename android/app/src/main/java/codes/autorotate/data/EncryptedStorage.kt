@@ -243,12 +243,26 @@ class EncryptedStorage(context: Context) : SecretStorage {
     }
 
     override fun getSecrets(): List<SecretRecord> {
-        val json = store.getString("secrets_list") ?: return defaultSecrets()
+        val json = store.getString("secrets_list")
+        // AR31-03 (2026-09-20): the previous code seeded a fabricated
+        // AWS/Stripe/GitHub inventory when nothing was stored yet.  On a
+        // fresh install that gives the operator the false impression that
+        // three live credentials are present and ready to rotate; the next
+        // attempt to rotate then surfaces a "credential not found" error.
+        // Return an empty list so the UI's empty-state CTA ("Scan a
+        // pairing QR / add your first secret") is the only thing the
+        // operator sees until they actually add a secret.
+        if (json.isNullOrEmpty()) return emptyList()
         val type = object : TypeToken<List<SecretRecord>>() {}.type
         return try {
-            gson.fromJson(json, type) ?: defaultSecrets()
+            gson.fromJson(json, type) ?: emptyList()
         } catch (e: Exception) {
-            defaultSecrets()
+            // Corrupt or partially-written state — log and reset rather
+            // than fabricate.  A delete-on-read would erase user data
+            // silently; the safer behavior here is to return empty and
+            // surface the failure on next saveSecrets().
+            Log.w(TAG, "getSecrets: corrupt JSON, returning empty: ${e.message}")
+            emptyList()
         }
     }
 
@@ -265,22 +279,4 @@ class EncryptedStorage(context: Context) : SecretStorage {
             emptyList()
         }
     }
-
-    private fun defaultSecrets(): List<SecretRecord> = listOf(
-        SecretRecord(
-            name = "AWS_SECRET_ACCESS_KEY",
-            connectorId = "aws-iam",
-            fingerprint = "3f8a91b2"
-        ),
-        SecretRecord(
-            name = "STRIPE_SECRET_KEY",
-            connectorId = "stripe",
-            fingerprint = "7a1c9e40"
-        ),
-        SecretRecord(
-            name = "GITHUB_TOKEN",
-            connectorId = "github",
-            fingerprint = "c4d29a88"
-        )
-    )
 }

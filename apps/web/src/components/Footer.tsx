@@ -3,40 +3,50 @@ import { Github, Twitter } from 'lucide-react'
 import { LogoMark } from './Navbar'
 import { openSentryFeedback } from '@/lib/sentry'
 
-const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
+// AR31-17 (2026-09-20): the previous footer routed every column to
+// dead `#anchor` URLs (/#docs, /#privacy, /#status, /#careers, …).  None
+// of those IDs existed on the landing page, so each click scrolled to the
+// top of the page with no error.  Now:
+//   • In-page anchors use react-router `<Link>` with real IDs that exist
+//     on the Home page (pipeline, connectors, companions, security).
+//   • Cross-document links (changelog, docs, API, status, about, blog,
+//     careers, contact, privacy, terms) point at the GitHub repo's
+//     existing README / LICENSE / SECURITY.md / CHANGELOG.md / Issues,
+//     so every link resolves to a real page.
+const COLUMNS: { title: string; links: { label: string; href: string; external?: boolean }[] }[] = [
   {
     title: 'Product',
     links: [
       { label: 'Console', href: '/dashboard' },
-      { label: 'Connectors', href: '/connectors' },
+      { label: 'Connectors', href: '/#connectors' },
       { label: 'Companions', href: '/#companions' },
-      { label: 'Changelog', href: '/#changelog' },
+      { label: 'Changelog', href: 'https://github.com/jaywedgeworth22/Autorotate/blob/main/CHANGELOG.md', external: true },
     ],
   },
   {
     title: 'Resources',
     links: [
-      { label: 'Docs', href: '/#docs' },
-      { label: 'API reference', href: '/#api' },
-      { label: 'Status', href: '/#status' },
+      { label: 'Docs', href: 'https://github.com/jaywedgeworth22/Autorotate#readme', external: true },
+      { label: 'API reference', href: 'https://github.com/jaywedgeworth22/Autorotate/tree/main/contracts', external: true },
+      { label: 'Status', href: 'https://github.com/jaywedgeworth22/Autorotate/actions', external: true },
       { label: 'Security', href: '/#security' },
     ],
   },
   {
-    title: 'Company',
+    title: 'Project',
     links: [
-      { label: 'About', href: '/#about' },
-      { label: 'Blog', href: '/#blog' },
-      { label: 'Careers', href: '/#careers' },
-      { label: 'Contact', href: '/#contact' },
+      { label: 'About', href: 'https://github.com/jaywedgeworth22/Autorotate/blob/main/README.md', external: true },
+      { label: 'Issue tracker', href: 'https://github.com/jaywedgeworth22/Autorotate/issues', external: true },
+      { label: 'Roadmap', href: 'https://github.com/jaywedgeworth22/Autorotate/milestones', external: true },
+      { label: 'Contact', href: 'https://github.com/jaywedgeworth22/Autorotate/issues/new', external: true },
     ],
   },
   {
     title: 'Legal',
     links: [
-      { label: 'Privacy', href: '/#privacy' },
-      { label: 'Terms', href: '/#terms' },
-      { label: 'License', href: 'https://github.com/jaywedgeworth22/Autorotate/blob/main/LICENSE' },
+      { label: 'Privacy', href: 'https://github.com/jaywedgeworth22/Autorotate/blob/main/SECURITY.md', external: true },
+      { label: 'Terms', href: 'https://github.com/jaywedgeworth22/Autorotate/blob/main/LICENSE', external: true },
+      { label: 'License', href: 'https://github.com/jaywedgeworth22/Autorotate/blob/main/LICENSE', external: true },
       { label: 'Security', href: '/#security' },
     ],
   },
@@ -77,12 +87,23 @@ export default function Footer() {
               <ul className="space-y-2.5">
                 {col.links.map((l) => (
                   <li key={l.label}>
-                    <a
-                      href={l.href}
-                      className="text-sm text-ink-secondary transition-colors duration-200 hover:text-ink-primary"
-                    >
-                      {l.label}
-                    </a>
+                    {l.external ? (
+                      <a
+                        href={l.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-ink-secondary transition-colors duration-200 hover:text-ink-primary"
+                      >
+                        {l.label}
+                      </a>
+                    ) : (
+                      <Link
+                        to={l.href}
+                        className="text-sm text-ink-secondary transition-colors duration-200 hover:text-ink-primary"
+                      >
+                        {l.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
