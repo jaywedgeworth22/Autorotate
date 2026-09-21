@@ -67,31 +67,57 @@ public enum OutboundURLGuard {
     /// Returns whether the given IPv6 address is in a range the engine
     /// refuses to reach.
     public static func isForbiddenIPv6(_ address: in6_addr) -> Bool {
-        let words = address.__u6_addr.__u6_addr32
-        let w0 = words.0.bigEndian
-        let w1 = words.1.bigEndian
-        let w2 = words.2.bigEndian
-        let w3 = words.3.bigEndian
+        // Read the 16 bytes directly — keeps the comparison in the
+        // canonical network-byte-order form the kernel uses, so there is
+        // no byte-swap bookkeeping between the union reads and the IPv4
+        // mapping step below.
+        let bytes = address.__u6_addr.__u6_addr8
+        let b0  = UInt32(bytes.0)
+        let b1  = UInt32(bytes.1)
+        let b2  = UInt32(bytes.2)
+        let b3  = UInt32(bytes.3)
+        let b4  = UInt32(bytes.4)
+        let b5  = UInt32(bytes.5)
+        let b6  = UInt32(bytes.6)
+        let b7  = UInt32(bytes.7)
+        let b8  = UInt32(bytes.8)
+        let b9  = UInt32(bytes.9)
+        let b10 = UInt32(bytes.10)
+        let b11 = UInt32(bytes.11)
+        let b12 = UInt32(bytes.12)
+        let b13 = UInt32(bytes.13)
+        let b14 = UInt32(bytes.14)
+        let b15 = UInt32(bytes.15)
 
-        // ::1/128 — loopback.
-        if w0 == 0 && w1 == 0 && w2 == 0 && w3 == 1 { return true }
+        // ::1/128 — loopback.  Bytes 0-14 are zero, byte 15 is 1.
+        if b0 == 0 && b1 == 0 && b2 == 0 && b3 == 0
+            && b4 == 0 && b5 == 0 && b6 == 0 && b7 == 0
+            && b8 == 0 && b9 == 0 && b10 == 0 && b11 == 0
+            && b12 == 0 && b13 == 0 && b14 == 0 && b15 == 1 {
+            return true
+        }
         // ::/128 — unspecified.
-        if w0 == 0 && w1 == 0 && w2 == 0 && w3 == 0 { return true }
-        // fe80::/10 — link-local.
-        if (w0 & 0xffc0_0000) == 0xfe80_0000 { return true }
-        // fc00::/7 — unique local.
-        if (w0 & 0xfe00_0000) == 0xfc00_0000 { return true }
-        // ff00::/8 — multicast.
-        if (w0 & 0xff00_0000) == 0xff00_0000 { return true }
-        // ::ffff:0:0/96 — IPv4-mapped.  After `.bigEndian` on a little-endian
-        // host, the `::ffff:` prefix reads as 0x0000ffff in the third word
-        // (the kernel writes the address in network byte order, so the
-        // raw native-UInt32 is byte-swapped by `.bigEndian` into the
-        // canonical big-endian form).  Strip the prefix and re-check as
-        // v4 against the same forbidden-v4 list.
-        if w0 == 0 && w1 == 0 && w2 == 0x0000_ffff {
+        if b0 == 0 && b1 == 0 && b2 == 0 && b3 == 0
+            && b4 == 0 && b5 == 0 && b6 == 0 && b7 == 0
+            && b8 == 0 && b9 == 0 && b10 == 0 && b11 == 0
+            && b12 == 0 && b13 == 0 && b14 == 0 && b15 == 0 {
+            return true
+        }
+        // fe80::/10 — link-local.  bytes 0 = 0xfe, byte 1 in 0x80..0xbf.
+        if b0 == 0xfe && (b1 & 0xc0) == 0x80 { return true }
+        // fc00::/7 — unique local.  bytes 0 in 0xfc..0xfd.
+        if (b0 & 0xfe) == 0xfc { return true }
+        // ff00::/8 — multicast.  byte 0 = 0xff.
+        if b0 == 0xff { return true }
+        // ::ffff:0:0/96 — IPv4-mapped.  bytes 0-9 are zero, bytes 10-11
+        // are 0xff, bytes 12-15 carry the IPv4 address in network byte
+        // order.  Re-check via the v4 list and return its verdict.
+        if b0 == 0 && b1 == 0 && b2 == 0 && b3 == 0
+            && b4 == 0 && b5 == 0 && b6 == 0 && b7 == 0
+            && b8 == 0 && b9 == 0 && b10 == 0xff && b11 == 0xff {
             var v4 = in_addr()
-            v4.s_addr = w3
+            // bytes 12..15 already in NBO — write them to s_addr.
+            v4.s_addr = (b12 << 24) | (b13 << 16) | (b14 << 8) | b15
             return isForbiddenIPv4(v4)
         }
         return false
