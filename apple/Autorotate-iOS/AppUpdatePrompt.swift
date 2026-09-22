@@ -246,8 +246,18 @@ enum AppUpdatePrompt {
     static func manifestEntry(for bundleId: String, manifest: ManifestFile?) -> ManifestApp? {
         guard let apps = manifest?.apps else { return nil }
         if let entry = apps[bundleId] { return entry }
-        guard let alias = manifestBundleAliases[bundleId] else { return nil }
-        return apps[alias]
+        guard let alias = manifestBundleAliases[bundleId],
+              let legacyEntry = apps[alias] else { return nil }
+        // The legacy key is a version/build compatibility alias only. Its
+        // Apple ID and deep links belong to the old App Store Connect record
+        // and must never be used by the renamed app.
+        return ManifestApp(
+            marketingVersion: legacyEntry.marketingVersion,
+            build: legacyEntry.build,
+            appleId: nil,
+            testFlightURL: nil,
+            appStoreURL: nil
+        )
     }
 
     struct ManifestFile: Decodable, Equatable {
