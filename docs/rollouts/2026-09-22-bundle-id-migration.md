@@ -37,8 +37,8 @@ The macOS app already carried `codes.autorotate.macos` from the 2026-08-22 rebra
   - `releaseName()` fallback default: `codes.autorotate` → `codes.autorotate.ios`.
   - Doc-comment example updated to match.
 - `apple/Autorotate-iOS/AppUpdatePrompt.swift`:
-  - Reads the new `codes.autorotate.ios` manifest key first and temporarily falls back to the legacy `codes.autorotate` key, so existing TestFlight update checks keep working while fleet publishers migrate.
-  - The `ios-versions.json` producer must publish `codes.autorotate.ios`; during the migration window it may retain the legacy key as an alias with the same version/build/Apple ID data for already-installed builds.
+  - Reads the new `codes.autorotate.ios` manifest key first and temporarily falls back to the legacy `codes.autorotate` key for version/build only, so existing TestFlight update checks keep working while fleet publishers migrate without inheriting the old App Store Connect record's Apple ID or deep links.
+  - The `ios-versions.json` producer must publish `codes.autorotate.ios` with the renamed app's Apple ID and URLs; during the migration window it may retain the legacy key only as a version/build alias for already-installed builds.
 - `apple/Autorotate-iOS/Autorotate.entitlements`:
   - **Added** `com.apple.security.application-groups` with `group.codes.autorotate`.
   - **Added** `com.apple.developer.associated-domains` with `applinks:autorotate.codes` and `webcredentials:autorotate.codes`.
@@ -91,7 +91,25 @@ The macOS app already carried `codes.autorotate.macos` from the 2026-08-22 rebra
 ## Owner action items
 
 1. **Apple Developer Portal** — register the new explicit App IDs: `codes.autorotate.ios`, `codes.autorotate.macos` (the macOS one already exists, verify it), and the new App Group capability `group.codes.autorotate` on **both** App IDs (it must be registered per-App-ID for `UserDefaults` sharing + FileProvider container participation).  This PR does not have the credentials to do so.
-2. **`autorotate.codes` DNS + AASA** — host the Apple App Site Association at `https://autorotate.codes/.well-known/apple-app-site-association` on the verified `autorotate.codes` zone. Its `appID` / `details[].appIDs` value must be the Autorotate Team ID plus bundle ID, `CC8UTF7ATG.codes.autorotate.ios` (not a BotFleet App ID). The associated-domains entitlement values `applinks:autorotate.codes` and `webcredentials:autorotate.codes` are already wired in `apple/Autorotate-iOS/Autorotate.entitlements`; they will validate once the AASA is reachable.
+2. **`autorotate.codes` DNS + AASA** — host the Apple App Site Association at `https://autorotate.codes/.well-known/apple-app-site-association` on the verified `autorotate.codes` zone. Its Universal Links `appID` / `details[].appIDs` value and the top-level Shared Web Credentials `webcredentials.apps` entry must use the Autorotate Team ID plus bundle ID, `CC8UTF7ATG.codes.autorotate.ios` (not a BotFleet App ID). The complete minimum structure is:
+
+   ```json
+   {
+     "applinks": {
+       "details": [
+         {
+           "appIDs": ["CC8UTF7ATG.codes.autorotate.ios"],
+           "components": [{ "/": "/*" }]
+         }
+       ]
+     },
+     "webcredentials": {
+       "apps": ["CC8UTF7ATG.codes.autorotate.ios"]
+     }
+   }
+   ```
+
+   The associated-domains entitlement values `applinks:autorotate.codes` and `webcredentials:autorotate.codes` are already wired in `apple/Autorotate-iOS/Autorotate.entitlements`; both services will validate once this AASA is reachable.
 3. **App Store Connect app record** — before the first upload with the renamed bundle ID, the owner must create a new App Store Connect app record bound to the explicit App ID `codes.autorotate.ios`. A TestFlight re-upload cannot create or retarget that app record.
 4. **Code-signing** — the certificate refresh is vendor-driven and out of scope.  After the cert swap, the build picks up the new bundle ID without any further source change (it reads `PRODUCT_BUNDLE_IDENTIFIER = "codes.autorotate.ios"` from `apple/project.yml`).
 5. **TestFlight re-upload** — vendor (hosted `testflight.yml`), after the App Store Connect app record exists.  No source change required beyond this PR's `apple/project.yml`; `xcodegen generate` regenerates `apple/Autorotate.xcodeproj` with the new `PRODUCT_BUNDLE_IDENTIFIER`.
