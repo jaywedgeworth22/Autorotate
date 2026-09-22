@@ -32,6 +32,14 @@ enum AppUpdatePrompt {
 
     private static let skippedVersionKeyPrefix = "appUpdatePrompt.skippedVersion."
 
+    // The public manifest is published after TestFlight uploads. During the
+    // bundle-ID migration it may still contain the pre-migration key, so keep
+    // that entry as a temporary read alias until every producer writes
+    // `codes.autorotate.ios`.
+    private static let manifestBundleAliases = [
+        "codes.autorotate.ios": "codes.autorotate"
+    ]
+
     struct Config: Equatable {
         var bundleId: String
         var appleId: Int?
@@ -191,7 +199,7 @@ enum AppUpdatePrompt {
     ) -> Offer? {
         guard channel != .xcode else { return nil }
 
-        let entry = manifest?.apps[config.bundleId]
+        let entry = manifestEntry(for: config.bundleId, manifest: manifest)
         let lookupResult = lookup?.results.first
 
         let latestMarketing: String?
@@ -233,6 +241,13 @@ enum AppUpdatePrompt {
             storeURL: urls.primary,
             fallbackURL: urls.fallback
         )
+    }
+
+    static func manifestEntry(for bundleId: String, manifest: ManifestFile?) -> ManifestApp? {
+        guard let apps = manifest?.apps else { return nil }
+        if let entry = apps[bundleId] { return entry }
+        guard let alias = manifestBundleAliases[bundleId] else { return nil }
+        return apps[alias]
     }
 
     struct ManifestFile: Decodable, Equatable {
