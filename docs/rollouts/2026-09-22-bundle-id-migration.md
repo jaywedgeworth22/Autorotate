@@ -16,7 +16,7 @@ Autorotate is the simplest lane in the fleet — one iOS rename, one new app gro
 | Associated Domain (new, iOS only) | — | `autorotate.codes` |
 | Associated Domain values (new, iOS only) | — | `webcredentials:autorotate.codes` (`applinks` deferred until URL routing exists) |
 | Keychain Sharing group | `codes.autorotate.shared` | `codes.autorotate.shared` (keep — separate namespace, not part of this rename) |
-| Android Java package + `applicationId` | `codes.autorotate` | `codes.autorotate` (intentionally **out of scope**; separate future lane) |
+| Android Java package + `applicationId` | `codes.autorotate` | `codes.autorotate` (leave unchanged; settled decision) |
 
 The macOS app already carried `codes.autorotate.macos` from the 2026-08-22 rebrand — only the iOS app needed the `.ios` suffix, and the new app group + associated domain join it to its sibling.
 
