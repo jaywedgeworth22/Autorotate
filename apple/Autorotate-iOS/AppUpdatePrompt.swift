@@ -32,13 +32,9 @@ enum AppUpdatePrompt {
 
     private static let skippedVersionKeyPrefix = "appUpdatePrompt.skippedVersion."
 
-    // The public manifest is published after TestFlight uploads. During the
-    // bundle-ID migration it may still contain the pre-migration key, so keep
-    // that entry as a temporary read alias until every producer writes
-    // `codes.autorotate.ios`.
-    private static let manifestBundleAliases = [
-        "codes.autorotate.ios": "codes.autorotate"
-    ]
+    // Update offers are keyed only by the installed bundle ID. A renamed app
+    // must not borrow version metadata or store links from the legacy App Store
+    // Connect record; checks stay silent until the new manifest entry exists.
 
     struct Config: Equatable {
         var bundleId: String
@@ -244,20 +240,7 @@ enum AppUpdatePrompt {
     }
 
     static func manifestEntry(for bundleId: String, manifest: ManifestFile?) -> ManifestApp? {
-        guard let apps = manifest?.apps else { return nil }
-        if let entry = apps[bundleId] { return entry }
-        guard let alias = manifestBundleAliases[bundleId],
-              let legacyEntry = apps[alias] else { return nil }
-        // The legacy key is a version/build compatibility alias only. Its
-        // Apple ID and deep links belong to the old App Store Connect record
-        // and must never be used by the renamed app.
-        return ManifestApp(
-            marketingVersion: legacyEntry.marketingVersion,
-            build: legacyEntry.build,
-            appleId: nil,
-            testFlightURL: nil,
-            appStoreURL: nil
-        )
+        manifest?.apps[bundleId]
     }
 
     struct ManifestFile: Decodable, Equatable {
