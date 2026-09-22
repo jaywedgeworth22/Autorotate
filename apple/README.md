@@ -42,7 +42,7 @@ apple/
     │                                secret generation
     └── Tests/AutorotateCoreTests/    XCTest suite (27 tests)
 ├── project.yml                  ← XcodeGen spec → Autorotate.xcodeproj
-├── Autorotate-iOS/                 ← iOS 17+ SwiftUI app (bundle codes.autorotate)
+├── Autorotate-iOS/                 ← iOS 17+ SwiftUI app (bundle codes.autorotate.ios)
 │   ├── AutorotateApp.swift         ← @main App, BGTask registration, dark theme
 │   ├── ContentView.swift        ← TabView: Dashboard/Secrets/Runs/Settings
 │   ├── AppModel.swift           ← @Observable @MainActor engine wiring
@@ -85,13 +85,15 @@ xcodegen generate          # creates Autorotate.xcodeproj
 open Autorotate.xcodeproj
 ```
 
-#### iOS app (`Autorotate-iOS`, bundle id `codes.autorotate`, iOS 17+)
+#### iOS app (`Autorotate-iOS`, bundle id `codes.autorotate.ios`, iOS 17+)
 
 1. `xcodegen generate` as above, then open `Autorotate.xcodeproj`.
 2. Select the `Autorotate-iOS` target → **Signing & Capabilities**:
    - Team: **Jay Wedgeworth, LLC (`CC8UTF7ATG`)**.
    - Keychain Sharing capability with group `$(AppIdentifierPrefix)codes.autorotate.shared`.
-   - Background Modes: Background fetch (`codes.autorotate.refresh`).
+   - App Groups capability with group `group.codes.autorotate`.
+   - Associated Domains capability with value `webcredentials:autorotate.codes`. Add `applinks` only when URL routing is implemented.
+   - Background Modes: Background fetch (`codes.autorotate.ios.refresh`).
 
 #### macOS app (`Autorotate-macOS`, bundle id `codes.autorotate.macos`, macOS 14+)
 
@@ -110,10 +112,52 @@ See `README-macOS.md`.  One `xcodegen generate` produces both schemes.
 
 
 Enable the **Keychain Sharing** capability in Xcode and add
-`$(AppIdentifierPrefix)com.autorotate.shared` to every target that must share
+`$(AppIdentifierPrefix)codes.autorotate.shared` to every target that must share
 items. `KeychainManager` defaults to this group
 (`KeychainManager.sharedAccessGroup`); pass `accessGroup: nil` for
 app-private items during development.
+
+### App Group `group.codes.autorotate` (both apps)
+
+```xml
+<key>com.apple.security.application-groups</key>
+<array>
+    <string>group.codes.autorotate</string>
+</array>
+```
+
+Enable the **App Groups** capability in Xcode and select `group.codes.autorotate`
+on every target. The group must be registered for every App ID that
+participates (`codes.autorotate.ios` and `codes.autorotate.macos`), so the
+owner registers the matching capability on the Apple Developer Portal.
+
+### Associated Domains `autorotate.codes` (iOS only)
+
+```xml
+<key>com.apple.developer.associated-domains</key>
+<array>
+    <string>webcredentials:autorotate.codes</string>
+</array>
+```
+
+Enable the **Associated Domains** capability on the iOS target only. The
+matching `apple-app-site-association` lives at
+`https://autorotate.codes/.well-known/apple-app-site-association` and is
+hosted on the verified `autorotate.codes` zone (owner). The iOS target has no
+URL or `NSUserActivity` routing today, so Universal Links are not implemented
+and the AASA must not publish an `applinks` claim yet. Shared Web Credentials
+is ready for the renamed app:
+
+```json
+{
+  "webcredentials": {
+    "apps": ["CC8UTF7ATG.codes.autorotate.ios"]
+  }
+}
+```
+
+Add `applinks:autorotate.codes` and path-scoped AASA components only in the
+same change that adds and tests the matching in-app route handlers.
 
 ### iCloud Keychain ("if allowed")
 

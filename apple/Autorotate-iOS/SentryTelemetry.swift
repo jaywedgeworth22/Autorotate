@@ -48,14 +48,14 @@ enum SentryTelemetry {
     }
 
     /// `<bundle-id>@<CFBundleShortVersionString>+<CFBundleVersion>`, e.g.
-    /// `codes.autorotate@1.0+3` — matches Sentry's own default Cocoa release
+    /// `codes.autorotate.ios@1.0+3` — matches Sentry's own default Cocoa release
     /// format, set explicitly here so it never depends on SDK-version
     /// defaulting behavior.
     private static func releaseName() -> String {
         let info = Bundle.main.infoDictionary
         let version = (info?["CFBundleShortVersionString"] as? String) ?? "0.0"
         let build = (info?["CFBundleVersion"] as? String) ?? "0"
-        let bundleId = Bundle.main.bundleIdentifier ?? "codes.autorotate"
+        let bundleId = Bundle.main.bundleIdentifier ?? "codes.autorotate.ios"
         return "\(bundleId)@\(version)+\(build)"
     }
 }

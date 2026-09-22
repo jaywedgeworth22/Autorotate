@@ -1,5 +1,7 @@
 # AR31 Android audit — 2026-08-31
 
+> **2026-09-22 archaeology note:** the Android namespace + `applicationId` (`codes.autorotate`) referenced here is **unchanged** by the 2026-09-22 fleet bundle migration — Android was intentionally out of scope for this lane (Java package rename requires directory moves + import refactor; separate future lane).  See `docs/rollouts/2026-09-22-bundle-id-migration.md`.
+
 **Surface:** `android/` · Kotlin + Jetpack Compose · `codes.autorotate` · minSdk 26
 **Findings:** AR31-AND-01 … AR31-AND-18
 

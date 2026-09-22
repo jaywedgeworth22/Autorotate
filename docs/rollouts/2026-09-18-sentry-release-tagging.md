@@ -1,5 +1,7 @@
 # 2026-09-18 — Sentry release tagging + web source-map upload (autorotate)
 
+> **2026-09-22 archaeology note:** the release-table entries below carry `codes.autorotate` for iOS and `codes.autorotate` for Android — these are the bundle IDs that were live when this doc was written.  iOS is now `codes.autorotate.ios` (see `docs/rollouts/2026-09-22-bundle-id-migration.md`); the Android namespace (`codes.autorotate`) is unchanged.  `releaseName()` in `apple/Autorotate-iOS/SentryTelemetry.swift` was updated in lockstep so Sentry events from the new build emit `codes.autorotate.ios@<version>+<build>`.
+
 ## Summary
 
 - Tag every Sentry event across web (browser + server), iOS, macOS, Android with a release identifier derived from the build environment.

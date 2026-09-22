@@ -1,5 +1,7 @@
 # AGENTS.md — Agent Coordination Manifest
 
+> **2026-09-22 [MM]:** Bundle identifier migration — iOS app renamed `codes.autorotate` → `codes.autorotate.ios`.  New shared app group `group.codes.autorotate` (iOS + macOS) and associated domain `autorotate.codes` (iOS only).  See `docs/rollouts/2026-09-22-bundle-id-migration.md` for the full table and owner action items.  macOS bundle (`codes.autorotate.macos`) and Android namespace (`codes.autorotate`) are unchanged.
+
 This file is the **authoritative coordination manifest for AI agent fleets**
 working on the Autorotate monorepo. Human contributors should read
 [CONTRIBUTING.md](CONTRIBUTING.md) instead. Read this file fully before
@@ -83,9 +85,9 @@ stop and escalate in the PR description.
 |---|---|---|---|
 | Web control center | `apps/web/` | React + Vite frontend; Hono + tRPC + Drizzle backend; MySQL | Everything under `apps/web/`. Never edit `apple/` or `android/` from a web task. |
 | AutorotateCore | `apple/AutorotateCore/` | SwiftPM library (no third-party deps) | Shared engine: rotation pipeline, connectors, crypto, Keychain, stores. Changes here affect Apple apps — require cross-platform review. |
-| iOS app | `apple/Autorotate-iOS/` | SwiftUI, iOS 17+ | iOS-only UI/background/notifications (`codes.autorotate`). Must only consume AutorotateCore's **public** API. |
+| iOS app | `apple/Autorotate-iOS/` | SwiftUI, iOS 17+ | iOS-only UI/background/notifications (`codes.autorotate.ios`). Must only consume AutorotateCore's **public** API. |
 | macOS app | `apple/Autorotate-macOS/` | SwiftUI, macOS 14+ | macOS-only UI/scheduler/file targets (`codes.autorotate.macos`). Must only consume AutorotateCore's **public** API. |
-| Android app | `android/` | Kotlin + Jetpack Compose, Android 8+ | Android-only UI/biometrics/QR scanner/workers (`codes.autorotate`). |
+| Android app | `android/` | Kotlin + Jetpack Compose, Android 8+ | Android-only UI/biometrics/QR scanner/workers (`codes.autorotate`). Android remains unchanged and out of scope for this PR. |
 | Docs | `docs/` | Markdown | `architecture.md` is the source of truth for the connector capability matrix; keep it in sync with code changes. |
 
 
@@ -134,6 +136,21 @@ interface listed below. Never "drive-by" edit another module.
 - The web app and Apple apps do **not** talk to each other directly today;
   any future sync interface must be designed in `docs/architecture.md`
   before implementation.
+
+## Bundle identifiers (canonical, post 2026-09-22 migration)
+
+| Surface | Bundle ID | Notes |
+|---|---|---|
+| iOS app (`Autorotate-iOS`) | `codes.autorotate.ios` | PRODUCT_BUNDLE_IDENTIFIER in `apple/project.yml`; Info.plist, BG task identifier, and Sentry release default all follow. |
+| macOS app (`Autorotate-macOS`) | `codes.autorotate.macos` | Unchanged from the 2026-08-22 rebrand — `codes.autorotate` was the original iOS-only ID; the macOS side has always been `.macos`-suffixed. |
+| App Group (new, 2026-09-22) | `group.codes.autorotate` | Declared in both `Autorotate.entitlements` (iOS) and `AutorotateMac.entitlements` (macOS). Owner registers on Apple Developer Portal. |
+| Associated Domain (new, iOS only, 2026-09-22) | `autorotate.codes` | Value `webcredentials:autorotate.codes` in iOS entitlements. `applinks` is deferred until tested URL routing exists. Owner hosts the AASA at `https://autorotate.codes/.well-known/apple-app-site-association`. |
+| Android app (`codes.autorotate`) | `codes.autorotate` | Java package + Gradle `applicationId`. Android remains unchanged and out of scope for this PR. |
+| Keychain Sharing group | `codes.autorotate.shared` | Internal keychain-access-group namespace, independent of bundle IDs. Unchanged. |
+| BGTaskScheduler identifier (iOS) | `codes.autorotate.ios.refresh` | Must match Info.plist `BGTaskSchedulerPermittedIdentifiers` and `BackgroundRotation.taskIdentifier`. |
+
+Full migration context (per-file diff, owner action items, verification):
+`docs/rollouts/2026-09-22-bundle-id-migration.md`.
 
 ## Session handoff template
 
