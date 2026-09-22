@@ -1,6 +1,6 @@
 # 2026-09-22 — Bundle Identifier Migration
 
-Issue raised on the macOS signing-cert change window, where the owner approved a fleet-wide bundle rename so every app uses a domain Jay owns as its base.  This document covers **Autorotate only**; the rest of the fleet (BotFleet, ContactLogo, DealDex, HogHunter, Socratic.Trade, Congress.Trade, Usage-Monitor, the MiniMax-ios companion) is on separate lanes owned by other seats.  The fleet-wide context lives in `/Users/jay/.minimax/sessions/mvs_0bdfe8c73c1046a986df888aa99dcb2e/workspace/fleet-bundle-id-plan.md`.
+Issue raised during the macOS signing-cert change window as part of a fleet-wide bundle rename using domains Jay owns as the base.  This document covers **Autorotate only**; the rest of the fleet (BotFleet, ContactLogo, DealDex, HogHunter, Socratic.Trade, Congress.Trade, Usage-Monitor, the MiniMax-ios companion) is on separate lanes owned by other seats.  The fleet-wide context lives in `/Users/jay/.minimax/sessions/mvs_0bdfe8c73c1046a986df888aa99dcb2e/workspace/fleet-bundle-id-plan.md`.
 
 Autorotate is the simplest lane in the fleet — one iOS rename, one new app group shared across iOS + macOS, and one new associated domain for the iOS Universal Links / shared web-credentials flow.  No web refs, no Electron helpers, no LaunchAgents.
 
@@ -16,7 +16,7 @@ Autorotate is the simplest lane in the fleet — one iOS rename, one new app gro
 | Associated Domain (new, iOS only) | — | `autorotate.codes` |
 | Associated Domain values (new, iOS only) | — | `webcredentials:autorotate.codes` (`applinks` deferred until URL routing exists) |
 | Keychain Sharing group | `codes.autorotate.shared` | `codes.autorotate.shared` (keep — separate namespace, not part of this rename) |
-| Android Java package + `applicationId` | `codes.autorotate` | `codes.autorotate` (leave unchanged; settled decision) |
+| Android Java package + `applicationId` | `codes.autorotate` | `codes.autorotate` (unchanged; out of scope for this PR) |
 
 The macOS app already carried `codes.autorotate.macos` from the 2026-08-22 rebrand — only the iOS app needed the `.ios` suffix, and the new app group + associated domain join it to its sibling.
 
@@ -78,7 +78,7 @@ The macOS app already carried `codes.autorotate.macos` from the 2026-08-22 rebra
 
 - `apple/AutorotateCore/` — references to `codes.autorotate.shared` (Keychain access group), `codes.autorotate.<secretId>` (managed-secret service names), `codes.autorotate.credential.<connectorId>.<secretId>` (connector admin credential service names), `codes.autorotate.infisical.<workspaceId>` (Infisical service), and the test fixture `codes.autorotate.test`.  These are **internal** Keychain service-name strings, not bundle IDs; renaming them would invalidate existing keychain items on user devices.  Out of scope for this lane.
 - `apple/Autorotate-iOS/KeychainInventory.swift` and `apple/Autorotate-macOS/KeychainInventory.swift` — both reference `codes.autorotate` (and the legacy `com.autorotate`) as service-prefix filters used to categorise Keychain items; same reason as above, out of scope.
-- `android/` — entire tree intentionally out of scope. Owner decision: leave the Java package namespace + Gradle `applicationId` as `codes.autorotate`; no Android rename lane is planned.
+- `android/` — entire tree intentionally out of scope. The Java package namespace + Gradle `applicationId` remain `codes.autorotate` and are unchanged by this PR.
 - `backups/kimi-agent-topspin/` — archaeology; do not edit.
 - No `dealdex.net`, `services.jays.*`, `com.botfleet.*`, `com.contactlogo.*`, `com.jayservices.HogHunter`, `trade.socratic.*`, `trade.congress.*`, `net.dealdex`, or `app.botfleet.*` references exist in this repo.
 
@@ -106,7 +106,7 @@ The macOS app already carried `codes.autorotate.macos` from the 2026-08-22 rebra
 4. **Code-signing** — the certificate refresh is vendor-driven and out of scope.  After the cert swap, the build picks up the new bundle ID without any further source change (it reads `PRODUCT_BUNDLE_IDENTIFIER = "codes.autorotate.ios"` from `apple/project.yml`).
 5. **TestFlight re-upload** — vendor (hosted `testflight.yml`), after the App Store Connect app record exists.  No source change required beyond this PR's `apple/project.yml`; `xcodegen generate` regenerates `apple/Autorotate.xcodeproj` with the new `PRODUCT_BUNDLE_IDENTIFIER`.
 6. **macOS keychain access group** — if the owner wants existing macOS Keychain items to remain shared with the renamed iOS app, no action is needed (`codes.autorotate.shared` is unchanged).  If a clean cut is desired, the owner signs the new app group separately — out of scope for this PR.
-7. **Android bundle** — leave the Java package namespace + Gradle `applicationId` unchanged as `codes.autorotate`. This is the settled owner decision recorded in `AGENTS.md`; do not open a rename lane.
+7. **Android bundle** — the Java package namespace + Gradle `applicationId` remain unchanged as `codes.autorotate` and are out of scope for this PR.
 
 ## Cross-module interface claim
 
@@ -138,7 +138,7 @@ This migration explicitly claims the **Apple signing-capability interface** betw
 - `autorotate.codes` AASA hosting + DNS (owner); the AASA App ID is `CC8UTF7ATG.codes.autorotate.ios`.
 - Code-signing cert refresh (vendor).
 - TestFlight re-upload (vendor).
-- Android Java package + `applicationId` remain `codes.autorotate` by settled owner decision; no rename is planned.
+- Android Java package + `applicationId` remain `codes.autorotate` and are out of scope for this PR.
 - Keychain service-name strings in `apple/AutorotateCore/` (internal API; renaming would invalidate existing Keychain items on user devices).
 - Renaming the macOS app from `codes.autorotate.macos` — already correct from the 2026-08-22 rebrand, no change needed.
 - Other fleet apps' bundle renames (separate per-app PRs, separate seats).
