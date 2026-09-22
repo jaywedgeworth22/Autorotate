@@ -92,7 +92,7 @@ open Autorotate.xcodeproj
    - Team: **Jay Wedgeworth, LLC (`CC8UTF7ATG`)**.
    - Keychain Sharing capability with group `$(AppIdentifierPrefix)codes.autorotate.shared`.
    - App Groups capability with group `group.codes.autorotate`.
-   - Associated Domains capability with values `applinks:autorotate.codes` and `webcredentials:autorotate.codes`.
+   - Associated Domains capability with value `webcredentials:autorotate.codes`. Add `applinks` only when URL routing is implemented.
    - Background Modes: Background fetch (`codes.autorotate.ios.refresh`).
 
 #### macOS app (`Autorotate-macOS`, bundle id `codes.autorotate.macos`, macOS 14+)
@@ -136,7 +136,6 @@ owner registers the matching capability on the Apple Developer Portal.
 ```xml
 <key>com.apple.developer.associated-domains</key>
 <array>
-    <string>applinks:autorotate.codes</string>
     <string>webcredentials:autorotate.codes</string>
 </array>
 ```
@@ -144,24 +143,21 @@ owner registers the matching capability on the Apple Developer Portal.
 Enable the **Associated Domains** capability on the iOS target only. The
 matching `apple-app-site-association` lives at
 `https://autorotate.codes/.well-known/apple-app-site-association` and is
-hosted on the verified `autorotate.codes` zone (owner). It must declare both
-Universal Links and Shared Web Credentials for the renamed app:
+hosted on the verified `autorotate.codes` zone (owner). The iOS target has no
+URL or `NSUserActivity` routing today, so Universal Links are not implemented
+and the AASA must not publish an `applinks` claim yet. Shared Web Credentials
+is ready for the renamed app:
 
 ```json
 {
-  "applinks": {
-    "details": [
-      {
-        "appIDs": ["CC8UTF7ATG.codes.autorotate.ios"],
-        "components": [{ "/": "/*" }]
-      }
-    ]
-  },
   "webcredentials": {
     "apps": ["CC8UTF7ATG.codes.autorotate.ios"]
   }
 }
 ```
+
+Add `applinks:autorotate.codes` and path-scoped AASA components only in the
+same change that adds and tests the matching in-app route handlers.
 
 ### iCloud Keychain ("if allowed")
 
