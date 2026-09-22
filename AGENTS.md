@@ -87,7 +87,7 @@ stop and escalate in the PR description.
 | AutorotateCore | `apple/AutorotateCore/` | SwiftPM library (no third-party deps) | Shared engine: rotation pipeline, connectors, crypto, Keychain, stores. Changes here affect Apple apps — require cross-platform review. |
 | iOS app | `apple/Autorotate-iOS/` | SwiftUI, iOS 17+ | iOS-only UI/background/notifications (`codes.autorotate.ios`). Must only consume AutorotateCore's **public** API. |
 | macOS app | `apple/Autorotate-macOS/` | SwiftUI, macOS 14+ | macOS-only UI/scheduler/file targets (`codes.autorotate.macos`). Must only consume AutorotateCore's **public** API. |
-| Android app | `android/` | Kotlin + Jetpack Compose, Android 8+ | Android-only UI/biometrics/QR scanner/workers (`codes.autorotate`). Owner decision 2026-09-22: **leave as `codes.autorotate`** (less churn than renaming the Java package + Gradle `applicationId`). Do not reopen as a rename task. |
+| Android app | `android/` | Kotlin + Jetpack Compose, Android 8+ | Android-only UI/biometrics/QR scanner/workers (`codes.autorotate`). Android remains unchanged and out of scope for this PR. |
 | Docs | `docs/` | Markdown | `architecture.md` is the source of truth for the connector capability matrix; keep it in sync with code changes. |
 
 
@@ -144,8 +144,8 @@ interface listed below. Never "drive-by" edit another module.
 | iOS app (`Autorotate-iOS`) | `codes.autorotate.ios` | PRODUCT_BUNDLE_IDENTIFIER in `apple/project.yml`; Info.plist, BG task identifier, and Sentry release default all follow. |
 | macOS app (`Autorotate-macOS`) | `codes.autorotate.macos` | Unchanged from the 2026-08-22 rebrand — `codes.autorotate` was the original iOS-only ID; the macOS side has always been `.macos`-suffixed. |
 | App Group (new, 2026-09-22) | `group.codes.autorotate` | Declared in both `Autorotate.entitlements` (iOS) and `AutorotateMac.entitlements` (macOS). Owner registers on Apple Developer Portal. |
-| Associated Domain (new, iOS only, 2026-09-22) | `autorotate.codes` | Values `applinks:autorotate.codes` and `webcredentials:autorotate.codes` in iOS entitlements. Owner hosts the AASA at `https://autorotate.codes/.well-known/apple-app-site-association`. |
-| Android app (`codes.autorotate`) | `codes.autorotate` | Java package + Gradle `applicationId`. **Owner decision 2026-09-22:** leave as `codes.autorotate` (less churn). Do not reopen as a rename task. |
+| Associated Domain (new, iOS only, 2026-09-22) | `autorotate.codes` | Value `webcredentials:autorotate.codes` in iOS entitlements. `applinks` is deferred until tested URL routing exists. Owner hosts the AASA at `https://autorotate.codes/.well-known/apple-app-site-association`. |
+| Android app (`codes.autorotate`) | `codes.autorotate` | Java package + Gradle `applicationId`. Android remains unchanged and out of scope for this PR. |
 | Keychain Sharing group | `codes.autorotate.shared` | Internal keychain-access-group namespace, independent of bundle IDs. Unchanged. |
 | BGTaskScheduler identifier (iOS) | `codes.autorotate.ios.refresh` | Must match Info.plist `BGTaskSchedulerPermittedIdentifiers` and `BackgroundRotation.taskIdentifier`. |
 
