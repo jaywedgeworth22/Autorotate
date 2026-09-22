@@ -60,6 +60,9 @@ jobs:
           swift build
           swift test
 
+      - name: Verify bundle-ID migration contract
+        run: python3 scripts/test-bundle-id-migration.py
+
       - name: Generate Xcode project
         working-directory: apple
         run: xcodegen generate
@@ -100,4 +103,3 @@ jobs:
       - name: Build Android App (Assemble Debug)
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
-
