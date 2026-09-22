@@ -32,6 +32,10 @@ enum AppUpdatePrompt {
 
     private static let skippedVersionKeyPrefix = "appUpdatePrompt.skippedVersion."
 
+    // Update offers are keyed only by the installed bundle ID. A renamed app
+    // must not borrow version metadata or store links from the legacy App Store
+    // Connect record; checks stay silent until the new manifest entry exists.
+
     struct Config: Equatable {
         var bundleId: String
         var appleId: Int?
@@ -191,7 +195,7 @@ enum AppUpdatePrompt {
     ) -> Offer? {
         guard channel != .xcode else { return nil }
 
-        let entry = manifest?.apps[config.bundleId]
+        let entry = manifestEntry(for: config.bundleId, manifest: manifest)
         let lookupResult = lookup?.results.first
 
         let latestMarketing: String?
@@ -233,6 +237,10 @@ enum AppUpdatePrompt {
             storeURL: urls.primary,
             fallbackURL: urls.fallback
         )
+    }
+
+    static func manifestEntry(for bundleId: String, manifest: ManifestFile?) -> ManifestApp? {
+        manifest?.apps[bundleId]
     }
 
     struct ManifestFile: Decodable, Equatable {

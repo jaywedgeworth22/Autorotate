@@ -1,5 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Autorotate macOS entitlements.
+
+  Keychain Sharing: the shared access group `codes.autorotate.shared` lets the
+  macOS app, the iOS app and any extensions share managed secret items,
+  connector admin credentials and the Infisical clientSecret
+  (docs/architecture.md §5). Enable the "Keychain Sharing" capability in
+  Xcode; Xcode will prefix the group with your App ID prefix automatically
+  via $(AppIdentifierPrefix).
+
+  App Group: `group.codes.autorotate` (added 2026-09-22 bundle-ID migration)
+  is the shared container for UserDefaults / FileProvider coordination with
+  the iOS companion app. Enable the "App Groups" capability in Xcode; the
+  group must be registered for every App ID that participates, so
+  `codes.autorotate.ios` and `codes.autorotate.macos` need matching
+  registrations on the owner side. See
+  docs/rollouts/2026-09-22-bundle-id-migration.md.
+
+  Associated Domains: intentionally absent on macOS — the iOS-only entitlement
+  drives Universal Links. macOS Safari password sharing is covered separately
+  if/when introduced.
+-->
 <plist version="1.0">
 <dict>
     <key>com.apple.security.app-sandbox</key>
@@ -13,6 +35,10 @@
     <key>keychain-access-groups</key>
     <array>
         <string>$(AppIdentifierPrefix)codes.autorotate.shared</string>
+    </array>
+    <key>com.apple.security.application-groups</key>
+    <array>
+        <string>group.codes.autorotate</string>
     </array>
 </dict>
 </plist>

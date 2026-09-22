@@ -5,7 +5,7 @@
 //  BGAppRefreshTask-based background rotation driver (architecture.md §2 —
 //  the scheduler that calls `RotationEngine.rotateDueSecrets()`).
 //
-//  - Task identifier `com.autorotate.refresh` is declared in Info.plist
+//  - Task identifier `codes.autorotate.ios.refresh` is declared in Info.plist
 //    (BGTaskSchedulerPermittedIdentifiers) and requires the "fetch"
 //    background mode.
 //  - Registration happens in `AutorotateApp.init` (before the app finishes
@@ -19,7 +19,7 @@ import Foundation
 enum BackgroundRotation {
 
     /// Registered BGAppRefreshTask identifier (must match Info.plist).
-    static let taskIdentifier = "codes.autorotate.refresh"
+    static let taskIdentifier = "codes.autorotate.ios.refresh"
 
 
     /// Minimum spacing between background refresh passes. The system may
