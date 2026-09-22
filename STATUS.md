@@ -1,5 +1,7 @@
 # Autorotate — Status
 
+> **2026-09-22 archaeology note:** the `codes.autorotate` (iOS) and `codes.autorotate.shared` (Keychain Sharing) strings in this file reflect the **2026-08-22 rebrand** and remain verbatim as the historical record of that rebrand.  The current iOS bundle ID is `codes.autorotate.ios` — see `docs/rollouts/2026-09-22-bundle-id-migration.md`.  macOS bundle (`codes.autorotate.macos`) is unchanged.
+
 ## Current Handoff
 
 ### 2026-09-18 CURSOR — Effort Issues Sync Crons margin (FLEET-INFRA-CD)

@@ -1,5 +1,7 @@
 # 2026-08-22 — Autorotate Apple IDs (portal leftover)
 
+> **2026-09-22 archaeology note:** the `codes.autorotate` (iOS) and `codes.autorotate.shared` (Keychain Sharing) strings in this file are the **2026-08-22 rebrand** state.  iOS is now `codes.autorotate.ios` (2026-09-22 fleet bundle migration — see `docs/rollouts/2026-09-22-bundle-id-migration.md`); macOS (`codes.autorotate.macos`) and the shared group (`codes.autorotate.shared`) are unchanged.  Owner still needs to register the renamed App ID on the Apple Developer Portal.
+
 Lives with AG PR #48 (`ag/utility-power-enhancements`).  Duplicate Grok
 https://github.com/jaywedgeworth22/Autorotate/pull/50 stays CLOSED.  Do not
 reopen it or merge that branch onto #48.

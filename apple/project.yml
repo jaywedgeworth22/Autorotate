@@ -11,6 +11,9 @@
 # Capabilities to enable in Xcode after generating (Signing & Capabilities):
 #   - Keychain Sharing: $(AppIdentifierPrefix)codes.autorotate.shared
 #     (already declared in Autorotate-iOS/Autorotate.entitlements)
+#   - App Groups: group.codes.autorotate (declared in both app entitlements)
+#   - Associated Domains: autorotate.codes (declared in iOS entitlements only;
+#     values applinks:autorotate.codes + webcredentials:autorotate.codes)
 #   - Background Modes: "Background fetch" (matches Info.plist)
 #   - Push Notifications: NOT needed (notifications are local-only)
 #
@@ -63,7 +66,7 @@ targets:
         product: Sentry
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: codes.autorotate
+        PRODUCT_BUNDLE_IDENTIFIER: codes.autorotate.ios
         PRODUCT_NAME: Autorotate
         CODE_SIGN_ENTITLEMENTS: Autorotate-iOS/Autorotate.entitlements
         INFOPLIST_FILE: Autorotate-iOS/Info.plist

@@ -1,5 +1,7 @@
 # AR31 — Autorotate-iOS audit
 
+> **2026-09-22 archaeology note:** the bundle-ID references in this audit (`codes.autorotate` as iOS, `codes.autorotate.shared` as the Keychain group, `codes.autorotate.*` as the service-prefix family) reflect the **2026-08-31** audit state.  iOS bundle ID is now `codes.autorotate.ios` (see `docs/rollouts/2026-09-22-bundle-id-migration.md`); the Keychain Sharing group (`codes.autorotate.shared`) and the Keychain service-prefix family are unchanged and the audit findings still apply.
+
 **Date:** 2026-08-31  
 **Module:** `apple/Autorotate-iOS/` (SwiftUI, iOS 17+, bundle `codes.autorotate`)  
 **Seat:** GROK (read-only)  

@@ -31,7 +31,7 @@ Autorotate/
 ├── apple/                  # Apple-platform workspace (XcodeGen)
 │   ├── AutorotateCore/        #   Shared SwiftPM package: rotation engine,
 │   │                       #   connectors, crypto, Keychain, stores
-│   ├── Autorotate-iOS/        #   iOS app (SwiftUI, iOS 17+, codes.autorotate)
+│   ├── Autorotate-iOS/        #   iOS app (SwiftUI, iOS 17+, codes.autorotate.ios)
 │   ├── Autorotate-macOS/      #   macOS app (SwiftUI, macOS 14+, codes.autorotate.macos)
 │   └── project.yml         #   XcodeGen spec → Autorotate.xcodeproj
 ├── android/                # Android companion app (Kotlin + Compose, codes.autorotate)

@@ -3,12 +3,27 @@
 <!--
   Autorotate iOS entitlements.
 
-  Keychain Sharing: the shared access group `com.autorotate.shared` lets the
+  Keychain Sharing: the shared access group `codes.autorotate.shared` lets the
   iOS app, the macOS app and any extensions share managed secret items,
   connector admin credentials and the Infisical clientSecret
   (docs/architecture.md §5). Enable the "Keychain Sharing" capability in
   Xcode; Xcode will prefix the group with your App ID prefix automatically
   via $(AppIdentifierPrefix).
+
+  App Group: `group.codes.autorotate` (added 2026-09-22 bundle-ID migration)
+  is the shared container for UserDefaults / FileProvider coordination between
+  the iOS and macOS companion apps. Enable the "App Groups" capability in
+  Xcode; the group must be registered for every App ID that participates, so
+  `codes.autorotate.ios` and `codes.autorotate.macos` need matching
+  registrations on the owner side. See docs/rollouts/2026-09-22-bundle-id-migration.md.
+
+  Associated Domains: `autorotate.codes` (added 2026-09-22 bundle-ID migration)
+  powers Universal Links and shared web credentials. Enable the "Associated
+  Domains" capability in Xcode; host the AASA at
+  https://autorotate.codes/.well-known/apple-app-site-association (owner
+  handles DNS + portal). Values below mirror the BotFleet convention:
+  applinks for Universal Links, webcredentials for the shared Safari
+  password flow.
 
   iCloud Keychain note: `kSecAttrSynchronizable` items (the "Sync via iCloud
   Keychain" toggle) require NO additional entitlement on iOS — sync happens
@@ -28,6 +43,15 @@
     <key>keychain-access-groups</key>
     <array>
         <string>$(AppIdentifierPrefix)codes.autorotate.shared</string>
+    </array>
+    <key>com.apple.security.application-groups</key>
+    <array>
+        <string>group.codes.autorotate</string>
+    </array>
+    <key>com.apple.developer.associated-domains</key>
+    <array>
+        <string>applinks:autorotate.codes</string>
+        <string>webcredentials:autorotate.codes</string>
     </array>
 </dict>
 </plist>
