@@ -18,12 +18,12 @@
   registrations on the owner side. See docs/rollouts/2026-09-22-bundle-id-migration.md.
 
   Associated Domains: `autorotate.codes` (added 2026-09-22 bundle-ID migration)
-  powers Universal Links and shared web credentials. Enable the "Associated
+  currently enables Shared Web Credentials only. Enable the "Associated
   Domains" capability in Xcode; host the AASA at
   https://autorotate.codes/.well-known/apple-app-site-association (owner
-  handles DNS + portal). Values below mirror the BotFleet convention:
-  applinks for Universal Links, webcredentials for the shared Safari
-  password flow.
+  handles DNS + portal). Universal Links are intentionally absent until the
+  app has matching URL / NSUserActivity routing; add `applinks` only with that
+  routing implementation.
 
   iCloud Keychain note: `kSecAttrSynchronizable` items (the "Sync via iCloud
   Keychain" toggle) require NO additional entitlement on iOS — sync happens
@@ -50,7 +50,6 @@
     </array>
     <key>com.apple.developer.associated-domains</key>
     <array>
-        <string>applinks:autorotate.codes</string>
         <string>webcredentials:autorotate.codes</string>
     </array>
 </dict>
