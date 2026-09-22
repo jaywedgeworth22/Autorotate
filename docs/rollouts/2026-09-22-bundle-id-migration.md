@@ -37,8 +37,8 @@ The macOS app already carried `codes.autorotate.macos` from the 2026-08-22 rebra
   - `releaseName()` fallback default: `codes.autorotate` → `codes.autorotate.ios`.
   - Doc-comment example updated to match.
 - `apple/Autorotate-iOS/AppUpdatePrompt.swift`:
-  - Reads the new `codes.autorotate.ios` manifest key first and temporarily falls back to the legacy `codes.autorotate` key for version/build only, so existing TestFlight update checks keep working while fleet publishers migrate without inheriting the old App Store Connect record's Apple ID or deep links.
-  - The `ios-versions.json` producer must publish `codes.autorotate.ios` with the renamed app's Apple ID and URLs; during the migration window it may retain the legacy key only as a version/build alias for already-installed builds.
+  - Reads only the new `codes.autorotate.ios` manifest key. The legacy `codes.autorotate` entry belongs to the old App Store Connect record and is never used by the renamed app.
+  - Until the owner creates the new App Store Connect record and the `ios-versions.json` producer publishes `codes.autorotate.ios` with its trusted Apple ID and URLs, the renamed app reports no update offer. Do not invent or reuse an Apple ID to bridge the migration window.
 - `apple/Autorotate-iOS/Autorotate.entitlements`:
   - **Added** `com.apple.security.application-groups` with `group.codes.autorotate`.
   - **Added** `com.apple.developer.associated-domains` with `webcredentials:autorotate.codes`. Universal Links (`applinks`) are deferred because the iOS target currently has no URL/NSUserActivity routing implementation.
@@ -124,7 +124,7 @@ This migration explicitly claims the **Apple signing-capability interface** betw
 - `xcodebuild -list -project apple/Autorotate.xcodeproj` (post-`xcodegen generate`) lists `Autorotate-iOS` and `Autorotate-macOS` targets cleanly.
 - `apple/Autorotate-iOS/BackgroundRotation.swift` `taskIdentifier` matches the `BGTaskSchedulerPermittedIdentifiers` entry in the iOS Info.plist (`codes.autorotate.ios.refresh` on both sides).
 - `apple/Autorotate-iOS/SentryTelemetry.swift` `releaseName()` fallback default + doc comment match the new iOS bundle ID.
-- `apple/Autorotate-iOS/AppUpdatePrompt.swift` resolves `codes.autorotate.ios` first and falls back to the legacy `codes.autorotate` manifest entry during migration; `scripts/test-bundle-id-migration.py` locks this alias and the rollout prerequisites.
+- `apple/Autorotate-iOS/AppUpdatePrompt.swift` resolves only `codes.autorotate.ios`; a legacy-only manifest produces no update offer. `scripts/test-bundle-id-migration.py` locks this fail-closed behavior and the rollout prerequisites.
 - `apple/Autorotate-iOS/Autorotate.entitlements` carries `com.apple.security.application-groups: [group.codes.autorotate]` and `com.apple.developer.associated-domains: [webcredentials:autorotate.codes]`; `applinks` remains absent until matching URL routing exists.
 - `apple/Autorotate-macOS/AutorotateMac.entitlements` carries `com.apple.security.application-groups: [group.codes.autorotate]` (no Associated Domains on macOS, by design).
 - `AGENTS.md` Bundle Identifiers section is the new canonical table for future seats; top-of-file callout points to this rollout doc.
