@@ -13,7 +13,7 @@
 #     (already declared in Autorotate-iOS/Autorotate.entitlements)
 #   - App Groups: group.codes.autorotate (declared in both app entitlements)
 #   - Associated Domains: autorotate.codes (declared in iOS entitlements only;
-#     values applinks:autorotate.codes + webcredentials:autorotate.codes)
+#     value webcredentials:autorotate.codes; applinks is deferred until tested URL routing exists)
 #   - Background Modes: "Background fetch" (matches Info.plist)
 #   - Push Notifications: NOT needed (notifications are local-only)
 #
