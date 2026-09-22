@@ -144,7 +144,24 @@ owner registers the matching capability on the Apple Developer Portal.
 Enable the **Associated Domains** capability on the iOS target only. The
 matching `apple-app-site-association` lives at
 `https://autorotate.codes/.well-known/apple-app-site-association` and is
-hosted on the verified `autorotate.codes` zone (owner).
+hosted on the verified `autorotate.codes` zone (owner). It must declare both
+Universal Links and Shared Web Credentials for the renamed app:
+
+```json
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["CC8UTF7ATG.codes.autorotate.ios"],
+        "components": [{ "/": "/*" }]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["CC8UTF7ATG.codes.autorotate.ios"]
+  }
+}
+```
 
 ### iCloud Keychain ("if allowed")
 
